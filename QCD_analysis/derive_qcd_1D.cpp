@@ -138,7 +138,7 @@ void derive(TString cut, TString cut_name, int g, int year, bool isEnriched){
     for(int i=0;i<nsample;i++){
         fileNamesA[i] = fileNames[i];
         fileNames[i] = fileNames[i].ReplaceAll(".root", "_*_"+cg+".root");
-        fileNamesA[i] =  fileNamesA[i].ReplaceAll(cg+".root", "A.root");
+        fileNamesA[i] =  fileNamesA[i].ReplaceAll(".root", "A.root");
     }
     
     //Lepton_triggers in C and D regions have prescales

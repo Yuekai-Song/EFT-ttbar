@@ -177,11 +177,8 @@ run_log
 combine/*sh
 combine/output*
 combine/impact*
+combine/**/*txt
 !combine/output/
-!combine/datacard/**/*.root
-!combine/datacard_ttx/**/*.root
-!combine/**/limit*.root
-!test/**/datacard/**/sumed/**/*.root
 **/output/**/check.cpp
 **/output/**/*.sh
 **/output/**/*.txt
