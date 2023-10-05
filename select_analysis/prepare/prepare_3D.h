@@ -39,19 +39,22 @@ private:
     map<TString, pair<double, double>> xsection;
     TString cut, cut_name;
     int edge_i[9], edge_f[9];
+    int npdf_w[9];
     TString sys_n[30], sys[30], sys_up[30], sys_down[30];
     TString process[9];
     TString EW[5];
-    TString weight_nom, weight_up, weight_dn;
+    TString weight_up, weight_dn;
     TString file_up, file_dn;
     TString tree_up, tree_dn;
+    TString other_con1, other_con2;
 
     void give_sys_name(TString file, TString weight, int s, int c);
     void renew_weight(TString* weight, TString file);
     void draw(TH3D* h1, TString file, TString tree, TString weight);
     void set_dir();
     void draw(int c);
-    void draw(int c, int s);
+    void draw_sys(int c, int s);
+    void draw_pdf(int c, int p);
     void draw_data();
 public:
     prepare_3D(TString cut_s, TString cut_name_s, int year_s, int* xy_bins, double* xy_range);

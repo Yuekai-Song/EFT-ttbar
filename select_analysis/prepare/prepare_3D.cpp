@@ -94,12 +94,6 @@ void prepare_3D::draw(TH3D* h1, TString file, TString tree, TString weight){
     delete c0;
 }
 void prepare_3D::draw(int c){
-    TString other_con1 = "*((jet_num>=4)||(jet_num==3 && jet_pt[0]>50))";
-    TString other_con2;
-    if(year==2018)
-        other_con2 = "*(lep_flavour||((!lep_flavour) && lepton_pt>34))";
-    else
-        other_con2 = "*1";
     TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom" + other_con1 + other_con2;
     TH3D* hist = new TH3D(process[c]+"_sub", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
     hist->Sumw2();
@@ -108,11 +102,10 @@ void prepare_3D::draw(int c){
     if(c == 5)
         weight = weight + "*nnlo_wt";
     for(int i=edge_i[c]; i<edge_f[c]; i++){
-        weight_nom = weight;
-        renew_weight(&weight_nom, fileNames[i]);
+        renew_weight(&weight, fileNames[i]);
         TH3D* h1 = new TH3D("h1", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
         h1->Sumw2();
-        draw(h1, fileNames[i], "mytree", weight_nom);
+        draw(h1, fileNames[i], "mytree", weight);
         hist->Add(h1);
         delete h1;
     }
@@ -120,14 +113,28 @@ void prepare_3D::draw(int c){
     hist->Write();
     delete hist;
 }
-
-void prepare_3D::draw(int c, int s){
-    TString other_con1 = "*((jet_num>=4)||(jet_num==3 && jet_pt[0]>50))";
-    TString other_con2;
-    if(year==2018)
-        other_con2 = "*(lep_flavour||((!lep_flavour) && lepton_pt>34))";
-    else
-        other_con2 = "*1";
+void prepare_3D::draw_pdf(int c, int p){
+    TString weight = Form("Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom*LHEPdfWeight[%d]", p) + other_con1 + other_con2;
+    TH3D* hist_pdf = new TH3D(process[c]+Form("pdf_w%d_sub", p), "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
+    hist_pdf->Sumw2();
+    if(c < 5)
+        weight = weight + EW[c] + "*nnlo_wt";
+    if(c == 5)
+        weight = weight + "*nnlo_wt";
+    for(int i=edge_i[c]; i<edge_f[c]; i++){
+        renew_weight(&weight, fileNames[i]);
+        TH3D* h1 = new TH3D("h1", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
+        h1->Sumw2();
+        draw(h1, fileNames[i], "mytree", weight);
+        hist_pdf->Add(h1);
+        delete h1;
+    }
+    file->cd();
+    hist_pdf->Write();
+    delete hist_pdf;
+    
+}
+void prepare_3D::draw_sys(int c, int s){
     TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom" + other_con1 + other_con2;
     TH3D* hist_up = new TH3D("hist_up", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
     TH3D* hist_dn = new TH3D("hist_dn", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
@@ -252,6 +259,7 @@ void prepare_3D::set_dir(){
     
     TString jes_source[] = {"Absolute", Form("Absolute_%d", year), "FlavorQCD", "BBEC1", "EC2", "HF", Form("BBEC1_%d", year), Form("EC2_%d", year), "RelativeBal", Form("RelativeSample_%d", year)};
     TString sf_bl[] = {"SF_btag_co", "SF_ltag_co", "SF_btag_un", "SF_btag_un"};
+
     for(int i=0; i<nsample; i++){
         fileName[i].ReplaceAll(".root","_*.root");
         if(i < 20)
@@ -261,12 +269,13 @@ void prepare_3D::set_dir(){
     
     TString process_s[]={"ttbar_ci0000","ttbar_ci0100", "ttbar_ci0010", "ttbar_ci0001", "ttbar_ci0200", "EW_no", "DYJets","STop", "WJets"};
     TString EWs[5] = {"*weight_ci0000", "*weight_ci0100", "*weight_ci0010", "*weight_ci0001", "*weight_ci0200"};
-
+    Int_t npdf_ws[] = {103, 103, 103, 103, 103, 0, 103, 101, 103};
     int edge_is[] = {0, 0, 0, 0, 0, 0, 3, 11, 16};//23,31}; 
     int edge_fs[] = {3, 3, 3, 3, 3, 3, 11, 16, 20,}; 
     for(int i=0; i<9; i++){
         edge_i[i] = edge_is[i];
         edge_f[i] = edge_fs[i];
+        npdf_w[i] = npdf_ws[i];
     }
     for(int i=0; i<10; i++){
         sys[i] = "jes";
@@ -286,6 +295,11 @@ void prepare_3D::set_dir(){
     for(int i=0; i<5; i++){
         EW[i] = EWs[i];
     }
+    other_con1 = "*((jet_num>=4)||(jet_num==3 && jet_pt[0]>50))";
+    if(year==2018)
+        other_con2 = "*(lep_flavour||((!lep_flavour) && lepton_pt>34))";
+    else
+        other_con2 = "*1";
 }
 
 void prepare_3D::draw_data(){
@@ -328,6 +342,7 @@ prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int* xyz_b
         draw(c);
         cout<<"finished nom of "<<process[c]<<endl;
     }
+
     //add_qcd();
     for(int s=0; s<30; s++){
         for(int c=0; c<8; c++){
@@ -337,8 +352,14 @@ prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int* xyz_b
                 break;//no sys for EW_no
             if(c == 7 && (s == 23 || s == 24))//no pdf or alphas for STop
                 break;
-            draw(c, s);
+            draw_sys(c, s);
             cout<<"finished sys of "<<sys_n[s]<<" of "<<process[c]<<endl;
+        }
+    }
+    for(int c=0; c<9; c++){
+        for(int p=0; p<npdf_w[c]; p++){
+            draw_pdf(c, p);
+            cout<<"finished pdf_w"<<p<<" of "<<process[c]<<endl;
         }
     }
     draw_data();
