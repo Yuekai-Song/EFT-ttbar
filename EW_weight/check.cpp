@@ -117,7 +117,7 @@ void check(){
     for(int var=0; var<3; var++){
         for(int vz=0; vz<2; vz++){
             for(int i=0; i<6; i++){
-                infile[i] = TFile::Open("./correction_roots_back/"+filename[i]);
+                infile[i] = TFile::Open("./correction_roots_1D/"+filename[i]);
                 h2[i] = (TH1F*)infile[i]->Get(id[var]);
                 h2[i]->SetName(h_name[i]);
             }
@@ -129,7 +129,7 @@ void check(){
 
             for(int i=0; i<6; i++){
                 check_name = Form("ci0%d%d%d", value[vz*6+i][0], value[vz*6+i][1], value[vz*6+i][2]);
-                cfile[i] = TFile::Open("./correction_roots_back/"+check_name+".root");
+                cfile[i] = TFile::Open("./correction_roots_1D/"+check_name+".root");
                 hc[i] = (TH1F*)cfile[i]->Get(id[var])->Clone();
                 hc[i]->SetName(Form("hc_%d",i));
                 hist[i] = (TH1F*)hc[i]->Clone();

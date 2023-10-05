@@ -75,7 +75,7 @@ class stagex_ttwc(PhysicsModel):
 				self.modelBuilder.factory_("expr::r_tt_times_ci0001(\"abs(@0)*@1*@1\", fcp,mu)")
 				self.modelBuilder.factory_("expr::r_tt_times_ci0100(\"2*@0-@0*@0\", y)")
 				self.modelBuilder.factory_("expr::r_tt_times_ci0200(\"0.5*@0*@0-0.5*@0\", y)")
-				self.modelBuilder.factory_("expr::r_tt_times_ci0010(\“1-@1*@1*(1-abs(@0))\", fcp,mu)")				
+				self.modelBuilder.factory_("expr::r_tt_times_ci0010(\"1-@1*@1*(1-abs(@0))\", fcp,mu)")				
 				self.modelBuilder.factory_("expr::r_tt_times_ci0000(\"-abs(@0)*@1*@1-1.5*@2+0.5*@2*@2+@1*@1*(1-abs(@0))\", fcp,mu,y)")
 				self.pois.append("y,fcp,mu")
 			self.POIs=",".join(self.pois)
@@ -83,7 +83,6 @@ class stagex_ttwc(PhysicsModel):
 			print ("parameters of interest in ttbar analysis: ", self.POIs)
 			#kappa:sign(@1)*sqrt((1-abs(@0))*abs(@1)) @0:fcp @1:mu
 			#kappa_t:sign(@0)*sign(@1)*sqrt(abs(@0)*abs(@1)) @0:fcp @1:mu
-			
 		if self.modelBuilder.out.var(muname):
 			print ("reclying %s" %muname)
 		else:                              
