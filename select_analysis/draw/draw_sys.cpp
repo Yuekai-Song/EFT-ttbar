@@ -187,10 +187,11 @@ void draw_pre(TString cutname, int year){
     TString inpath = "../../combine/";
     TString outpath = "../sys_pdf/";
     TString filename = "ttbar_"+cutname+Form("_%d.root", year);
-    TFile* file = TFile::Open(inpath+"datacard/"+filename);
+    TFile* file_ori = TFile::Open(inpath+"datacard/original/"+filename);
+    TFile* file = TFile::Open(inpath+"datacard/smooth/"+filename);
     TH1D *hsm;
     TH1D *hmc[4], *hd[4], *hratio[3];
-    TString name[] = {"Up", "Down", "OUp", "ODown"}; 
+    TString name[] = {"Up", "Down"}; 
     int color[] = {2, 4};
     TString xtitle = "M_{t#bar{t}}";
     TString legend[] = {"up", "down"};
@@ -221,8 +222,10 @@ void draw_pre(TString cutname, int year){
             format_leg(leg);
             format_canvas(c2);
             hsm = (TH1D*)file->Get(process[c]);
-            for(int i=0; i<4; i++)
+            for(int i=0; i<2; i++){
                 hmc[i] = (TH1D*)file->Get(process[c]+"_"+sys+name[i]);
+                hmc[2+i] = (TH1D*)file_ori->Get(process[c]+"_"+sys+name[i]);
+            }
             if(hmc[0] == NULL){
                 delete pad1; delete pad2; delete leg;
                 for(int i=0; i<4; i++)
@@ -302,6 +305,8 @@ void draw_pre(TString cutname, int year){
             delete c2;
         }
     }
+    file->Close();
+    file_ori->Close();
 }
 void draw_sys(){
     TString cutNames[] = {"M_4jets","M_3jets","E_4jets","E_3jets"};
