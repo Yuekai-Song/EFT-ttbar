@@ -117,15 +117,13 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
         bin_num += nbins[i];      
     }
     start[nycut] = bin_num;
-    TString hist_name, sys_name, nom_name;
+    TString hist_name;
     map<TString, TH1D> hist_map;
     while((key = (TKey*)iter())) {
-        if (key->GetClassName() == classname) {
+        if(key->GetClassName() == classname) {
             TH3D* hist3 = (TH3D*)key->ReadObj();
             if(hist3) {
                 hist_name = TString(hist3->GetName());
-                if(hist_name.Contains("STop_pdf") || hist_name.Contains("STop_alphas"))//no pdf or alphas for STop
-                    continue;
                 hist_name.ReplaceAll("_sub", "");
                 cout<<hist_name<<endl;
 
