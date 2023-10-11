@@ -95,6 +95,7 @@ void prepare_3D::draw(TH3D* h1, TString file, TString tree, TString weight){
 }
 void prepare_3D::draw(int c){
     TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom" + other_con1 + other_con2;
+    TString weight_nom;
     TH3D* hist = new TH3D(process[c]+"_sub", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
     hist->Sumw2();
     if(c < 5)
@@ -102,10 +103,11 @@ void prepare_3D::draw(int c){
     if(c == 5)
         weight = weight + "*nnlo_wt";
     for(int i=edge_i[c]; i<edge_f[c]; i++){
-        renew_weight(&weight, fileNames[i]);
+        weight_nom = weight;
+        renew_weight(&weight_nom, fileNames[i]);
         TH3D* h1 = new TH3D("h1", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
         h1->Sumw2();
-        draw(h1, fileNames[i], "mytree", weight);
+        draw(h1, fileNames[i], "mytree", weight_nom);
         hist->Add(h1);
         delete h1;
     }
@@ -115,26 +117,28 @@ void prepare_3D::draw(int c){
 }
 void prepare_3D::draw_pdf(int c, int p){
     TString weight = Form("Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom*LHEPdfWeight[%d]", p) + other_con1 + other_con2;
-    TH3D* hist_pdf = new TH3D(process[c]+Form("pdf_w%d_sub", p), "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
+    TString weight_nom;
+    TH3D* hist_pdf = new TH3D(process[c]+Form("_pdf_w%d_sub", p), "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
     if(c > 5)
-        hist_pdf->SetName(process[c]+Form("pdf%d_w%d_sub", c-5, p));
+        hist_pdf->SetName(process[c]+Form("_pdf%d_w%d_sub", c-5, p));
     hist_pdf->Sumw2();
     if(c < 5)
         weight = weight + EW[c] + "*nnlo_wt";
     if(c == 5)
         weight = weight + "*nnlo_wt";
     for(int i=edge_i[c]; i<edge_f[c]; i++){
-        renew_weight(&weight, fileNames[i]);
+        weight_nom = weight;
+        renew_weight(&weight_nom, fileNames[i]);
         TH3D* h1 = new TH3D("h1", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
         h1->Sumw2();
-        draw(h1, fileNames[i], "mytree", weight);
+        draw(h1, fileNames[i], "mytree", weight_nom);
         hist_pdf->Add(h1);
         delete h1;
     }
     file->cd();
     hist_pdf->Write();
     delete hist_pdf;
-    
+
 }
 void prepare_3D::draw_sys(int c, int s){
     TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom" + other_con1 + other_con2;
@@ -263,7 +267,7 @@ void prepare_3D::set_dir(){
     TString sf_bl[] = {"SF_btag_co", "SF_ltag_co", "SF_btag_un", "SF_btag_un"};
 
     for(int i=0; i<nsample; i++){
-        fileName[i].ReplaceAll(".root","_*.root");
+        fileName[i].ReplaceAll(".root", "_*.root");
         if(i < 20)
             fileNames[i] = fileName[i];
         xsection[fileName[i]] = pair<double, double>(cross_section[i],  K_Factor[i]);
@@ -330,7 +334,7 @@ prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int* xyz_b
     cut = cut_s;
     cut_name = cut_name_s;
     TString category="ttbar_"+cut_name;
-    file=new TFile(outputDir+"/"+category+".root","recreate");
+    file = new TFile(outputDir+"/"+category+".root", "recreate");
     xbins = xyz_bins[0];
     ybins = xyz_bins[1];
     zbins = xyz_bins[2];
