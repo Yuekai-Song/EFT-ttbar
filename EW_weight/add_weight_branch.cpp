@@ -31,7 +31,7 @@ void add_weight_branch_tree(TString fileName, TString tree_name){
     Int_t Cpq3[5] = {0, 0, 0, 0, 0};
     Int_t Cpu[5] = {0, 2, 1, 0, 0};
     Int_t ReCup[5] = {0, 0, 0, 1, 0};
-    Int_t ImCup[5] = {0, 0, 0, 0, 1};                 
+    Int_t ImCup[5] = {0, 0, 0, 0, 1};
     for(Int_t i=0; i<5; i++){
         infile = Form("EWci%d%d%d%d",Cpq3[i],Cpu[i],ReCup[i],ImCup[i]) + mtop + ".root";
         fhist[i] = TFile::Open(dir+infile);
@@ -44,20 +44,20 @@ void add_weight_branch_tree(TString fileName, TString tree_name){
     TTree *mytree=(TTree*)file->Get(tree_name);
     Float_t M_tt, delta_rapidity;
     mytree->SetBranchAddress("M_tt_gen", &M_tt);
-    mytree->SetBranchAddress("delta_rapidity_gen", &delta_rapidity);      
+    mytree->SetBranchAddress("delta_rapidity_gen", &delta_rapidity);
     Float_t weight[9];TBranch* branch[9];
     for(int i=0; i<5; i++){
         TString weight_name = Form("weight_ci%d%d%d%d", Cpq3[i],Cpu[i],ReCup[i],ImCup[i]);
         branch[i] = mytree->Branch(weight_name, &weight[i], weight_name+"/F");
-    }  
+    }
     Int_t entries=mytree->GetEntries();
     cout<<"total number of events: "<<entries<<endl;
-    for(Int_t i=0;i<entries;i++){
+    for(Int_t i=0; i<entries; i++){
         mytree->GetEntry(i);
-        for(Int_t i=0; i<5; i++){
-            Int_t nbin = hist[i]->FindBin(M_tt, delta_rapidity);
-            weight[i] = 1.0 + hist[i]->GetBinContent(nbin);
-            branch[i]->Fill();
+        for(Int_t w=0; w<5; w++){
+            Int_t nbin = hist[w]->FindBin(M_tt, delta_rapidity);
+            weight[w] = 1.0 + hist[w]->GetBinContent(nbin);
+            branch[w]->Fill();
             //cout<<"weight[i]: "<<weight[i]<<endl;
         }
     }
