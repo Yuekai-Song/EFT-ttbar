@@ -65,15 +65,19 @@ void get_TH1D(TH1D* h1, TString h1_name, TH3D* h3, int like_cut, int ycut_low, i
     //cout<<h1->GetSumOfWeights()<<endl;
     delete h3_1;
 }
-void pdf_convert(TH1D* hist, TH1D* hist_nom, TH1D* hist_up, TH1D* hist_dn){
-    for(int bin=0; bin<hist->GetNbinsX(); bin++){
-        double up = hist->GetBinContent(bin+1);
-        double nom = hist_nom->GetBinContent(bin+1);
-        double dn = nom*nom/up;
+void pdf_convert(TH1D hist, TH1D hist_nom, TH1D* hist_up, TH1D* hist_dn){
+    for(int bin=0; bin<hist.GetNbinsX(); bin++){
+        double up = hist.GetBinContent(bin+1);
+        double nom = hist_nom.GetBinContent(bin+1);
+        double dn;
+        if(up == 0)
+            dn = 0;
+        else
+            dn = nom*nom/up;
         hist_up->SetBinContent(bin+1, up);
         hist_dn->SetBinContent(bin+1, dn);
-        hist_up->SetBinError(bin+1, hist->GetBinError(bin+1));
-        hist_dn->SetBinError(bin+1, hist->GetBinError(bin+1));
+        hist_up->SetBinError(bin+1, hist.GetBinError(bin+1));
+        hist_dn->SetBinError(bin+1, hist.GetBinError(bin+1));
     }
 }
 void convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user){
@@ -125,8 +129,9 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
             if(hist3) {
                 hist_name = TString(hist3->GetName());
                 hist_name.ReplaceAll("_sub", "");
+                if(hist_name.Contains("pdf"))//pdf name wrong
+                    hist_name.ReplaceAll("pdf", "_pdf");
                 cout<<hist_name<<endl;
-
                 TH1D* hists = new TH1D(hist_name, "", bin_num, 0 ,bin_num);
                 TH1D* hist1[nycut];
                 for(int f=0; f<nycut; f++){
@@ -143,10 +148,10 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
         }
     }
     for(map<TString, TH1D>::iterator iter=hist_map.begin(); iter!=hist_map.end(); iter++){
-        if(iter->first.Contains("pdf_w")){
+        if(iter->first.Contains("pdf")){
             TH1D* hists_up = new TH1D(iter->first+"Up", "", bin_num, 0 ,bin_num);
             TH1D* hists_dn = new TH1D(iter->first+"Down", "", bin_num, 0 ,bin_num);
-            pdf_convert(&iter->second, &hist_map[sys_to_nom(iter->first)], hists_up, hists_dn);
+            pdf_convert(iter->second, hist_map[sys_to_nom(iter->first)], hists_up, hists_dn);
             outFile->cd();
             hists_up->Write();
             hists_dn->Write();
@@ -156,7 +161,6 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
             outFile->cd();
             iter->second.Write();
         }
-                
     }
     outFile->Close();
 }

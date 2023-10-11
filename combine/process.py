@@ -114,6 +114,8 @@ def process(file_name: str, original: str, sys_type: dict, sys_xs_fix: dict) -> 
         nom_name = sys.replace("_"+sys_name, "")
         if sys_name in sys_xs_fix.keys():
             xs_fix(hist_map[sys+"Up"], hist_map[sys+"Down"], sys_xs_fix[sys_name])
+        if "pdf" in sys_name:
+            sys_name = "pdf"
         smooth_sys(hist_map[sys+"Up"], hist_map[sys+"Down"], hist_map[nom_name], start, sys_type[sys_name])
         file.cd()
         hist_map[sys+"Up"].Write()

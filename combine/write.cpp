@@ -122,7 +122,7 @@ void write_card(ofstream& card, TString category, std::vector<process> pro_v, ma
     //writeline(qcd_n, card);
 }
 
-void write(TString cut_name, int year, TString datacard_name){
+void write(TString datacard_name, TString cut_name, int year){
     TString path = "./"+datacard_name;
     TString category="ttbar"+cut_name+Form("_%d", year);
     cout<<path+category+".txt"<<endl;
@@ -172,6 +172,7 @@ void write(TString cut_name, int year, TString datacard_name){
             }
         }
     }
+    sort(pro_v.begin(), pro_v.end(), compare);
     write_card(card, category, pro_v, sys_shape, sys_lnN);
     card.close();
     file->Close();
