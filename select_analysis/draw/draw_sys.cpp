@@ -15,9 +15,26 @@
 #include<string.h>
 #include<fstream>
 #include<iostream>
+#include<TKey.h>
 #include<TPaveText.h>
 using namespace std;
 double p2weight=0.65/0.3;
+void sys_and_nom(TString hist_name, TString& sys_name, TString& nom_name){
+    int pos = 0;
+    hist_name.ReplaceAll("Up", "");
+    hist_name.ReplaceAll("Down", "");
+    char* s = const_cast<char*>(hist_name.Data());
+    while(s[pos] != '_')
+        pos++;
+    if(hist_name.Contains("ttbar")){
+        pos++;
+        while(s[pos] != '_')
+            pos++;
+    }
+    s[pos] = 0;
+    nom_name = TString(s);
+    sys_name = TString(s+pos+1);
+}
 void seterror0(TH1D* h1){
     for(int i=1; i<=h1->GetNbinsX(); i++){
         h1->SetBinError(i,0);
@@ -78,17 +95,13 @@ void format_pad(TPad* pad1, TPad* pad2){
     pad2->SetBottomMargin(0.45);
     pad2->SetLeftMargin(0.15);
 }
-void get_range_pad2(TH1D* h1, double* ranges, int s){
-    double range[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                      0, 0, 0, 0.25, 0, 0, 0, 0, 0, 0,
-                      0, 0, 0, 0, 0, 0, 0, 0, 0.09, 0.06,
-                      0, 0 ,0 ,0};
+void get_range_pad2(TH1D* h1, double* ranges, double range){
     float up = h1->GetMaximum();
     float down = h1->GetMinimum();
     up = fabs(up);
     down = fabs(down);
-    if(range[s] != 0){
-        *ranges = range[s];
+    if(range != 0){
+        *ranges = range;
         return;
     }
     if(up>0.1 || down>0.1){
@@ -175,22 +188,8 @@ void format_line(TLine* l1){
     l1->SetLineWidth(2);
     l1->SetLineColor(1);
 }
-void draw_pre(TString cutname, int year){
+void draw_pre(TH1D* hsm, TH1D* hmc[4], TString sys, TString other_name, double range0){
     double range, high;
-    TString sys, sys_path;
-
-    TString syss[] = {"jes","jer","unclus","SF_lepton","SF_btag", Form("SF_btag%d", year), "SF_ltag", Form("SF_ltag%d", year), "pdf", "alphas", "L1PF", "PU", "muR1","muF1","muR2","muF2","muR3","muF3","ISR","FSR","mtop","hdamp","TuneCP5","nnlo_wt","EW_un", "qcds"};
-    TString jes_source[] = {"Absolute", Form("Absolute_%d", year), "FlavorQCD", "BBEC1", "EC2", "HF", Form("BBEC1_%d", year), Form("EC2_%d", year), "RelativeBal", Form("RelativeSample_%d", year)};
-    TString process[]={"ttbar_ci0000", "ttbar_ci0100", "ttbar_ci0010", "ttbar_ci0001", "ttbar_ci0200", "DYJets","STop", "WJets", "QCD"};
-    TString sys_paths[] = {"jes/","jer/","unclus/","sl/", "sb_co/","sb_un/","sl_co/","sl_un/","pdf/","alphas/", "L1PF/", "PU/", "muR/","muF/","muR/","muF/","muR/","muF/","ISR/","FSR/","mtop/","hdamp/","TuneCP5/","nnlo/", "EW_un/", "qcds/"};
-    TString jes_source_paths[] = {"Absolute/", "Absolute_un/", "FlavorQCD/", "BBEC1/", "EC2/", "HF/", "BBEC1_un/", "EC2_un/", "RelativeBal/", "RelativeSample_un/"};
-    TString inpath = "../../combine/";
-    TString outpath = "../sys_pdf/";
-    TString filename = "ttbar_"+cutname+Form("_%d.root", year);
-    TFile* file_ori = TFile::Open(inpath+"datacard/original/"+filename);
-    TFile* file = TFile::Open(inpath+"datacard/smooth/"+filename);
-    TH1D *hsm;
-    TH1D *hmc[4], *hd[4], *hratio[3];
     TString name[] = {"Up", "Down"}; 
     int color[] = {2, 4};
     TString xtitle = "M_{t#bar{t}}";
@@ -201,115 +200,144 @@ void draw_pre(TString cutname, int year){
     TString cut[4] = {"|#Deltay|<0.4", "0.4<|#Deltay|<1.0", "1.0<|#Deltay|<2.0", "|#Deltay|>2.0"};
     TLine *l1[3], *l2[3];
     TPaveText *t[4];
-    //if(h1 == NULL)
-    //    cout<<"right"<<endl;
-    for(int c=0; c<8; c++){
-        for(int s=0; s<34; s++){
-            if(s < 10){
-                sys = "jes_" + jes_source[s];
-                sys_path = "jes_"  + jes_source_paths[s];
-            }
-            else{
-                sys = syss[s-9];
-                sys_path = sys_paths[s-9];
-            }
-            TCanvas* c2 = new TCanvas("c1", "c1", 8, 30, 650, 650);
-            TPad *pad1 = new TPad("pad1","This is pad1",0.05,0.32,0.95,0.97);
-            TPad *pad2 = new TPad("pad2","This is pad2",0.05,0.02,0.95,0.32);
-            c2->cd();
-            format_pad(pad1, pad2);
-            TLegend *leg = new TLegend(0.75, .55, 1.00, .70);
-            format_leg(leg);
-            format_canvas(c2);
-            hsm = (TH1D*)file->Get(process[c]);
-            for(int i=0; i<2; i++){
-                hmc[i] = (TH1D*)file->Get(process[c]+"_"+sys+name[i]);
-                hmc[2+i] = (TH1D*)file_ori->Get(process[c]+"_"+sys+name[i]);
-            }
-            if(hmc[0] == NULL){
-                delete pad1; delete pad2; delete leg;
-                for(int i=0; i<4; i++)
-                    delete hmc[i];
-                delete c2;
-                continue;
-            }
-            for(int i=0; i<4; i++){
-                hd[i] = (TH1D*)hmc[i]->Clone();
-                hd[i]->SetName(Form("hd_%d", i));
-                hd[i]->Add(hsm, -1);
-                hd[i]->Divide(hsm);
-            }
+    TH1D *hd[4], *hratio[3];
+    TCanvas* c2 = new TCanvas("c1", "c1", 8, 30, 650, 650);
+    TPad *pad1 = new TPad("pad1","This is pad1",0.05,0.32,0.95,0.97);
+    TPad *pad2 = new TPad("pad2","This is pad2",0.05,0.02,0.95,0.32);
+    c2->cd();
+    format_pad(pad1, pad2);
+    TLegend *leg = new TLegend(0.75, .55, 1.00, .70);
+    format_leg(leg);
+    format_canvas(c2);
+    for(int i=0; i<4; i++){
+        hd[i] = (TH1D*)hmc[i]->Clone();
+        hd[i]->SetName(Form("hd_%d", i));
+        hd[i]->Add(hsm, -1);
+        hd[i]->Divide(hsm);
+    }
+    pad1->cd();
+    hsm->Draw("hist");
+    high = format_th_pad1(hsm, xtitle, 1);
+    leg->AddEntry(hsm, "SM case", "l");
+    for(int i=0; i<2; i++){
+        hmc[i]->Draw("histSame");
+        format_th_pad1(hmc[i], xtitle, color[i]);
+        leg->AddEntry(hmc[i], sys+"_"+legend[i], "l");
+    }
+    leg->Draw("Same");
+    
+    for(int d=0; d<3; d++){
+        l1[d] = new TLine(div[d], 0, div[d], high);
+        format_line(l1[d]);
+        pad1->cd();
+        l1[d]->Draw("same");
+    }
+    for(int tex=0; tex<4; tex++){
+        t[tex] = new TPaveText(0.2+0.19*tex,0.75,0.25+0.19*tex,0.85,"NDC");
+        format_text(t[tex]);
+        t[tex]->AddText(cut[tex]);
+        t[tex]->Draw("same");
+    }
 
-            pad1->cd();
-            hsm->Draw("hist");
-            high = format_th_pad1(hsm, xtitle, color[0]);
-            leg->AddEntry(hsm, "SM case", "l");
-            for(int i=0; i<2; i++){
-                hmc[i]->Draw("histSame");
-                format_th_pad1(hmc[i], xtitle, color[i]);
-                leg->AddEntry(hmc[i], sys+"_"+legend[i], "l");
-            }
-            leg->Draw("Same");
-            
-            for(int d=0; d<3; d++){
-                l1[d] = new TLine(div[d], 0, div[d], high);
-                format_line(l1[d]);
-                pad1->cd();
-                l1[d]->Draw("same");
-            }
-            for(int tex=0; tex<4; tex++){
-                t[tex] = new TPaveText(0.2+0.19*tex,0.75,0.25+0.19*tex,0.85,"NDC");
-                format_text(t[tex]);
-                t[tex]->AddText(cut[tex]);
-                t[tex]->Draw("same");
-            }
+    pad2->cd();
+    get_range_pad2(hd[0], &range, range0);
+    for(int r=0; r<3; r++){
+        hratio[r] = new TH1D(Form("ratio%d",r), "", bins, 0, bins);
+        set_ratio(hratio[r], 0.5*range*(r-1));
+        if(r == 0)
+            hratio[r]->Draw("L");
+        else
+            hratio[r]->Draw("LSame");
+        format_th_pad2(hratio[r], xtitle, range, 1, 0, nbins);
+    }
+    for(int i=0; i<2; i++){
+        hd[i]->Draw("PhSame");
+        format_th_pad2(hd[i], xtitle, range, color[i], 2, nbins);
+    }
+    for(int i=0; i<2; i++){
+        hd[2+i]->Draw("hSame");
+        format_th_pad2(hd[2+i], xtitle, range, color[i], 1, nbins);
+    }
 
-            pad2->cd();
-            get_range_pad2(hd[0], &range, s);
-            for(int r=0; r<3; r++){
-                hratio[r] = new TH1D(Form("ratio%d",r), "", bins, 0, bins);
-                set_ratio(hratio[r], 0.5*range*(r-1));
-                if(r == 0)
-                    hratio[r]->Draw("L");
-                else
-                    hratio[r]->Draw("LSame");
-                format_th_pad2(hratio[r], xtitle, range, 1, 0, nbins);
-            }
-            for(int i=0; i<2; i++){
-                hd[i]->Draw("PhSame");
-                format_th_pad2(hd[i], xtitle, range, color[i], 2, nbins);
-            }
-            for(int i=0; i<2; i++){
-                hd[2+i]->Draw("hSame");
-                format_th_pad2(hd[2+i], xtitle, range, color[i], 1, nbins);
-            }
+    for(int d=0; d<3; d++){
+        l2[d] = new TLine(div[d], -range, div[d], range);
+        format_line(l2[d]);
+        l2[d]->Draw("same");
+    }
+    c2->Print("./sys_pdf/"+sys+other_name+".pdf");
+    for(int d=0; d<3; d++){
+        delete l1[d]; delete l2[d];
+    }
+    for(int tex=0; tex<4; tex++)
+        delete t[tex];
+    delete leg;
 
-            for(int d=0; d<3; d++){
-                l2[d] = new TLine(div[d], -range, div[d], range);
-                format_line(l2[d]);
-                l2[d]->Draw("same");
+    for(int i=0; i<3; i++)
+        delete hratio[i];
+    for(int i=0; i<4; i++)
+        delete hd[i], hmc[i];
+    delete pad1; delete pad2;
+    delete c2;
+        
+}
+void draw_pre(TString cutname, int year){  
+    TString inpath = "../../combine/";
+    TString outpath = "../sys_pdf/";
+    TString filename = "ttbar_"+cutname+Form("_%d.root", year);
+    TFile* file_ori = TFile::Open(inpath+"datacard/original/"+filename);
+    TFile* file = TFile::Open(inpath+"datacard/smooth/"+filename);
+    TH1D *hsm;
+    TH1D *hmc[4];
+    map<TString, TH1D> hist_map;
+    map<TString, std::vector<TString>> sys_nom;
+    TString sys_name, nom_name;
+    TList *list = file->GetListOfKeys();
+    TList *list_ori = file->GetListOfKeys();
+    TKey *key, *key_ori;
+    TIter iter(list), iter_ori(list_ori);
+    map<TString, double> sys_range = {{"sb_co", 0.25}, {"mtop", 0.09}};
+    double range;
+    while((key = (TKey*)iter())){
+        if(key->GetClassName() == "TH1D"){
+            TH1D* hist = (TH1D*)key->ReadObj();
+            if(hist){
+                TString hist_name = TString(hist->GetName());
+                hist_map[hist_name] = *hist;
+                sys_and_nom(hist_name, sys_name, nom_name);
+                sys_nom[sys_name].push_back(nom_name);
             }
-            c2->Print(outpath+sys_path+Form("%d/", year)+cutname+"/"+process[c]+".pdf");
-            for(int d=0; d<3; d++){
-                delete l1[d]; delete l2[d];
+            delete hist;
+        }
+    }
+    while((key_ori = (TKey*)iter_ori())){
+        if(key_ori->GetClassName() == "TH1D"){
+            TH1D* hist = (TH1D*)key_ori->ReadObj();
+            if(hist){
+                TString hist_name = TString(hist->GetName()) + "_ori";
+                hist_map[hist_name] = *hist;
             }
-            for(int tex=0; tex<4; tex++)
-                delete t[tex];
-            delete leg;
-            delete hsm;
-            for(int i=0; i<3; i++)
-                delete hratio[i];
-            for(int i=0; i<4; i++)
-                delete hd[i], hmc[i];
-            delete pad1; delete pad2;
-            delete c2;
+            delete hist;
+        }
+    }
+    for(map<TString, std::vector<TString>>::iterator it_sys=sys_nom.begin(); it_sys!=sys_nom.end(); it_sys++){
+        for(vector<TString>::iterator it_nom=it_sys->second.begin(); it_nom!=it_sys->second.end(); it_nom++){
+            if(sys_range.find(it_sys->first) != sys_range.end())
+                range = 0;
+            else
+                range = sys_range[it_sys->first];
+            hsm = &hist_map[*it_nom];
+            hmc[0] = &hist_map[*it_nom+"_"+it_sys->first+"Up"];
+            hmc[1] = &hist_map[*it_nom+"_"+it_sys->first+"Down"];
+            hmc[2] = &hist_map[*it_nom+"_"+it_sys->first+"Up_ori"];
+            hmc[3] = &hist_map[*it_nom+"_"+it_sys->first+"Down_ori"];
+            draw_pre(hsm, hmc, it_sys->first, "_" + *it_nom + cutname + Form("_%d.root", year), range);
         }
     }
     file->Close();
     file_ori->Close();
 }
 void draw_sys(){
-    TString cutNames[] = {"M_4jets","M_3jets","E_4jets","E_3jets"};
+    TString cutNames[] = {"_M_4jets","_M_3jets","_E_4jets","_E_3jets"};
     int years[] = {2015, 2016, 2017, 2018};
     //TString filenames[] = {"ttbar_M_4jets.root","ttbar_M_3jets.root","ttbar_E_4jets.root","ttbar_E_3jets.root"};
     for(int i=0; i<4; i++){

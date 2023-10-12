@@ -13,9 +13,11 @@
 #include<THStack.h>
 #include<string.h>
 #include<TGraph.h>
+#include<TKey.h>
 #include<TGraphAsymmErrors.h>
 #include<fstream>
 #include<iostream>
+#include<map>
 using namespace std;
 
 double p2weight=0.65/0.3;
@@ -28,38 +30,39 @@ void set_ratio(TH1D* h1, double a){
     for(int i=1; i<=h1->GetNbinsX(); i++)
         h1->SetBinContent(i, a);
 }
-void get_error(int p, double* up_vs, double* down_vs, TString file_name, int year){
-    TString pro[] = {"ttbar_ci0000","DYJets","STop","WJets"};
-    TString sys_ns[] = {"jer", "unclus", "SF_btag", Form("SF_btag%d", year), "SF_ltag", Form("SF_ltag%d", year), "SF_lepton", "L1PF", "PU", "muR", "muF", "ISR", "FSR", "pdf", "alphas", "mtop", "hdamp", "TuneCP5", "nnlo_wt", "EW_un"};
-    TString jes_source[] = {"Absolute", Form("Absolute_%d", year), "FlavorQCD", "BBEC1", "EC2", "HF", Form("BBEC1_%d", year), Form("EC2_%d", year), "RelativeBal", Form("RelativeSample_%d", year)};
-    TString sys[35];
-    for(int i=0; i<30; i++){
-        if(i < 10)
-            sys[i] = "jes_" + jes_source[i];
-        else
-            sys[i] = sys_ns[i-10];
+void sys_and_nom(TString hist_name, TString& sys_name, TString& nom_name){
+    int pos = 0;
+    hist_name.ReplaceAll("Up", "");
+    hist_name.ReplaceAll("Down", "");
+    char* s = const_cast<char*>(hist_name.Data());
+    while(s[pos] != '_')
+        pos++;
+    if(hist_name.Contains("ttbar")){
+        pos++;
+        while(s[pos] != '_')
+            pos++;
     }
-    TFile *file = TFile::Open(file_name);
-    TH1D *up, *down, *h1;
+    s[pos] = 0;
+    nom_name = TString(s);
+    sys_name = TString(s+pos+1);
+}
+void get_error(TString nom_name, map<TString, TH1D> &hist_map, map<TString, std::vector<TString>> &nom_sys, double* up_vs, double* down_vs){
     double nom_v;
     double up_v, up_max;
     double down_v, down_min;
-    for(int s=0; s<30; s++){
-        //cout<<p<<" "<<s<<endl;
-        //if(pro[p] == "STop" && sys[s] == "alphas")
-        //    continue;
-        up = (TH1D*)file->Get(pro[p]+"_"+sys[s]+"Up");
-        if(up == NULL)
-            continue;
-        down = (TH1D*)file->Get(pro[p]+"_"+sys[s]+"Down");
-        h1 = (TH1D*)file->Get(pro[p]);
-        const int n = h1->GetNbinsX();
+    TH1D *h1_up, *h1_dn, *h1_nom;
+
+    for(vector<TString>::iterator it_sys=nom_sys[nom_name].begin(); it_sys!=nom_sys[nom_name].end(); it_sys++){
+        h1_up = &hist_map[nom_name + "_" + *it_sys + "Up"];
+        h1_dn = &hist_map[nom_name + "_" + *it_sys + "Down"];
+        h1_nom = &hist_map[nom_name];
+        const int n = h1_nom->GetNbinsX();
         //cout<<sys[s]<<": "<<pro[p]<<": "<<"bin 3: ";
         //cout<<up->GetBinContent(4)<<" "<<down->GetBinContent(4)<<" "<<h1->GetBinContent(4)<<endl;
         for(int b=0; b<n; b++){
-            up_v = up->GetBinContent(b+1);
-            down_v = down->GetBinContent(b+1);
-            nom_v = h1->GetBinContent(b+1);
+            up_v = h1_up->GetBinContent(b+1);
+            down_v = h1_dn->GetBinContent(b+1);
+            nom_v = h1_nom->GetBinContent(b+1);
             up_max = max(up_v, down_v);
             down_min = min(up_v, down_v);
             if(up_max <= nom_v){
@@ -67,7 +70,7 @@ void get_error(int p, double* up_vs, double* down_vs, TString file_name, int yea
                 down_vs[b] += (nom_v - down_min) * (nom_v - down_min);
             }
             else if(down_min >= nom_v){
-                up_vs[b] += (up_max- nom_v) * (up_max - nom_v);
+                up_vs[b] += (up_max - nom_v) * (up_max - nom_v);
                 down_vs[b] += 0;
             }
             else{
@@ -75,38 +78,25 @@ void get_error(int p, double* up_vs, double* down_vs, TString file_name, int yea
                 down_vs[b] += (nom_v - down_min) * (nom_v - down_min);
             }
         }
-        //cout<<pro[p]<<" "<<sys[s]<<" "<<sqrt(up_vs[3])<<" "<<sqrt(down_vs[3])<<endl;
     }
-    
 }
-void set_rel_error(TGraphAsymmErrors* hg, TH1D* h1, double bin_len, TString sys_file, int year){
+void set_error(TGraphAsymmErrors* hg, TH1D* h1, double bin_len, map<TString, TH1D> &hist_map, map<TString, std::vector<TString>> &nom_sys, bool is_abs){
     const int n = h1->GetNbinsX();
-    double up_vs[n], down_vs[n];
-    double nom;
+    double up_vs[n], down_vs[n], nom;
+    TString pro[] = {"ttbar_ci0000", "DYJets", "STop", "WJets"};
     for(int i=0; i<n; i++){
         up_vs[i] = 0;
         down_vs[i] = 0;
     }
     for(int p=0; p<4; p++){
-        get_error(p, up_vs, down_vs, sys_file, year);
+        get_error(pro[p], hist_map, nom_sys, up_vs, down_vs);
     }
-    for(int i=0; i<n; i++){
-        nom = h1->GetBinContent(i+1);
-        hg->SetPointEXlow(i, bin_len/2.0);
-        hg->SetPointEXhigh(i, bin_len/2.0);
-        hg->SetPointEYhigh(i, sqrt(up_vs[i])/nom);
-        hg->SetPointEYlow(i, sqrt(down_vs[i])/nom);
-    }
-}
-void set_abs_error(TGraphAsymmErrors* hg, TH1D* h1, double bin_len, TString sys_file, int year){
-    const int n = h1->GetNbinsX();
-    double up_vs[n], down_vs[n];
-    for(int i=0; i<n; i++){
-        up_vs[i] = 0;
-        down_vs[i] = 0;
-    }
-    for(int p=0; p<4; p++){
-        get_error(p, up_vs, down_vs, sys_file, year);
+    if(!is_abs){
+        for(int i=0; i<n; i++){
+            nom = h1->GetBinContent(i+1);
+            up_vs[i] /= nom * nom;
+            down_vs[i] /= nom * nom;
+        }
     }
     for(int i=0; i<n; i++){
         hg->SetPointEXlow(i, bin_len/2.0);
@@ -215,9 +205,9 @@ void draw_pre(TString cut_name, int var, int year){//2, 0
     TString legendd = "data";
     TString xtitle[] = {"lnL","M_{t}","M_{#bar{t}}","M_{Wl}","M_{Wh}","M_{th}","M_{tl}","P_{T}^{l}","P_{T}^{leading-jet}","jet_num","p_{T}^{t}","M_{t#bar{t}}","#Deltay_{t#bar{t}}"};
     TString title[] = {"likelihood","mass_t","mass_at","mass_wlep","mass_whad","mass_thad","mass_tlep","lepton_pt","leading_pt","jet_num","top_pt","Mtt", "deltay"};
-    Double_t xup[] = {50, 450, 450, 140, 140, 450, 450, 250, 400, 7, 500, 1500, 3};
-    Double_t xdown[] = {13, 50, 50, 50, 50, 50, 50, 0, 0, 3, 50, 300, -3};
-    Int_t bins[]={37, 40, 40, 36, 36, 40, 40, 20, 20, 4, 20, 24, 24};
+    Double_t xup, xdown, bin_len;
+    Int_t bins;
+    Double_t nums, events;
 
     TString path = Form("../sys_root/%d/",year);
     int edge[]={0,3,11,16,20,29};//23,31}; 
@@ -225,17 +215,31 @@ void draw_pre(TString cut_name, int var, int year){//2, 0
     
     TString sys_file = path+title[var]+"_"+cut_name+".root";
     TFile *file = TFile::Open(sys_file);
-    //TFile* qcd = TFile::Open(Form("../../QCD_analysis/output/%d/QCD_", year)+cut_name+"_C_1D.root");
-    //cout<<lep_name[l]+cate_name[c]<<endl;
+    TList *list = file->GetListOfKeys();
+    TIter iter(list);
+    TKey *key;
+    map<TString, TH1D> hist_map;
+    map<TString, std::vector<TString>> nom_sys;
+    TString sys_name, nom_name;
+    while((key = (TKey*)iter())){
+        if(key->GetClassName() == "TH1D"){
+            TH1D* hist = (TH1D*)key->ReadObj();
+            if(hist){
+                TString hist_name = TString(hist->GetName());
+                hist_map[hist_name] = *hist;
+                sys_and_nom(hist_name, sys_name, nom_name);
+                nom_sys[nom_name].push_back(sys_name);
+            }
+            delete hist;
+        }
+    }
+    file->Close();
     TH1D *nmc, *hist, *h1[5];
     TH1D *hdata, *hdatad, *hmc;
     TH1D *hratio[3];
     TGraphAsymmErrors *hmcdg, *hmcg;
-    Double_t nums, events;
-    Double_t bin_len;
-    //if(i == 5)
-    //    cate[cate_num] = cate[cate_num] + "*(mass_tt>500)";
-    bin_len = (xup[var] - xdown[var])/(1.0 * bins[var]);
+    
+    
     auto c1 = new TCanvas("c1", "c1", 8, 30, 600, 600); // temporary canvas
     auto c2 = new TCanvas("c2", "c2", 8, 30, 650, 650);
     TPad *pad1 = new TPad("pad1","This is pad1",0.05,0.32,0.95,0.97);
@@ -246,9 +250,15 @@ void draw_pre(TString cut_name, int var, int year){//2, 0
     TLegend *leg = new TLegend(0.70, .65, 1.00, .90);
     format_leg(leg);
     format_canvas(c2);
-    hmc = new TH1D("mc", "", bins[var], xdown[var], xup[var]);
+    
+    hdata = &hist_map["data_obs"];
+    bins = hdata->GetNbinsX();
+    xdown = hdata->GetXaxis()->GetBinLowEdge(1);
+    xup = hdata->GetXaxis()->GetBinUpEdge(bins);
+    bin_len = (xup - xdown)/(1.0 * bins);
+
+    hmc = new TH1D("mc", "", bins, xdown, xup);
     hmc->Sumw2();
-    hdata = (TH1D*)file->Get("data_obs");
     hdatad = (TH1D*)hdata->Clone();
     hdatad->SetName("datad");
     THStack* hstack = new THStack("hstack", "");
@@ -263,10 +273,10 @@ void draw_pre(TString cut_name, int var, int year){//2, 0
     //nums+=h1[4]->GetSumOfWeights();
     //leg->AddEntry(h1[4], legend[4], "f");
     for (int k = 3; k >= 0; k--){
-        h1[k] = (TH1D*)file->Get(pro[k]);
+        h1[k] = &hist_map[pro[k]];
         //cout<<legend[k]<<": "<<h1[k]->GetSumOfWeights()<<endl;
         hmc->Add(h1[k]);
-        nums+=h1[k]->GetSumOfWeights();
+        nums += h1[k]->GetSumOfWeights();
         h1[k]->SetFillColor(color[k]);
         hstack->Add(h1[k]);
     }
@@ -275,15 +285,15 @@ void draw_pre(TString cut_name, int var, int year){//2, 0
     }
     leg->AddEntry(hdata, legendd, "p");
     for(int r=0; r<3; r++){
-        hratio[r]=new TH1D(Form("ratio%d",r), "", bins[var], xdown[var], xup[var]);
+        hratio[r]=new TH1D(Form("ratio%d",r), "", bins, xdown, xup);
         set_ratio(hratio[r], 0.75+0.25*r);
     }
     sete0(hmc);
     hdatad->Divide(hmc);
     hmcdg = new TGraphAsymmErrors(hratio[1]);
     hmcg = new TGraphAsymmErrors(hmc);
-    set_rel_error(hmcdg, hmc, bin_len, sys_file, year);
-    set_abs_error(hmcg, hmc,  bin_len, sys_file, year);
+    set_error(hmcdg, hmc, bin_len, hist_map, nom_sys, 0);
+    set_error(hmcg, hmc, bin_len, hist_map, nom_sys, 1);
     //cout<<nums<<" "<<events<<endl;
 
 
@@ -320,12 +330,10 @@ void draw_pre(TString cut_name, int var, int year){//2, 0
     hc->GetYaxis()->SetTitleSize(0);
 
     c2->Print(Form("../qcd_pdf/%d/",year)+title[var]+"_"+cut_name+".pdf");
-    for(int i=0; i<4; i++)
-        delete h1[i];
+
     for(int i=0; i<3; i++)
         delete hratio[i];
     delete hc;
-    delete hdata;
     delete hdatad;
     delete hmc;
     delete hmcg;
