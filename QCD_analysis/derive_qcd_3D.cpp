@@ -166,6 +166,9 @@ void derive(TString cut, TString cut_name, int g, int year, int* xyz_bins, doubl
     else
         other_con2 = "*1";
 
+    TString input_path = Form("./output/%d/",year);
+    TString output_path = Form("./output/%d/QCD_root/",year);
+    TFile* file = new TFile(output_path+"QCD_"+cut_name+"_"+cg+"_3D.root", "recreate");
     TH3D *hdata, *hmc_b[2], *hmc_qa;
     hdata = new TH3D("QCD_other_removed", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);//final QCD;
     hmc_b[0] = new TH3D("other_MC_CG", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
@@ -175,10 +178,6 @@ void derive(TString cut, TString cut_name, int g, int year, int* xyz_bins, doubl
     hmc_b[1]->Sumw2();
     hmc_qa->Sumw2();
 
-    TString input_path = Form("./output/%d/",year);
-    TString output_path = Form("./output/%d/QCD_root/",year);
-
-    TFile* file = new TFile(output_path+"QCD_"+cut_name+"_"+cg+"_3D.root", "recreate");
     TChain* data_tree = new TChain("mytree");
     data_tree->Add(input_path+"data/"+"new_data"+"*_"+cg+".root");
     auto c1 = new TCanvas("c1", "c1", 8, 30, 600, 600);
