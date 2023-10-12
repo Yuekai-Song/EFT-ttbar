@@ -28,6 +28,8 @@ using namespace RooFit;
 
 class prepare_3D{
 private:
+    int begin, end;
+    TString category;
     TFile* file;
     int year;
     TString dir, outputDir, qcd_dir, pdf_dir;
@@ -51,12 +53,12 @@ private:
     void give_sys_name(TString file, TString weight, int s, int c);
     void renew_weight(TString* weight, TString file);
     void draw(TH3D* h1, TString file, TString tree, TString weight);
-    void set_dir();
+    void set_dir(int option);
     void draw(int c);
     void draw_sys(int c, int s);
     void draw_pdf(int c, int p);
     void draw_data();
 public:
-    prepare_3D(TString cut_s, TString cut_name_s, int year_s, int* xy_bins, double* xy_range);
+    prepare_3D(TString cut_s, TString cut_name_s, int year_s, int* xy_bins, double* xy_range, int option);
     ~prepare_3D();
 };

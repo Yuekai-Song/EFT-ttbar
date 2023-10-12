@@ -186,7 +186,7 @@ void prepare_3D::draw_sys(int c, int s){
     delete hist_dn;
 }
 
-void prepare_3D::set_dir(){
+void prepare_3D::set_dir(int option){
     dir = Form("../output/%d", year);
     outputDir = Form("../output/%d/datacard", year);
     const int nsample = 44;
@@ -306,6 +306,12 @@ void prepare_3D::set_dir(){
         other_con2 = "*(lep_flavour||((!lep_flavour) && lepton_pt>34))";
     else
         other_con2 = "*1";
+    int begins[] = {0, 1, 2, 3, 4, 5, 0};
+    int ends[] = {1, 2, 3, 4, 5, 9, 9};
+    TString categorys[] = {"ttbar000","ttbar100", "ttbar010", "ttbar001", "ttbar200", "bg", "ttbar"};
+    begin = begins[option];
+    end = ends[option];
+    category = categorys[option] + "_" + cut_name;
 }
 
 void prepare_3D::draw_data(){
@@ -328,12 +334,11 @@ void prepare_3D::draw_data(){
     //delete c0;
 }
 
-prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int* xyz_bins, double* xyz_range){
+prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int* xyz_bins, double* xyz_range, int option){
     year = year_s;
-    set_dir();
     cut = cut_s;
     cut_name = cut_name_s;
-    TString category="ttbar_"+cut_name;
+    set_dir(option);
     file = new TFile(outputDir+"/"+category+".root", "recreate");
     xbins = xyz_bins[0];
     ybins = xyz_bins[1];
@@ -344,14 +349,14 @@ prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int* xyz_b
     yup = xyz_range[3];
     zlow = xyz_range[4];
     zup = xyz_range[5];
-    for(int c=0; c<9; c++){
+    for(int c=begin; c<end; c++){
         draw(c);
         cout<<"finished nom of "<<process[c]<<endl;
     }
 
     //add_qcd();
     for(int s=0; s<29; s++){
-        for(int c=0; c<9; c++){
+        for(int c=begin; c<end; c++){
             if(c > 4 && s > 22)//sys only for signal
                 break;
             if(c == 5)
@@ -360,7 +365,7 @@ prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int* xyz_b
             cout<<"finished sys of "<<sys_n[s]<<" of "<<process[c]<<endl;
         }
     }
-    for(int c=0; c<9; c++){
+    for(int c=begin; c<end; c++){
         for(int p=0; p<npdf_w[c]; p++){
             draw_pdf(c, p);
             cout<<"finished pdf_w"<<p<<" of "<<process[c]<<endl;
