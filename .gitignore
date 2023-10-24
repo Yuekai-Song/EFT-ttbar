@@ -178,7 +178,7 @@ combine/process_sys.py
 combine/*sh
 combine/output*
 combine/impact*
-combine/**/*txt
+combine/datacard*
 !combine/output/
 **/output/**/check.cpp
 **/output/**/*.sh
