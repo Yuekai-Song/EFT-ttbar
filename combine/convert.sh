@@ -1,6 +1,6 @@
 cut_names=("_E_3jets" "_E_4jets" "_M_3jets" "_M_4jets")
 years=(2015 2016 2017 2018)
-datacards=("datacard/" "datacard_ttx/")
+datacards=("datacard_test/")
 for datacard in ${datacards[*]}
 do
     rm -rf $datacard

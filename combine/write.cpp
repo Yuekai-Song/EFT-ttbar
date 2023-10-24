@@ -67,9 +67,13 @@ void write_pro(vector<process> pro_v, ofstream& card){
         card<<pro_v[i].yield<<"\t";
     card<<endl;
 }
-void write_sys(vector<process> pro_v, map<TString, std::vector<TString>> sys_nom, ofstream& card){
+void write_sys(vector<process> pro_v, map<TString, std::vector<TString>> sys_nom, vector<TString> sys_of_shapeU, ofstream& card){
     for(map<TString, std::vector<TString>>::iterator iter=sys_nom.begin(); iter!=sys_nom.end(); iter++){
-        card<<iter->first<<"\t shape \t";
+        auto is_shapeU = find(sys_of_shapeU.begin(), sys_of_shapeU.end(), iter->first);
+        if(is_shapeU != sys_of_shapeU.end())
+            card<<iter->first<<"\t shapeU \t";
+        else
+            card<<iter->first<<"\t shape \t";
         for(int i=0; i<pro_v.size(); i++){
             auto it = find((iter->second).begin(), (iter->second).end(), pro_v[i].name);
             if(it != (iter->second).end())
@@ -93,7 +97,7 @@ void write_sys(vector<process> pro_v, map<TString, map<TString, TString>> sys_ln
         card<<endl;
     }
 }
-void write_card(ofstream& card, TString category, std::vector<process> pro_v, map<TString, std::vector<TString>> sys_shape, map<TString, map<TString, TString>> sys_lnN){
+void write_card(ofstream& card, TString category, std::vector<process> pro_v, map<TString, std::vector<TString>> sys_shape, vector<TString> sys_of_shapeU, map<TString, map<TString, TString>> sys_lnN){
     card <<"Datacard for event category: "<< category << endl;
     card<< "imax 1 number of channels"<<endl;
     card<< Form("jmax %lu number of processes minus 1", pro_v.size()-1)<<endl;
@@ -109,7 +113,7 @@ void write_card(ofstream& card, TString category, std::vector<process> pro_v, ma
     write_pro(pro_v, card);
     //write_sys("cms_lumi", cms_lumi, card);
     write_sys(pro_v, sys_lnN, card);
-    write_sys(pro_v, sys_shape, card);
+    write_sys(pro_v, sys_shape, sys_of_shapeU, card);
     /*card<<"sig_norm"<<"\t lnN \t";
     writeline(sig_norm);
     card<<"DYJets_norm"<<"\t lnN \t";
@@ -122,13 +126,13 @@ void write_card(ofstream& card, TString category, std::vector<process> pro_v, ma
     //writeline(qcd_n, card);
 }
 
-void write(TString datacard_name, TString cut_name, int year){
+void write(TString datacard_name, TString cut_name, int year, vector<TString> sys_of_shapeU){
     TString path = "./"+datacard_name;
     TString category="ttbar"+cut_name+Form("_%d", year);
     cout<<path+category+".txt"<<endl;
 
     ofstream card;
-    card.open (path+category+".txt");
+    card.open(path+category+".txt");
     TFile *file = TFile::Open(path+category+".root");
     TList *list = file->GetListOfKeys();
     TKey *key;
@@ -173,7 +177,7 @@ void write(TString datacard_name, TString cut_name, int year){
         }
     }
     sort(pro_v.begin(), pro_v.end(), compare);
-    write_card(card, category, pro_v, sys_shape, sys_lnN);
+    write_card(card, category, pro_v, sys_shape, sys_of_shapeU, sys_lnN);
     card.close();
     file->Close();
 }

@@ -118,19 +118,21 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
     int bin_num = 0;
     for(int i=0; i<nycut; i++){
         start[i] = bin_num;
-        bin_num += nbins[i];      
+        bin_num += nbins[i];
     }
     start[nycut] = bin_num;
     TString hist_name;
     map<TString, TH1D> hist_map;
-    while((key = (TKey*)iter())) {
-        if(key->GetClassName() == classname) {
+    while((key = (TKey*)iter())){
+        if(key->GetClassName() == classname){
             TH3D* hist3 = (TH3D*)key->ReadObj();
-            if(hist3) {
+            if(hist3){
                 hist_name = TString(hist3->GetName());
                 hist_name.ReplaceAll("_sub", "");
-                if(hist_name.Contains("pdf"))//pdf name wrong
-                    hist_name.ReplaceAll("pdf", "_pdf");
+                if(hist_name.Contains("pdf_w101") || hist_name.Contains("pdf_w102")){
+                    hist_name.ReplaceAll("pdf_w101", "alphasUp");
+                    hist_name.ReplaceAll("pdf_w102", "alphasDown");
+                }
                 cout<<hist_name<<endl;
                 TH1D* hists = new TH1D(hist_name, "", bin_num, 0 ,bin_num);
                 TH1D* hist1[nycut];

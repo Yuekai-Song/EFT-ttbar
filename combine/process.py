@@ -31,6 +31,15 @@ def lowess(hist: ROOT.TH1D, frac: float) -> None:
     for i in range(0, hist.GetNbinsX()):
         hist.SetBinContent(i+1, yest[i])
 
+def is_small_effect(hist_up: ROOT.TH1D, hist_dn: ROOT.TH1D, hist_nom: ROOT.TH1D) -> bool:
+    is_big = False
+    for i in range(0, hist_nom.GetNbinsX()):
+        up = hist_up.GetBinContent(i+1)
+        dn = hist_dn.GetBinContent(i+1)
+        nom = hist_nom.GetBinContent(i+1)
+        if(up/nom > 1.003 or dn/nom < 0.997):
+            is_big = True
+    return not is_big
 
 def smooth_sys(hist_up: ROOT.TH1D, hist_dn: ROOT.TH1D, hist_nom: ROOT.TH1D, start:list, option:list) -> None:
     norm_up = hist_up.GetSumOfWeights()
@@ -88,7 +97,7 @@ def get_sys_name(h1_sys_name: str) -> None:
     return h1_sys_name[pos+1: ]
 
 
-def process(file_name: str, original: str, sys_type: dict, sys_xs_fix: dict) -> None:
+def process(file_name: str, original: str, sys_type: dict, sys_xs_fix: dict, sys_saved: list) -> None:
     file = ROOT.TFile(file_name, "recreate")
     old_file = ROOT.TFile(original, "read")
     hist_map = dict()
@@ -112,11 +121,19 @@ def process(file_name: str, original: str, sys_type: dict, sys_xs_fix: dict) -> 
     for sys in sys_contained:
         sys_name = get_sys_name(sys)
         nom_name = sys.replace("_"+sys_name, "")
+        if "pdf_" in sys_name:
+            sys_name = "pdf"
+            if is_small_effect(hist_map[sys+"Up"], hist_map[sys+"Down"], hist_map[nom_name]):
+                continue
+        if sys_name not in sys_saved:
+            continue
         if sys_name in sys_xs_fix.keys():
             xs_fix(hist_map[sys+"Up"], hist_map[sys+"Down"], sys_xs_fix[sys_name])
-        if "pdf" in sys_name:
-            sys_name = "pdf"
-        smooth_sys(hist_map[sys+"Up"], hist_map[sys+"Down"], hist_map[nom_name], start, sys_type[sys_name])
+        if sys_name not in sys_type.keys():
+            option = [0, 0]
+        else:
+            option = sys_type[sys_name]
+        smooth_sys(hist_map[sys+"Up"], hist_map[sys+"Down"], hist_map[nom_name], start, option)
         file.cd()
         hist_map[sys+"Up"].Write()
         hist_map[sys+"Down"].Write()
