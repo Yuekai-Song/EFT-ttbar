@@ -155,7 +155,7 @@ void format_th_pad2(TH1D* h1, TString xtitle, double range, int color, int type,
     h1->GetYaxis()->SetTitleSize(0.06*p2weight);
     h1->GetXaxis()->SetTitleOffset(1.8);
     h1->GetYaxis()->SetTitleOffset(1.1/p2weight);
-    h1->GetXaxis()->SetLabelSize(0.12);
+    h1->GetXaxis()->SetLabelSize(0.09);
     h1->GetYaxis()->SetLabelSize(0.05*p2weight);
     h1->GetYaxis()->SetRangeUser(-range, range);
     set_th_lable(h1, nbins);
@@ -179,7 +179,8 @@ double format_th_pad1(TH1D* h1, TString xtitle, int color){
     h1->GetYaxis()->SetTitleOffset(1.20);
     h1->GetXaxis()->SetLabelSize(0.0);
     h1->GetYaxis()->SetLabelSize(0.05);
-    h1->GetYaxis()->SetRangeUser(0.0, h1->GetMaximum()*1.4);
+    //h1->GetYaxis()->SetRangeUser(0.0, h1->GetMaximum()*1.4);
+    h1->GetYaxis()->SetRangeUser(0.0, 80000);
     return h1->GetMaximum();
     //h1->GetYaxis()->SetRangeUser(0.0, 800000);
 }
@@ -188,7 +189,7 @@ void format_line(TLine* l1){
     l1->SetLineWidth(2);
     l1->SetLineColor(1);
 }
-void draw_pre(TH1D* hsm, TH1D* hmc[4], TString sys, TString other_name, double range0){
+void draw_pre(TH1D* hsm, TH1D* hmc[4], TString sys, TString other_name, double range0, TString path){
     double range, high;
     TString name[] = {"Up", "Down"}; 
     int color[] = {2, 4};
@@ -264,7 +265,7 @@ void draw_pre(TH1D* hsm, TH1D* hmc[4], TString sys, TString other_name, double r
         format_line(l2[d]);
         l2[d]->Draw("same");
     }
-    c2->Print("./sys_pdf/"+sys+other_name+".pdf");
+    c2->Print("../sys_pdf/"+path+"/"+sys+other_name+".pdf");
     for(int d=0; d<3; d++){
         delete l1[d]; delete l2[d];
     }
@@ -280,37 +281,39 @@ void draw_pre(TH1D* hsm, TH1D* hmc[4], TString sys, TString other_name, double r
     delete c2;
         
 }
-void draw_pre(TString cutname, int year){  
+void draw_sys(TString cutname, int year, TString path){  
     TString inpath = "../../combine/";
-    TString outpath = "../sys_pdf/";
-    TString filename = "ttbar_"+cutname+Form("_%d.root", year);
+    TString filename = "ttbar"+cutname+Form("_%d.root", year);
     TFile* file_ori = TFile::Open(inpath+"datacard/original/"+filename);
-    TFile* file = TFile::Open(inpath+"datacard/smooth/"+filename);
+    TFile* file = TFile::Open(inpath+"datacard/"+path+"/"+filename);
+    static TString classname("TH1D");
     TH1D *hsm;
     TH1D *hmc[4];
     map<TString, TH1D> hist_map;
     map<TString, std::vector<TString>> sys_nom;
     TString sys_name, nom_name;
     TList *list = file->GetListOfKeys();
-    TList *list_ori = file->GetListOfKeys();
+    TList *list_ori = file_ori->GetListOfKeys();
     TKey *key, *key_ori;
     TIter iter(list), iter_ori(list_ori);
     map<TString, double> sys_range = {{"sb_co", 0.25}, {"mtop", 0.09}};
     double range;
     while((key = (TKey*)iter())){
-        if(key->GetClassName() == "TH1D"){
+        if(key->GetClassName() == classname){
             TH1D* hist = (TH1D*)key->ReadObj();
             if(hist){
                 TString hist_name = TString(hist->GetName());
                 hist_map[hist_name] = *hist;
-                sys_and_nom(hist_name, sys_name, nom_name);
-                sys_nom[sys_name].push_back(nom_name);
+                if(hist_name.Contains("Up") ){
+                    sys_and_nom(hist_name, sys_name, nom_name);
+                    sys_nom[sys_name].push_back(nom_name);
+                }
             }
             delete hist;
         }
     }
     while((key_ori = (TKey*)iter_ori())){
-        if(key_ori->GetClassName() == "TH1D"){
+        if(key_ori->GetClassName() == classname){
             TH1D* hist = (TH1D*)key_ori->ReadObj();
             if(hist){
                 TString hist_name = TString(hist->GetName()) + "_ori";
@@ -330,19 +333,10 @@ void draw_pre(TString cutname, int year){
             hmc[1] = &hist_map[*it_nom+"_"+it_sys->first+"Down"];
             hmc[2] = &hist_map[*it_nom+"_"+it_sys->first+"Up_ori"];
             hmc[3] = &hist_map[*it_nom+"_"+it_sys->first+"Down_ori"];
-            draw_pre(hsm, hmc, it_sys->first, "_" + *it_nom + cutname + Form("_%d.root", year), range);
+            cout<<hsm->GetMaximum()<<endl;
+            draw_pre(hsm, hmc, it_sys->first, "_" + *it_nom + cutname + Form("_%d", year), range, path);
         }
     }
     file->Close();
     file_ori->Close();
-}
-void draw_sys(){
-    TString cutNames[] = {"_M_4jets","_M_3jets","_E_4jets","_E_3jets"};
-    int years[] = {2015, 2016, 2017, 2018};
-    //TString filenames[] = {"ttbar_M_4jets.root","ttbar_M_3jets.root","ttbar_E_4jets.root","ttbar_E_3jets.root"};
-    for(int i=0; i<4; i++){
-        for(int y=0; y<4; y++){
-            draw_pre(cutNames[i], years[y]);
-        }
-    }
 }

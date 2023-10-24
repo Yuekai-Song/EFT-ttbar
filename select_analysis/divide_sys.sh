@@ -1,22 +1,18 @@
-cutname=(M_4jets M_3jets E_4jets E_3jets)
+cutname=(_M_4jets _M_3jets _E_4jets _E_3jets)
 years=(2015 2016 2017 2018)
-sys=("jes_Absolute" "jes_Absolute_un" "jes_FlavorQCD" "jes_BBEC1" "jes_EC2" "jes_HF" "jes_BBEC1_un" "jes_EC2_un" "jes_RelativeBal" "jes_RelativeSample_un" "jer" "unclus" "sl" "sb_un" "sb_co" "sl_un" "sl_co" "L1PF" "muR" "muF" "ISR" "FSR" "mtop" "hdamp" "TuneCP5" "nnlo" "EW_un" "alphas" "pdf" "qcds" "PU")
+path=(smooth)
 rm -rf sys_pdf/
 mkdir sys_pdf/
-for c in ${sys[*]}
+for c in ${path[*]}
 do
     mkdir sys_pdf/$c
     for b in ${years[*]}
     do
-        mkdir sys_pdf/$c/$b
         for a in ${cutname[*]}
         do
-            mkdir sys_pdf/$c/$b/$a
+            cd ./draw
+            root -l -q -b draw_sys.cpp"(\"$a\", $b, \"$c\")"
+            cd ../
         done
     done
-done
-cd ./draw
-root -l -q -b draw_sys.cpp
-cd ../
-
-        
+done    
