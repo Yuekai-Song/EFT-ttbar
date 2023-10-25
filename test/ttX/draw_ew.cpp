@@ -92,7 +92,7 @@ void format_th_pad2(TH1D* h1, TString xtitle, double* low, double* high){
     h1->GetYaxis()->SetTitleSize(0.06*p2weight);
     h1->GetXaxis()->SetTitleOffset(1.8);
     h1->GetYaxis()->SetTitleOffset(1.1/p2weight);
-    h1->GetXaxis()->SetLabelSize(0.08);
+    h1->GetXaxis()->SetLabelSize(0.11);
     h1->GetYaxis()->SetLabelSize(0.05*p2weight);
     h1->GetYaxis()->SetRangeUser(0.9, 1.1);
     *low = 0.9;
@@ -128,7 +128,6 @@ void format_line(TLine* l1){
 void set_th_lable(TH1D* h1, int* nbins){
     double xbins[][20] = {{300,340,360,380,400,420,440,460,480,500,520,540,570,600,640,700,3000}, 
                           {300,450,500,570,600,700,820,3000}};
-    h1->SetLabelSize(0.11);
     for(int i=0; i<2; i++){
         for(int j=nbins[i]; j<nbins[i+1]; j++){
             h1->GetXaxis()->SetBinLabel(j+1, TString::Format("%.0f-%.0f", xbins[i][j-nbins[i]], xbins[i][j-nbins[i]+1]));
@@ -161,7 +160,7 @@ void draw_pre(TString cutname, int year, double value[5], int index[5]){
     TString inpath = "../../combine/";
     TString outpath = "./ew_pdf/";
     TString filename = "ttbar_"+cutname+Form("_%d.root", year);
-    TFile* file = TFile::Open(inpath+"datacard_ttx/"+filename);
+    TFile* file = TFile::Open(inpath+"datacard_ttx/original/"+filename);
     TH1D *hmc1[5], *h1[5], *hd1[5];
     TH1D* hno, *hd;
     int color[] = {2, 1, 8, 4, 6};
