@@ -168,13 +168,10 @@ __MACOSX
 *.dSYM
 
 # Project files
-convert_3Dto1D.cpp
-write_datacard.cpp
 
 *.root
 *.pdf
 run_log
-combine/process_sys.py
 combine/*sh
 combine/output*
 combine/impact*
