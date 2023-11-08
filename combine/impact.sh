@@ -1,3 +1,4 @@
+#!/bin/bash
 cd /afs/cern.ch/user/y/yuekai/tth_cms/CMSSW_11_3_4/src/
 eval `scramv1 runtime -sh`
 
