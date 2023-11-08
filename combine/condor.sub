@@ -1,4 +1,4 @@
-executable              = ../../../../impact.sh
+executable              = ../../../impact.sh
 arguments               = $(dir)
 Initialdir              = $(dir)
 						
