@@ -34,7 +34,8 @@ bool compare(process pro1, process pro2)
 {
     return pro1.id < pro2.id;
 }
-TString sys_lumi_year[] = {"1.012", "1.012", "1.023", "1.025"};
+map<int, TString> sys_lumi_year = {{2015, "1.012"}, {2016, "1.012"}, {2017, "1.023"}, {2018, "1.025"}};
+map<TString, TString> sys_norm_bg = {{"STop", "1.15"}, {"DYJets", "1.30"}, {"WJets", "1.30"}};
 void sys_and_nom(TString hist_name, TString &sys_name, TString &nom_name)
 {
     int pos = 0;
@@ -140,7 +141,7 @@ void write_card(ofstream &card, TString category, std::vector<process> pro_v, ma
     card << "---------------------------------" << endl;
     card << endl;
     card << "shapes * " << category << " "
-         << "../" + category + ".root $PROCESS $PROCESS_$SYSTEMATIC" << endl;
+         << "../../" + category + ".root $PROCESS $PROCESS_$SYSTEMATIC" << endl;
     card << "---------------------------------" << endl;
     card << "bin           " << category << endl;
     card << "observation   "
@@ -163,7 +164,7 @@ void write_card(ofstream &card, TString category, std::vector<process> pro_v, ma
     // writeline(qcd_n, card);
 }
 
-void write(TString datacard_name, TString type, TString cut_name, int year, vector<TString> saved, vector<TString> sys_of_shapeU)
+void write(TString datacard_name, TString type, TString cut_name, int year, bool lnN_bg, vector<TString> saved, vector<TString> sys_of_shapeU)
 {
     TString path = "./" + datacard_name + type + "/";
     TString category = "ttbar" + cut_name + Form("_%d", year);
@@ -212,6 +213,8 @@ void write(TString datacard_name, TString type, TString cut_name, int year, vect
             //    sys_lnN[sys_name][nom_name] = Form("%.3f/%.3f", hist_map[hist_name + "Up"].GetSumOfWeights() / hist_map[nom_name].GetSumOfWeights(),
             //                                    hist_map[hist_name + "Down"].GetSumOfWeights() / hist_map[nom_name].GetSumOfWeights());
             //else
+            if (!nom_name.Contains("ttbar") && lnN_bg)
+                continue;
             sys_shape[sys_name].push_back(nom_name);
         }
         else if (!hist_name.Contains("Down") && !hist_name.Contains("EW_no") && !hist_name.Contains("data_obs"))
@@ -231,7 +234,9 @@ void write(TString datacard_name, TString type, TString cut_name, int year, vect
             }
             pro_v.push_back(pro);
             // need to add some lnN sys manually
-            sys_lnN["cms_lumi"][hist_name] = sys_lumi_year[year - 2015];
+            sys_lnN["cms_lumi"][hist_name] = sys_lumi_year[year];
+            if (!nom_name.Contains("ttbar") && lnN_bg)
+                sys_lnN[hist_name + "_norm"][hist_name] = sys_norm_bg[hist_name]; 
         }
     }
     sort(pro_v.begin(), pro_v.end(), compare);
