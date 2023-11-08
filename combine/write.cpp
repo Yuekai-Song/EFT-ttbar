@@ -235,7 +235,7 @@ void write(TString datacard_name, TString type, TString cut_name, int year, bool
             pro_v.push_back(pro);
             // need to add some lnN sys manually
             sys_lnN["cms_lumi"][hist_name] = sys_lumi_year[year];
-            if (!nom_name.Contains("ttbar") && lnN_bg)
+            if (!hist_name.Contains("ttbar") && lnN_bg)
                 sys_lnN[hist_name + "_norm"][hist_name] = sys_norm_bg[hist_name]; 
         }
     }
