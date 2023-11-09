@@ -177,8 +177,8 @@ combine/output*
 combine/impact*
 combine/datacard*
 !combine/output/
-**/output/**/check.cpp
-**/output/**/*.sh
+check.cpp
+check.sh
 **/output/**/*.txt
 select_test
 combine_test
