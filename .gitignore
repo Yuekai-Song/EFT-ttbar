@@ -171,6 +171,13 @@ __MACOSX
 
 *.root
 *.pdf
+*.aux
+*.fdb_latexmk
+*.fls
+*.snm
+*.toc
+*.synctex.gz
+*.nav
 run_log
 combine/*sh
 combine/output*
