@@ -122,7 +122,7 @@ def sort_dict_by_key(input_dict):
     return sorted_dict
 
 if __name__ == "__main__":
-    dir = "/home/yksong/code/EFT-ttbar/test/combine_test/test2/sys_pdf/processed_bg_flat"
+    dir = "../sys_pdf/processed_bg_flat"
     modelfile = obtain_initial('./temp/temp.tex')
     pdfdict, sys_nom = list_files(dir)
     #print("jes_M_4jets_2015_Absolute_2018_WJets" in pdfdict.keys())
