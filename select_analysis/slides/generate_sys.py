@@ -51,23 +51,9 @@ def list_files(dir: str) -> tuple:
                     pdfdict[sys + "_" + channel + "_" + nom] = os.path.join(root, file)
     return pdfdict, sys_nom
 
-# To obtain the str needed in latex file
-
-
-def obtain_initial(filename):
-    lines = []
-    with open(filename, 'r', encoding='utf-8') as f:
-        for line in f.readlines():
-            if line != '\\end{document}':
-                lines.append(line)
-    f.close()
-    return lines
-
 # To generate latex files
 
-
-
-def gentex_sb(filename: str, filedict: dict, sys: str,
+def gentex(filename: str, filedict: dict, sys: str,
               processes: list) -> None:
     channels = ["E_3jets", "M_3jets", "E_4jets", "M_4jets"]
     years = ["2015", "2016", "2017", "2018"]
@@ -121,27 +107,16 @@ def sort_dict_by_key(input_dict):
     sorted_dict = {k: v for k, v in sorted_items}
     return sorted_dict
 
-if __name__ == "__main__":
-    dir = "../sys_pdf/processed_bg_flat"
-    modelfile = obtain_initial('./temp/temp.tex')
-    pdfdict, sys_nom = list_files(dir)
-    #print("jes_M_4jets_2015_Absolute_2018_WJets" in pdfdict.keys())
-    filename = "./ttbar/ttbar.tex"
-
-    with open(filename, 'w', encoding='utf-8') as f:
-        for line in modelfile:
-            f.write('%s' % line)
+def sys_add(dir: str, filename: str) -> None:
+    with open(filename, 'a', encoding='utf-8') as f:
+        f.write('\n')
+        f.write('\\section{Distributions of the systematics}\n')
     f.close()
 
+    pdfdict, sys_nom = list_files(dir)
     sys_nom_sorted = sort_dict_by_key(sys_nom)
     for sys, noms in sys_nom_sorted.items():
         nom_list = list(noms)
         nom_list.sort(key=position)
         if "pdf" not in sys:
-            gentex_sb(filename, pdfdict, sys, nom_list)
-
-
-    with open(filename, 'a', encoding='utf-8') as f:
-        f.write('\\end{document}\n')
-    f.close()
-    print('END')
+            gentex(filename, pdfdict, sys, nom_list)

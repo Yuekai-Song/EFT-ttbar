@@ -30,7 +30,7 @@ void format_text(TPaveText *lumi)
     lumi->SetFillColor(0);
     lumi->SetTextFont(42);
     lumi->SetTextSize(0.035);
-    lumi->SetTextColor(13);
+    lumi->SetTextColor(1);
     lumi->SetBorderSize(0);
 }
 void format_leg(TLegend *leg)
@@ -83,6 +83,7 @@ void format_th_pad2(TH1D *h1, TString xtitle, double *low, double *high)
     int ydivisions = 505;
     float up = h1->GetMaximum();
     float down = h1->GetMinimum();
+    int bins = h1->GetNbinsX();
     up = fabs(up - 1);
     down = fabs(down - 1);
     h1->SetMarkerStyle(20);
@@ -98,7 +99,7 @@ void format_th_pad2(TH1D *h1, TString xtitle, double *low, double *high)
     h1->GetYaxis()->SetTitleSize(0.06 * p2weight);
     h1->GetXaxis()->SetTitleOffset(1.8);
     h1->GetYaxis()->SetTitleOffset(1.1 / p2weight);
-    h1->GetXaxis()->SetLabelSize(0.08);
+    h1->GetXaxis()->SetLabelSize(0.08 * 33 / bins);
     h1->GetYaxis()->SetLabelSize(0.05 * p2weight);
     h1->GetYaxis()->SetRangeUser(0.9, 1.1);
     *low = 0.9;
@@ -123,9 +124,9 @@ double format_th_pad1(TH1D *h1, TString xtitle)
     h1->GetYaxis()->SetTitleOffset(1.20);
     h1->GetXaxis()->SetLabelSize(0.0);
     h1->GetYaxis()->SetLabelSize(0.05);
-    h1->GetYaxis()->SetRangeUser(0.0, h1->GetMaximum() * 1.4);
+    //h1->GetYaxis()->SetRangeUser(0.0, h1->GetMaximum() * 1.4);
+    h1->GetYaxis()->SetRangeUser(0.0, 80000);
     return h1->GetMaximum();
-    // h1->GetYaxis()->SetRangeUser(0.0, 800000);
 }
 void format_line(TLine *l1)
 {
@@ -167,12 +168,12 @@ void model(TH1D *h1, TH1D *h2[5], double y, double z, double k)
 }
 void draw_pre(TString cutname, int year, TString sys, int type, double value[5], int index[5], bool rel, vector<vector<double>> xbins, vector<double> ycuts)
 {
-    double low, high;
+    double low2, high2;
     TString process[] = {"ttbar_ci0100", "ttbar_ci0010", "ttbar_ci0001", "ttbar_ci0000", "ttbar_ci0200"};
-    TString inpath = "../../combine/";
-    TString outpath = "../ew_pdf/" + cutname + Form("_%d/", year);
+    TString inpath = "./";
+    TString outpath = "./ew_pdf/" + cutname + Form("_%d/", year);
     TString filename = "ttbar_" + cutname + Form("_%d.root", year);
-    TFile *file = TFile::Open(inpath + "datacard/original/" + filename);
+    TFile *file = TFile::Open(inpath + "/datacard/sys_kappa_same/" + filename);
     TH1D *hmc1[5], *h1[5], *hd1[5];
     TH1D *hno, *hd;
     int color[] = {2, 1, 8, 4, 6};
@@ -195,12 +196,14 @@ void draw_pre(TString cutname, int year, TString sys, int type, double value[5],
         nbins[i] = nbins[i - 1] + xbins[i - 1].size() - 1;
     for (int i = 0; i < ndiv; i++)
         div[i] = nbins[i + 1];
-    int bins = nbins[nnbins];
+    int bins = nbins[nnbins - 1];
+
     TString cut[ncuts];
-    cut[0] = Form("|#Deltay|<%.1f", ycuts[1]);
-    cut[ncuts - 1] = Form("|#Deltay|>%.1f", ycuts[ncuts - 2]);
+    cut[0] = Form("|#Deltay| < %.1f", ycuts[1]);
+    cut[ncuts - 1] = Form("|#Deltay| > %.1f", ycuts[ncuts - 1]);
     for (int i = 1; i < ncuts - 1; i++)
-        cut[i] = Form("%.1f<|#Deltay|<%.1f", ycuts[i - 1], ycuts[i]);
+        cut[i] = Form("%.1f<|#Deltay| < %.1f", ycuts[i], ycuts[i]);
+    
     TLine *l1[ndiv], *l2[ndiv];
     TPaveText *t[ncuts];
 
@@ -267,7 +270,10 @@ void draw_pre(TString cutname, int year, TString sys, int type, double value[5],
     }
     for (int tex = 0; tex < ncuts; tex++)
     {
-        t[tex] = new TPaveText(0.2 + 0.19 * tex, 0.75, 0.25 + 0.19 * tex, 0.85, "NDC");
+        double mid_row = (nbins[tex] + nbins[tex + 1]) / 2.0;
+        double mid_col = high1 * 0.9;
+        //cout << mid << endl;
+        t[tex] = new TPaveText(mid_row - 1, mid_col * 0.95, mid_row + 1, mid_col * 1.05);
         format_text(t[tex]);
         t[tex]->AddText(cut[tex]);
         t[tex]->Draw("same");
@@ -276,7 +282,7 @@ void draw_pre(TString cutname, int year, TString sys, int type, double value[5],
     pad2->cd();
     hd->Draw("hist");
     hd->SetLineColor(28);
-    format_th_pad2(hd, xtitle, &low, &high);
+    format_th_pad2(hd, xtitle, &low2, &high2);
     set_th_lable(hd, xbins);
     hd->SetLineStyle(9);
     hd->SetLineWidth(2);
@@ -290,7 +296,7 @@ void draw_pre(TString cutname, int year, TString sys, int type, double value[5],
 
     for (int d = 0; d < ndiv; d++)
     {
-        l2[d] = new TLine(div[d], low, div[d], high);
+        l2[d] = new TLine(div[d], low2, div[d], high2);
         format_line(l2[d]);
         l2[d]->Draw("same");
     }

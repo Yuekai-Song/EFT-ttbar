@@ -82,7 +82,7 @@ void format_canvas(TCanvas *c)
     c->SetTickx(1);
     c->SetTicky(1);
     c->SetLeftMargin(0.01);
-    c->SetRightMargin(0.01);
+    c->SetRightMargin(0.00);
     c->SetTopMargin(0.01);
     c->SetBottomMargin(0.01);
     c->SetFrameFillStyle(0);
@@ -148,6 +148,7 @@ void set_th_lable(TH1D *h1, vector<vector<double>> xbins)
 void format_th_pad2(TH1D *h1, TString xtitle, double range, int color, int type, vector<vector<double>> xbins)
 {
     int ydivisions = 505;
+    int bins = h1->GetNbinsX();
     h1->SetLineColor(color);
     if (type == 0)
     { // ratio
@@ -179,7 +180,7 @@ void format_th_pad2(TH1D *h1, TString xtitle, double range, int color, int type,
     h1->GetYaxis()->SetTitleSize(0.06 * p2weight);
     h1->GetXaxis()->SetTitleOffset(1.8);
     h1->GetYaxis()->SetTitleOffset(1.1 / p2weight);
-    h1->GetXaxis()->SetLabelSize(0.09);
+    h1->GetXaxis()->SetLabelSize(0.08 * 33 / bins);
     h1->GetYaxis()->SetLabelSize(0.05 * p2weight);
     h1->GetYaxis()->SetRangeUser(-range, range);
     set_th_lable(h1, xbins);
@@ -235,12 +236,13 @@ void draw_pre(TH1D *hsm, TH1D *hmc[4], TString sys, TString pdf_name, double ran
         nbins[i] = nbins[i - 1] + xbins[i - 1].size() - 1;
     for (int i = 0; i < ndiv; i++)
         div[i] = nbins[i + 1];
-    int bins = nbins[nnbins];
+    int bins = nbins[nnbins - 1];
+
     TString cut[ncuts];
-    cut[0] = Form("|#Deltay|<%.1f", ycuts[1]);
-    cut[ncuts - 1] = Form("|#Deltay|>%.1f", ycuts[ncuts - 2]);
+    cut[0] = Form("|#Deltay| < %.1f", ycuts[1]);
+    cut[ncuts - 1] = Form("|#Deltay| > %.1f", ycuts[ncuts - 1]);
     for (int i = 1; i < ncuts - 1; i++)
-        cut[i] = Form("%.1f<|#Deltay|<%.1f", ycuts[i - 1], ycuts[i]);
+        cut[i] = Form("%.1f < |#Deltay| < %.1f", ycuts[i], ycuts[i]);
 
     TLine *l1[ndiv], *l2[ndiv];
     TPaveText *t[ncuts];
@@ -271,7 +273,6 @@ void draw_pre(TH1D *hsm, TH1D *hmc[4], TString sys, TString pdf_name, double ran
         leg->AddEntry(hmc[i], sys + "_" + legend[i], "l");
     }
     leg->Draw("Same");
-
     for (int d = 0; d < ndiv; d++)
     {
         l1[d] = new TLine(div[d], 0, div[d], high);
@@ -281,7 +282,10 @@ void draw_pre(TH1D *hsm, TH1D *hmc[4], TString sys, TString pdf_name, double ran
     }
     for (int tex = 0; tex < ncuts; tex++)
     {
-        t[tex] = new TPaveText(0.2 + 0.19 * tex, 0.75, 0.25 + 0.19 * tex, 0.85, "NDC");
+        double mid_row = (nbins[tex] + nbins[tex + 1]) / 2.0;
+        double mid_col = high * 0.9;
+        //cout << mid << endl;
+        t[tex] = new TPaveText(mid_row - 1, mid_col * 0.95, mid_row + 1, mid_col * 1.05);
         format_text(t[tex]);
         t[tex]->AddText(cut[tex]);
         t[tex]->Draw("same");
@@ -316,7 +320,7 @@ void draw_pre(TH1D *hsm, TH1D *hmc[4], TString sys, TString pdf_name, double ran
         format_line(l2[d]);
         l2[d]->Draw("same");
     }
-    c2->Print("../sys_pdf/" + pdf_name + ".pdf");
+    c2->Print("./sys_pdf/" + pdf_name + ".pdf");
     for (int d = 0; d < ndiv; d++)
     {
         delete l1[d];
