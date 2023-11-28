@@ -1,53 +1,62 @@
 #include "select_tree.h"
 #include "reco.cpp"
 
-read_object::read_object(TString input, int type){
-    TChain* chain = new TChain("Events");
+read_object::read_object(TString input, int type)
+{
+    TChain *chain = new TChain("Events");
     UInt_t nMuon, nJet, nElectron, nGenJet;
     chain->Add(input);
-    cout<<input<<" is reading and processing"<<endl;
-    cout<<"total number of events: "<<chain->GetEntries()<<endl;
+    cout << input << " is reading and processing" << endl;
+    cout << "total number of events: " << chain->GetEntries() << endl;
     chain->SetBranchAddress("nMuon", &nMuon);
     chain->SetBranchAddress("nJet", &nJet);
     chain->SetBranchAddress("nElectron", &nElectron);
-    if(type != 0)
+    if (type != 0)
         chain->SetBranchAddress("nGenJet", &nGenJet);
     nm = 0, ne = 0, nj = 0, ng = 0;
-    for(int num=0; num<chain->GetEntries(); num++){
+    for (int num = 0; num < chain->GetEntries(); num++)
+    {
         chain->GetEntry(num);
-        if(nm < nMuon)
+        if (nm < nMuon)
             nm = nMuon;
-        if(ne < nElectron)
+        if (ne < nElectron)
             ne = nElectron;
-        if(nj < nJet)
-            nj=nJet;
-        if(type == 1){
-            if(ng < nGenJet)
+        if (nj < nJet)
+            nj = nJet;
+        if (type == 1)
+        {
+            if (ng < nGenJet)
                 ng = nGenJet;
         }
     }
     delete chain;
 }
-Bool_t select_tree::is_lep_from_jet(TLorentzVector mom_lep){
-    Bool_t flag=false;
-    for(int i=0; i<jet_num; i++){
+Bool_t select_tree::is_lep_from_jet(TLorentzVector mom_lep)
+{
+    Bool_t flag = false;
+    for (int i = 0; i < jet_num; i++)
+    {
 
-        if(mom_lep.DeltaR(mom_jets[i])<0.4){
-            flag=true;
+        if (mom_lep.DeltaR(mom_jets[i]) < 0.4)
+        {
+            flag = true;
             break;
         }
     }
     return flag;
 }
-select_tree::select_tree(TString inputFile, TString outputFile, TString name_tree, TString name_jet, TString name_MET,  int sample_year, int s_type, int num_j, int num_e, int num_m, int num_g){ //type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
+select_tree::select_tree(TString inputFile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int sample_year, int data_types, int reco_types, bool reco_ttxs, int num_j, int num_e, int num_m, int num_g)
+{ // type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
     input = outputFile;
     year = sample_year;
     tree_name = name_tree;
-    type = s_type;
-    Float_t btag_num[]={0.2589,0.2489,0.3040,0.2783};
-    btag_criteria = btag_num[year-2015];
+    data_type = data_types;
+    reco_type = reco_types;
+    reco_ttx = reco_ttxs;
+    Float_t btag_num[] = {0.2589, 0.2489, 0.3040, 0.2783};
+    btag_criteria = btag_num[year - 2015];
     TString recreate;
-    if(type == 2)
+    if (data_type == 2)
         recreate = "update";
     else
         recreate = "RECREATE";
@@ -62,7 +71,8 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     chain->SetBranchAddress("nJet", &nJet);
     chain->SetBranchAddress("nElectron", &nElectron);
 
-    if(type == 1){
+    if (data_type == 1)
+    {
         GenJet_pt = new Float_t[ng];
         GenJet_mass = new Float_t[ng];
         GenJet_phi = new Float_t[ng];
@@ -72,21 +82,22 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
         chain->SetBranchAddress("GenJet_pt", GenJet_pt);
         chain->SetBranchAddress("GenJet_phi", GenJet_phi);
         chain->SetBranchAddress("GenJet_mass", GenJet_mass);
-        chain->SetBranchAddress("nLHEScaleWeight",&nLHEScaleWeight);
-        chain->SetBranchAddress("nLHEPdfWeight",&nLHEPdfWeight);
-        chain->SetBranchAddress("nPSWeight",&nPSWeight);
-        chain->SetBranchAddress("LHEScaleWeight",LHEScaleWeight);
-        chain->SetBranchAddress("PSWeight",PSWeight);
-        chain->SetBranchAddress("LHEPdfWeight",LHEPdfWeight);
+        chain->SetBranchAddress("nLHEScaleWeight", &nLHEScaleWeight);
+        chain->SetBranchAddress("nLHEPdfWeight", &nLHEPdfWeight);
+        chain->SetBranchAddress("nPSWeight", &nPSWeight);
+        chain->SetBranchAddress("LHEScaleWeight", LHEScaleWeight);
+        chain->SetBranchAddress("PSWeight", PSWeight);
+        chain->SetBranchAddress("LHEPdfWeight", LHEPdfWeight);
     }
-    if(type != 0){
+    if (data_type != 0)
+    {
         jet_partonFlavour = new Int_t[nj];
         Jet_partonFlavour = new Int_t[nj];
         jet_hadronFlavour = new Int_t[nj];
         Jet_hadronFlavour = new Int_t[nj];
         chain->SetBranchAddress("Jet_partonFlavour", Jet_partonFlavour);
         chain->SetBranchAddress("Jet_hadronFlavour", Jet_hadronFlavour);
-        chain->SetBranchAddress("Generator_weight",&Generator_weight);
+        chain->SetBranchAddress("Generator_weight", &Generator_weight);
 
         chain->SetBranchAddress("L1PreFiringWeight_Nom", &L1PreFiringWeight_Nom);
         chain->SetBranchAddress("L1PreFiringWeight_Up", &L1PreFiringWeight_Up);
@@ -103,7 +114,7 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     Electron_deltaEtaSC = new Float_t[ne];
     Electron_dxy = new Float_t[ne];
     Electron_dz = new Float_t[ne];
-    
+
     Muon_mass = new Float_t[nm];
     Muon_phi = new Float_t[nm];
     Muon_pt = new Float_t[nm];
@@ -129,7 +140,8 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     jet_phi = new Float_t[nj];
     mom_jets = new TLorentzVector[nj];
 
-    if(input.Contains("TT")){
+    if (input.Contains("TT"))
+    {
         chain->SetBranchAddress("LHEPart_eta", LHEPart_eta);
         chain->SetBranchAddress("LHEPart_mass", LHEPart_mass);
         chain->SetBranchAddress("LHEPart_phi", LHEPart_phi);
@@ -138,7 +150,7 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
         chain->SetBranchAddress("nLHEPart", &nLHEPart);
     }
     chain->SetBranchAddress(name_MET, &MET_pt);
-    chain->SetBranchAddress(name_MET.ReplaceAll("_pt","_phi"), &MET_phi);
+    chain->SetBranchAddress(name_MET.ReplaceAll("_pt", "_phi"), &MET_phi);
     chain->SetBranchAddress("Electron_phi", Electron_phi);
     chain->SetBranchAddress("Electron_pt", Electron_pt);
     chain->SetBranchAddress("Electron_mass", Electron_mass);
@@ -156,20 +168,20 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     chain->SetBranchAddress("Jet_btagDeepFlavB", Jet_btagDeepFlavB);
     chain->SetBranchAddress("Jet_eta", Jet_eta);
     chain->SetBranchAddress(name_jet, Jet_pt);
-    chain->SetBranchAddress(name_jet.ReplaceAll("_pt","_mass"), Jet_mass);
+    chain->SetBranchAddress(name_jet.ReplaceAll("_pt", "_mass"), Jet_mass);
     chain->SetBranchAddress("Jet_phi", Jet_phi);
 
-    chain->SetBranchAddress("Muon_pfRelIso04_all",Muon_pfRelIso04_all);
-    chain->SetBranchAddress("Muon_tightId",Muon_tightId);
-    chain->SetBranchAddress("Muon_looseId",Muon_looseId);
-    chain->SetBranchAddress("Electron_cutBased",Electron_cutBased);
-    chain->SetBranchAddress("Jet_jetId",Jet_jetId);
-    chain->SetBranchAddress("Electron_deltaEtaSC",Electron_deltaEtaSC);
-    chain->SetBranchAddress("Electron_dz",Electron_dz);
-    chain->SetBranchAddress("Electron_dxy",Electron_dxy);
+    chain->SetBranchAddress("Muon_pfRelIso04_all", Muon_pfRelIso04_all);
+    chain->SetBranchAddress("Muon_tightId", Muon_tightId);
+    chain->SetBranchAddress("Muon_looseId", Muon_looseId);
+    chain->SetBranchAddress("Electron_cutBased", Electron_cutBased);
+    chain->SetBranchAddress("Jet_jetId", Jet_jetId);
+    chain->SetBranchAddress("Electron_deltaEtaSC", Electron_deltaEtaSC);
+    chain->SetBranchAddress("Electron_dz", Electron_dz);
+    chain->SetBranchAddress("Electron_dxy", Electron_dxy);
     chain->SetBranchAddress("PV_npvsGood", &PV_npvsGood);
     chain->SetBranchAddress("PV_npvs", &PV_npvs);
-    
+
     chain->SetBranchAddress("Flag_goodVertices", &Flag_met[0]);
     chain->SetBranchAddress("Flag_globalSuperTightHalo2016Filter", &Flag_met[1]);
     chain->SetBranchAddress("Flag_HBHENoiseFilter", &Flag_met[2]);
@@ -181,210 +193,237 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     chain->SetBranchAddress("Flag_BadChargedCandidateFilter", &Flag_met[8]);
     chain->SetBranchAddress("Flag_eeBadScFilter", &Flag_met[9]);
 
-    chain->SetBranchAddress("luminosityBlock",&luminosityBlock);
-    chain->SetBranchAddress("event",&event);
-    chain->SetBranchAddress("run",&run);
-    if(year==2018){
-        chain->SetBranchAddress("HLT_Ele32_WPTight_Gsf",&HLT_Ele32_WPTight_Gsf);
-        chain->SetBranchAddress("HLT_IsoMu24",&HLT_IsoMu24);
+    chain->SetBranchAddress("luminosityBlock", &luminosityBlock);
+    chain->SetBranchAddress("event", &event);
+    chain->SetBranchAddress("run", &run);
+    if (year == 2018)
+    {
+        chain->SetBranchAddress("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf);
+        chain->SetBranchAddress("HLT_IsoMu24", &HLT_IsoMu24);
         chain->SetBranchAddress("Flag_ecalBadCalibFilter", &Flag_met[10]);
         nFlag_met = 11;
     }
-    else if(year==2016||year==2015){//2015 means 2016_pre
-        chain->SetBranchAddress("HLT_Ele27_WPTight_Gsf",&HLT_Ele27_WPTight_Gsf);
-        chain->SetBranchAddress("HLT_IsoMu24",&HLT_IsoMu24);
-        chain->SetBranchAddress("HLT_IsoTkMu24",&HLT_IsoTkMu24);
+    else if (year == 2016 || year == 2015)
+    { // 2015 means 2016_pre
+        chain->SetBranchAddress("HLT_Ele27_WPTight_Gsf", &HLT_Ele27_WPTight_Gsf);
+        chain->SetBranchAddress("HLT_IsoMu24", &HLT_IsoMu24);
+        chain->SetBranchAddress("HLT_IsoTkMu24", &HLT_IsoTkMu24);
         nFlag_met = 10;
     }
-    else{
-        chain->SetBranchAddress("HLT_Ele35_WPTight_Gsf",&HLT_Ele35_WPTight_Gsf);
-        chain->SetBranchAddress("HLT_IsoMu27",&HLT_IsoMu27);
+    else
+    {
+        chain->SetBranchAddress("HLT_Ele35_WPTight_Gsf", &HLT_Ele35_WPTight_Gsf);
+        chain->SetBranchAddress("HLT_IsoMu27", &HLT_IsoMu27);
         chain->SetBranchAddress("Flag_ecalBadCalibFilter", &Flag_met[10]);
         nFlag_met = 11;
     }
 }
 
-Bool_t select_tree::select_jet(){
+Bool_t select_tree::select_jet()
+{
     nBtag = 0;
-    jet_num = 0; 
+    jet_num = 0;
     max_score = 0;
     int jet_index[nj];
-    Bool_t jet_flag = false; 
-    for(int i = 0; i < nJet; i++) {   
-        if(fabs(Jet_eta[i]) < 2.4 && Jet_pt[i] > 30 && Jet_jetId[i]==6){
-            //mom_jets[i].SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i],Jet_mass[i]);
+    Bool_t jet_flag = false;
+    for (int i = 0; i < nJet; i++)
+    {
+        if (fabs(Jet_eta[i]) < 2.4 && Jet_pt[i] > 30 && Jet_jetId[i] == 6)
+        {
+            // mom_jets[i].SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i],Jet_mass[i]);
             jet_index[jet_num] = i;
             jet_num = jet_num + 1;
             if (Jet_btagDeepFlavB[i] > btag_criteria)
                 nBtag++;
-            if(Jet_btagDeepFlavB[i]>max_score)
+            if (Jet_btagDeepFlavB[i] > max_score)
                 max_score = Jet_btagDeepFlavB[i];
         }
-    }      
-    if(jet_num >= 3 && nBtag >= 2){
+    }
+    if (jet_num >= 3 && nBtag >= 2)
+    {
         jet_flag = true;
-        for(int i=0;i<jet_num;i++){
-            mom_jets[i].SetPtEtaPhiM(Jet_pt[jet_index[i]], Jet_eta[jet_index[i]], Jet_phi[jet_index[i]],Jet_mass[jet_index[i]]);  
-            jet_eta[i]=Jet_eta[jet_index[i]];
-            jet_pt[i]=Jet_pt[jet_index[i]];
-            jet_phi[i]=Jet_phi[jet_index[i]];
-            jet_mass[i]=Jet_mass[jet_index[i]];
-            jet_btagDeepB[i]=Jet_btagDeepB[jet_index[i]];
-            jet_btagDeepFlavB[i]=Jet_btagDeepFlavB[jet_index[i]];
-            if(type != 0){
-                jet_partonFlavour[i]=Jet_partonFlavour[jet_index[i]];
-                jet_hadronFlavour[i]=Jet_hadronFlavour[jet_index[i]];
+        for (int i = 0; i < jet_num; i++)
+        {
+            mom_jets[i].SetPtEtaPhiM(Jet_pt[jet_index[i]], Jet_eta[jet_index[i]], Jet_phi[jet_index[i]], Jet_mass[jet_index[i]]);
+            jet_eta[i] = Jet_eta[jet_index[i]];
+            jet_pt[i] = Jet_pt[jet_index[i]];
+            jet_phi[i] = Jet_phi[jet_index[i]];
+            jet_mass[i] = Jet_mass[jet_index[i]];
+            jet_btagDeepB[i] = Jet_btagDeepB[jet_index[i]];
+            jet_btagDeepFlavB[i] = Jet_btagDeepFlavB[jet_index[i]];
+            if (data_type != 0)
+            {
+                jet_partonFlavour[i] = Jet_partonFlavour[jet_index[i]];
+                jet_hadronFlavour[i] = Jet_hadronFlavour[jet_index[i]];
             }
         }
     }
     return jet_flag;
 }
-Bool_t select_tree::select_lep(){
-    Int_t nlepton = nMuon+nElectron;
+Bool_t select_tree::select_lep()
+{
+    Int_t nlepton = nMuon + nElectron;
     Bool_t lepton_flag = false; // if true pass the selction
-    int num_select=0;
+    int num_select = 0;
     bool is_from_jet;
     TLorentzVector p4_lepton;
-    for(int i = 0; i < nlepton; i++){
-        if(i < nElectron){
-            p4_lepton.SetPtEtaPhiM(Electron_pt[i],Electron_eta[i],Electron_phi[i],Electron_mass[i]);
-            is_from_jet=is_lep_from_jet(p4_lepton);
-            if(Electron_cutBased[i]>=2 && fabs(Electron_eta[i]) <2.4 && (fabs(Electron_eta[i])<1.4442
-                ||fabs(Electron_eta[i])>1.5660)&&Electron_pt[i]>15){
-                if((fabs(Electron_deltaEtaSC[i]+Electron_eta[i])<1.479&&fabs(Electron_dxy[i])<0.05&&fabs(Electron_dz[i])<0.1)
-                    ||(fabs(Electron_deltaEtaSC[i]+Electron_eta[i])>=1.479&&fabs(Electron_dxy[i])<0.1&&fabs(Electron_dz[i])<0.2))
+    for (int i = 0; i < nlepton; i++)
+    {
+        if (i < nElectron)
+        {
+            p4_lepton.SetPtEtaPhiM(Electron_pt[i], Electron_eta[i], Electron_phi[i], Electron_mass[i]);
+            is_from_jet = is_lep_from_jet(p4_lepton);
+            if (Electron_cutBased[i] >= 2 && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 15)
+            {
+                if ((fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) < 1.479 && fabs(Electron_dxy[i]) < 0.05 && fabs(Electron_dz[i]) < 0.1) || (fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) >= 1.479 && fabs(Electron_dxy[i]) < 0.1 && fabs(Electron_dz[i]) < 0.2))
                 {
                     num_select++;
-                    if(Electron_cutBased[i]==4 && fabs(Electron_eta[i]) <2.4 && (fabs(Electron_eta[i])<1.4442
-                        ||fabs(Electron_eta[i])>1.5660)&&Electron_pt[i]>30 && (!is_from_jet))
-                    {  
+                    if (Electron_cutBased[i] == 4 && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 30 && (!is_from_jet))
+                    {
                         lep_c = Electron_charge[i];
                         mom_lep = p4_lepton;
-                        lep_flavour=false;
-                        lepton_flag=true;
+                        lep_flavour = false;
+                        lepton_flag = true;
                         electron_deltaEtaSC = Electron_deltaEtaSC[i];
                     }
-                }      
+                }
             }
-        }       
-        else{
-            p4_lepton.SetPtEtaPhiM(Muon_pt[i-nElectron],Muon_eta[i-nElectron],Muon_phi[i-nElectron],Muon_mass[i-nElectron]);
-            is_from_jet=is_lep_from_jet(p4_lepton);
-            if(Muon_looseId[i-nElectron]==1 && Muon_pfRelIso04_all[i-nElectron]<=0.25 && Muon_pt[i-nElectron]>15 && fabs(Muon_eta[i-nElectron])<2.4)
-            {    
+        }
+        else
+        {
+            p4_lepton.SetPtEtaPhiM(Muon_pt[i - nElectron], Muon_eta[i - nElectron], Muon_phi[i - nElectron], Muon_mass[i - nElectron]);
+            is_from_jet = is_lep_from_jet(p4_lepton);
+            if (Muon_looseId[i - nElectron] == 1 && Muon_pfRelIso04_all[i - nElectron] <= 0.25 && Muon_pt[i - nElectron] > 15 && fabs(Muon_eta[i - nElectron]) < 2.4)
+            {
                 num_select++;
-                if(Muon_tightId[i-nElectron]==1 && Muon_pfRelIso04_all[i-nElectron]<=0.15 && Muon_pt[i-nElectron]>30 && fabs(Muon_eta[i-nElectron])<2.4 && (!is_from_jet))
+                if (Muon_tightId[i - nElectron] == 1 && Muon_pfRelIso04_all[i - nElectron] <= 0.15 && Muon_pt[i - nElectron] > 30 && fabs(Muon_eta[i - nElectron]) < 2.4 && (!is_from_jet))
                 {
-                    lep_c = Muon_charge[i-nElectron];
+                    lep_c = Muon_charge[i - nElectron];
                     mom_lep = p4_lepton;
-                    lep_flavour=true;
-                    lepton_flag=true;
+                    lep_flavour = true;
+                    lepton_flag = true;
                     electron_deltaEtaSC = 0;
                 }
             }
         }
-        if(num_select > 1) {
-            lepton_flag=false;
+        if (num_select > 1)
+        {
+            lepton_flag = false;
             break;
         }
     }
     return lepton_flag;
 }
 
-void select_tree::read_LHE(){
-    if(!input.Contains("TT"))
+void select_tree::read_LHE()
+{
+    if (!input.Contains("TT"))
         return;
     LHE_nhad = 0;
     LHE_nlep = 0;
-    for (int i = nLHEPart-6; i < nLHEPart; i++) {
-        if(LHEPart_pdgId[i] == 2 || LHEPart_pdgId[i] == 4 || LHEPart_pdgId[i] == -2 || LHEPart_pdgId[i] == -4)
+    for (int i = nLHEPart - 6; i < nLHEPart; i++)
+    {
+        if (LHEPart_pdgId[i] == 2 || LHEPart_pdgId[i] == 4 || LHEPart_pdgId[i] == -2 || LHEPart_pdgId[i] == -4)
             LHE_nhad++;
-        if(LHEPart_pdgId[i] == 1 || LHEPart_pdgId[i] == 3 || LHEPart_pdgId[i] == -1 || LHEPart_pdgId[i] == -3)
+        if (LHEPart_pdgId[i] == 1 || LHEPart_pdgId[i] == 3 || LHEPart_pdgId[i] == -1 || LHEPart_pdgId[i] == -3)
             LHE_nhad++;
-        if(LHEPart_pdgId[i] == 11 || LHEPart_pdgId[i] == 13 || LHEPart_pdgId[i] == -11 || LHEPart_pdgId[i] == -13)
+        if (LHEPart_pdgId[i] == 11 || LHEPart_pdgId[i] == 13 || LHEPart_pdgId[i] == -11 || LHEPart_pdgId[i] == -13)
             LHE_nlep++;
-        if(LHEPart_pdgId[i] == 15 || LHEPart_pdgId[i] == -15)
+        if (LHEPart_pdgId[i] == 15 || LHEPart_pdgId[i] == -15)
             LHE_nlep++;
     }
-    if (LHE_nhad==2 && LHE_nlep==1) {
+    if (LHE_nhad == 2 && LHE_nlep == 1)
+    {
         // get information of ttbar process at parton level from LHEPart
-        for (int i = 0; i < nLHEPart; i++){
-            if(LHEPart_pdgId[i] == 5)
+        for (int i = 0; i < nLHEPart; i++)
+        {
+            if (LHEPart_pdgId[i] == 5)
                 index_b = i;
-            else if(LHEPart_pdgId[i] == -5)
+            else if (LHEPart_pdgId[i] == -5)
                 index_antib = i;
-            else if(LHEPart_pdgId[i] == 2||LHEPart_pdgId[i] == 4||LHEPart_pdgId[i] == -2||LHEPart_pdgId[i] == -4)
+            else if (LHEPart_pdgId[i] == 2 || LHEPart_pdgId[i] == 4 || LHEPart_pdgId[i] == -2 || LHEPart_pdgId[i] == -4)
                 index_up = i;
-            else if (LHEPart_pdgId[i] == 1||LHEPart_pdgId[i] == 3||LHEPart_pdgId[i] == -1||LHEPart_pdgId[i] == -3)
+            else if (LHEPart_pdgId[i] == 1 || LHEPart_pdgId[i] == 3 || LHEPart_pdgId[i] == -1 || LHEPart_pdgId[i] == -3)
                 index_down = i;
-            else if (LHEPart_pdgId[i] == 11||LHEPart_pdgId[i] == 13||LHEPart_pdgId[i] == 15||LHEPart_pdgId[i]== -11||LHEPart_pdgId[i] == -13||LHEPart_pdgId[i] == -15)
+            else if (LHEPart_pdgId[i] == 11 || LHEPart_pdgId[i] == 13 || LHEPart_pdgId[i] == 15 || LHEPart_pdgId[i] == -11 || LHEPart_pdgId[i] == -13 || LHEPart_pdgId[i] == -15)
                 index_lep = i;
-            else if (LHEPart_pdgId[i] == 12||LHEPart_pdgId[i] == 14||LHEPart_pdgId[i] == 16||LHEPart_pdgId[i] == -12||LHEPart_pdgId[i] == -14||LHEPart_pdgId[i] == -16)
+            else if (LHEPart_pdgId[i] == 12 || LHEPart_pdgId[i] == 14 || LHEPart_pdgId[i] == 16 || LHEPart_pdgId[i] == -12 || LHEPart_pdgId[i] == -14 || LHEPart_pdgId[i] == -16)
                 index_nu = i;
         }
         p4_b.SetPtEtaPhiM(LHEPart_pt[index_b], LHEPart_eta[index_b], LHEPart_phi[index_b], LHEPart_mass[index_b]);
-        p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib],LHEPart_phi[index_antib], LHEPart_mass[index_antib]);
+        p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib], LHEPart_phi[index_antib], LHEPart_mass[index_antib]);
         p4_up.SetPtEtaPhiM(LHEPart_pt[index_up], LHEPart_eta[index_up], LHEPart_phi[index_up], LHEPart_mass[index_up]);
         p4_down.SetPtEtaPhiM(LHEPart_pt[index_down], LHEPart_eta[index_down], LHEPart_phi[index_down], LHEPart_mass[index_down]);
         p4_lep.SetPtEtaPhiM(LHEPart_pt[index_lep], LHEPart_eta[index_lep], LHEPart_phi[index_lep], LHEPart_mass[index_lep]);
         p4_nu.SetPtEtaPhiM(LHEPart_pt[index_nu], LHEPart_eta[index_nu], LHEPart_phi[index_nu], LHEPart_mass[index_nu]);
-        if(LHEPart_pdgId[index_lep] > 0){
+        if (LHEPart_pdgId[index_lep] > 0)
+        {
             p4_antitop = p4_antib + p4_lep + p4_nu;
             p4_top = p4_b + p4_up + p4_down;
             lep_charge = -1;
-        } 
-        else{
+        }
+        else
+        {
             p4_top = p4_b + p4_lep + p4_nu;
             p4_antitop = p4_antib + p4_up + p4_down;
             lep_charge = 1;
         }
     }
-    if(LHE_nhad==0 && LHE_nlep==2){
+    if (LHE_nhad == 0 && LHE_nlep == 2)
+    {
         // get information of ttbar process at parton level from LHEPart
-        for(int i = 0; i < nLHEPart; i++){
-            if (LHEPart_pdgId[i] == 5) index_b = i;
-            else if (LHEPart_pdgId[i] == -5) index_antib = i;
-            else if (LHEPart_pdgId[i] == 11|| LHEPart_pdgId[i] == 13||LHEPart_pdgId[i] == 15)
+        for (int i = 0; i < nLHEPart; i++)
+        {
+            if (LHEPart_pdgId[i] == 5)
+                index_b = i;
+            else if (LHEPart_pdgId[i] == -5)
+                index_antib = i;
+            else if (LHEPart_pdgId[i] == 11 || LHEPart_pdgId[i] == 13 || LHEPart_pdgId[i] == 15)
                 index_lepn = i;
             else if (LHEPart_pdgId[i] == 12 || LHEPart_pdgId[i] == 14 || LHEPart_pdgId[i] == 16)
                 index_nun = i;
             else if (LHEPart_pdgId[i] == -11 || LHEPart_pdgId[i] == -13 || LHEPart_pdgId[i] == -15)
                 index_lepp = i;
-            else if (LHEPart_pdgId[i] == -12 ||LHEPart_pdgId[i] == -14 || LHEPart_pdgId[i] == -16)
+            else if (LHEPart_pdgId[i] == -12 || LHEPart_pdgId[i] == -14 || LHEPart_pdgId[i] == -16)
                 index_nup = i;
-        } 
-        p4_b.SetPtEtaPhiM(LHEPart_pt[index_b], LHEPart_eta[index_b],LHEPart_phi[index_b], LHEPart_mass[index_b]);
-        p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib],LHEPart_phi[index_antib],LHEPart_mass[index_antib]);
-        p4_lepp.SetPtEtaPhiM(LHEPart_pt[index_lepp], LHEPart_eta[index_lepp],LHEPart_phi[index_lepp], LHEPart_mass[index_lepp]);
-        p4_lepn.SetPtEtaPhiM(LHEPart_pt[index_lepn], LHEPart_eta[index_lepn],LHEPart_phi[index_lepn], LHEPart_mass[index_lepn]);
-        p4_nup.SetPtEtaPhiM(LHEPart_pt[index_nup], LHEPart_eta[index_nup],LHEPart_phi[index_nup], LHEPart_mass[index_nup]);
-        p4_nun.SetPtEtaPhiM(LHEPart_pt[index_nun], LHEPart_eta[index_nun],LHEPart_phi[index_nun], LHEPart_mass[index_nun]);
+        }
+        p4_b.SetPtEtaPhiM(LHEPart_pt[index_b], LHEPart_eta[index_b], LHEPart_phi[index_b], LHEPart_mass[index_b]);
+        p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib], LHEPart_phi[index_antib], LHEPart_mass[index_antib]);
+        p4_lepp.SetPtEtaPhiM(LHEPart_pt[index_lepp], LHEPart_eta[index_lepp], LHEPart_phi[index_lepp], LHEPart_mass[index_lepp]);
+        p4_lepn.SetPtEtaPhiM(LHEPart_pt[index_lepn], LHEPart_eta[index_lepn], LHEPart_phi[index_lepn], LHEPart_mass[index_lepn]);
+        p4_nup.SetPtEtaPhiM(LHEPart_pt[index_nup], LHEPart_eta[index_nup], LHEPart_phi[index_nup], LHEPart_mass[index_nup]);
+        p4_nun.SetPtEtaPhiM(LHEPart_pt[index_nun], LHEPart_eta[index_nun], LHEPart_phi[index_nun], LHEPart_mass[index_nun]);
         p4_top = p4_b + p4_lepp + p4_nun;
-        p4_antitop = p4_antib + p4_lepn + p4_nup; 
+        p4_antitop = p4_antib + p4_lepn + p4_nup;
     }
-    if(LHE_nhad==4 && LHE_nlep==0){
-        for(int i = 0; i < nLHEPart; i++) {
-            if (LHEPart_pdgId[i] == 5) index_b = i;
-            else if (LHEPart_pdgId[i] == -5) index_antib = i;
-            else if (LHEPart_pdgId[i] == 2|| LHEPart_pdgId[i] == 4)
+    if (LHE_nhad == 4 && LHE_nlep == 0)
+    {
+        for (int i = 0; i < nLHEPart; i++)
+        {
+            if (LHEPart_pdgId[i] == 5)
+                index_b = i;
+            else if (LHEPart_pdgId[i] == -5)
+                index_antib = i;
+            else if (LHEPart_pdgId[i] == 2 || LHEPart_pdgId[i] == 4)
                 index_up = i;
             else if (LHEPart_pdgId[i] == -2 || LHEPart_pdgId[i] == -4)
                 index_upbar = i;
             else if (LHEPart_pdgId[i] == 1 || LHEPart_pdgId[i] == 3)
                 index_down = i;
-            else if (LHEPart_pdgId[i] == -1 ||LHEPart_pdgId[i] == -3)
+            else if (LHEPart_pdgId[i] == -1 || LHEPart_pdgId[i] == -3)
                 index_downbar = i;
-        } 
-        p4_b.SetPtEtaPhiM(LHEPart_pt[index_b], LHEPart_eta[index_b],LHEPart_phi[index_b], LHEPart_mass[index_b]);
-        p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib],LHEPart_phi[index_antib],LHEPart_mass[index_antib]);
-        p4_up.SetPtEtaPhiM(LHEPart_pt[index_up], LHEPart_eta[index_up],LHEPart_phi[index_up], LHEPart_mass[index_up]);
-        p4_upbar.SetPtEtaPhiM(LHEPart_pt[index_upbar], LHEPart_eta[index_upbar],LHEPart_phi[index_upbar], LHEPart_mass[index_upbar]);
-        p4_down.SetPtEtaPhiM(LHEPart_pt[index_down], LHEPart_eta[index_down],LHEPart_phi[index_down], LHEPart_mass[index_down]);
-        p4_downbar.SetPtEtaPhiM(LHEPart_pt[index_downbar], LHEPart_eta[index_downbar],LHEPart_phi[index_downbar], LHEPart_mass[index_downbar]);
+        }
+        p4_b.SetPtEtaPhiM(LHEPart_pt[index_b], LHEPart_eta[index_b], LHEPart_phi[index_b], LHEPart_mass[index_b]);
+        p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib], LHEPart_phi[index_antib], LHEPart_mass[index_antib]);
+        p4_up.SetPtEtaPhiM(LHEPart_pt[index_up], LHEPart_eta[index_up], LHEPart_phi[index_up], LHEPart_mass[index_up]);
+        p4_upbar.SetPtEtaPhiM(LHEPart_pt[index_upbar], LHEPart_eta[index_upbar], LHEPart_phi[index_upbar], LHEPart_mass[index_upbar]);
+        p4_down.SetPtEtaPhiM(LHEPart_pt[index_down], LHEPart_eta[index_down], LHEPart_phi[index_down], LHEPart_mass[index_down]);
+        p4_downbar.SetPtEtaPhiM(LHEPart_pt[index_downbar], LHEPart_eta[index_downbar], LHEPart_phi[index_downbar], LHEPart_mass[index_downbar]);
         p4_top = p4_b + p4_up + p4_downbar;
-        p4_antitop = p4_antib + p4_upbar + p4_down; 
+        p4_antitop = p4_antib + p4_upbar + p4_down;
     }
-    if(input.Contains("TT")){
+    if (input.Contains("TT"))
+    {
         top_pt = p4_top.Pt();
         top_eta = p4_top.Eta();
         top_phi = p4_top.Phi();
@@ -399,30 +438,33 @@ void select_tree::read_LHE(){
         p4_top_cms.Boost(-p3_cms);
         TVector3 p3_top_cms = p4_top_cms.Vect();
         TVector3 p3_cms_lab = p4_cms_lab.Vect();
-        ctstar = p3_top_cms.Dot(p3_cms_lab)/(p3_top_cms.Mag() * p3_cms_lab.Mag());
+        ctstar = p3_top_cms.Dot(p3_cms_lab) / (p3_top_cms.Mag() * p3_cms_lab.Mag());
         M_tt_gen = (p4_top + p4_antitop).M();
         delta_rapidity_gen = p4_top.Rapidity() - p4_antitop.Rapidity();
     }
 }
-void select_tree::pdf_w(Float_t LHEPdfWeight[103], Float_t &alphas_up, Float_t &alphas_dn, Float_t &pdf_up, Float_t &pdf_dn){
+void select_tree::pdf_w(Float_t LHEPdfWeight[103], Float_t &alphas_up, Float_t &alphas_dn, Float_t &pdf_up, Float_t &pdf_dn)
+{
     pdf_up = LHEPdfWeight[0];
     pdf_dn = LHEPdfWeight[0];
     alphas_dn = LHEPdfWeight[101];
     alphas_up = LHEPdfWeight[102];
-    for(int i=1; i<101; i++){
-        if(pdf_up < LHEPdfWeight[i])
+    for (int i = 1; i < 101; i++)
+    {
+        if (pdf_up < LHEPdfWeight[i])
             pdf_up = LHEPdfWeight[i];
-        if(pdf_dn > LHEPdfWeight[i])
+        if (pdf_dn > LHEPdfWeight[i])
             pdf_dn = LHEPdfWeight[i];
     }
 }
-void select_tree::read_sys(){
-    muR_up = 1.0*LHEScaleWeight[3]/LHEScaleWeight[4];
-    muR_down = 1.0*LHEScaleWeight[5]/LHEScaleWeight[4];
+void select_tree::read_sys()
+{
+    muR_up = 1.0 * LHEScaleWeight[3] / LHEScaleWeight[4];
+    muR_down = 1.0 * LHEScaleWeight[5] / LHEScaleWeight[4];
 
-    muF_up = 1.0*LHEScaleWeight[1]/LHEScaleWeight[4];
-    muF_down = 1.0*LHEScaleWeight[7]/LHEScaleWeight[4];
-    //cout<<muF_down<<endl;
+    muF_up = 1.0 * LHEScaleWeight[1] / LHEScaleWeight[4];
+    muF_down = 1.0 * LHEScaleWeight[7] / LHEScaleWeight[4];
+    // cout<<muF_down<<endl;
 
     ISR_up = PSWeight[0];
     ISR_down = PSWeight[2];
@@ -430,53 +472,73 @@ void select_tree::read_sys(){
     FSR_up = PSWeight[1];
     FSR_down = PSWeight[3];
 }
-void select_tree::loop(TTree* mytree, TTree* rawtree){
+void select_tree::loop(TTree *mytree, TTree *rawtree, TH2D* hist_mh, TH2D* hist_ml, TH1D* hist_mh3, TH1D* hist_D)
+{
     Bool_t ele_trigger, mu_trigger;
     Bool_t jet_flag, lep_flag, trigger_flag;
-    for(int entry=0; entry<chain->GetEntries(); entry++){
+    for (int entry = 0; entry < chain->GetEntries(); entry++)
+    {
         nLHEPart = 0;
         chain->GetEntry(entry);
-        if(type == 1 || type == 3)
+        if ((data_type == 1 || data_type == 3) && reco_type != 2)
             rawtree->Fill();
         index = entry;
-        if(year==2018){
-            ele_trigger=HLT_Ele32_WPTight_Gsf;
-            mu_trigger=HLT_IsoMu24;
+        if (year == 2018)
+        {
+            ele_trigger = HLT_Ele32_WPTight_Gsf;
+            mu_trigger = HLT_IsoMu24;
         }
-        else if(year==2016||year==2015){
-            ele_trigger=HLT_Ele27_WPTight_Gsf;
-            mu_trigger=HLT_IsoMu24||HLT_IsoTkMu24;
+        else if (year == 2016 || year == 2015)
+        {
+            ele_trigger = HLT_Ele27_WPTight_Gsf;
+            mu_trigger = HLT_IsoMu24 || HLT_IsoTkMu24;
         }
-        else{
-            ele_trigger=HLT_Ele35_WPTight_Gsf;
-            mu_trigger=HLT_IsoMu27;
+        else
+        {
+            ele_trigger = HLT_Ele35_WPTight_Gsf;
+            mu_trigger = HLT_IsoMu27;
         }
         met_match = true;
-        for(int i=0; i<nFlag_met; i++){
+        for (int i = 0; i < nFlag_met; i++)
+        {
             met_match *= Flag_met[i];
         }
-        if((mu_trigger||ele_trigger) && met_match){
+        if ((mu_trigger || ele_trigger) && met_match)
+        {
             jet_flag = select_jet();
-            if(!jet_flag)
+            if (!jet_flag)
                 continue;
             lep_flag = select_lep();
-            if(!lep_flag)
+            if (!lep_flag)
                 continue;
-            trigger_flag=false;
-            if(((!lep_flavour) && ele_trigger) || (lep_flavour && mu_trigger))
-                trigger_flag=true;
-            if(!trigger_flag || PV_npvsGood<1)
+            trigger_flag = false;
+            if (((!lep_flavour) && ele_trigger) || (lep_flavour && mu_trigger))
+                trigger_flag = true;
+            if (!trigger_flag || PV_npvsGood < 1)
                 continue;
-            RECO* reco = new RECO(jet_num, mom_jets, mom_lep, lep_c, jet_btagDeepFlavB, MET_pt, MET_phi);
-            Double_t nu_px = RECO::nu_px;
-            Double_t nu_py = RECO::nu_py;
-            neutrino_pz = RECO::nu_pz;
+            
+            if (data_type != 0)
+                read_LHE();
+            RECO *reco = new RECO(jet_num, mom_jets, mom_lep, lep_c, MET_pt, MET_phi, jet_btagDeepFlavB);
+            reco->set_gen(reco_type);
+            if(reco_type != 0)
+            {
+                if (lep_charge == 1)
+                    reco->set_LHE(p4_b, p4_antib, p4_up, p4_down);
+                else
+                    reco->set_LHE(p4_antib, p4_b, p4_up, p4_down);
+            }
+            if(reco_ttx)
+                reco->set_ttx();
+            //reco->reco();
+            if (reco_type == 1)
+                category = reco->category;
             mass_thad = reco->mass_thad;
             mass_tlep = reco->mass_tlep;
             mass_whad = reco->mass_whad;
             mass_wlep = reco->mass_wlep;
             mass_t = reco->mass_t;
-            mass_at = reco->mass_at;   
+            mass_at = reco->mass_at;
             mass_bjj = reco->mass_bjj;
             mass_jj = reco->mass_jj;
             mass_lb = reco->mass_lb;
@@ -486,35 +548,55 @@ void select_tree::loop(TTree* mytree, TTree* rawtree){
             rapidity_tt = reco->rapidity_tt;
             like = reco->like;
             chi = reco->chi;
-            MtW=sqrt(2*(mom_lep.Pt()*MET_pt-mom_lep.Px()*nu_px-mom_lep.Py()*nu_py));         
-            //if(MtW<140){ 
-            if(MtW<140 && like<10000){
-                //cout<<entry<<" "<<like<<" "<<neutrino_pz<<endl;
-                lepton_pt =mom_lep.Pt();
-                lepton_eta = mom_lep.Eta();
-                lepton_mass = mom_lep.M();
-                lepton_phi = mom_lep.Phi();
-                if(type == 1){
+            double nu_px = (reco->mom_nu).Px();
+            double nu_py = (reco->mom_nu).Py();
+            MtW = sqrt(2 * (mom_lep.Pt() * MET_pt - mom_lep.Px() * nu_px - mom_lep.Py() * nu_py));
+            lepton_pt = mom_lep.Pt();
+            lepton_eta = mom_lep.Eta();
+            lepton_mass = mom_lep.M();
+            lepton_phi = mom_lep.Phi();
+            // if(MtW<140){
+            if (MtW < 140)
+            {
+                // cout<<entry<<" "<<like<<" "<<neutrino_pz<<endl;
+                if (data_type == 1)
+                {
                     read_sys();
-                    //pdf_w(LHEPdfWeight, alphas_up, alphas_dn, pdf_up, pdf_dn);
+                    // pdf_w(LHEPdfWeight, alphas_up, alphas_dn, pdf_up, pdf_dn);
                 }
-                if(type != 0)
-                    read_LHE();
-                mytree->Fill();
+                
+                if (reco_type != 2 && like < 10000)
+                    mytree->Fill();
+                
+                if (reco_type == 2)
+                {
+                    if (jet_num >= 4)
+                        hist_mh->Fill(mass_thad, mass_whad);
+                    else
+                        hist_mh3->Fill(mass_thad);
+                    if (reco_ttx)
+                        hist_D->Fill(D_nu);
+                    else
+                        hist_ml->Fill(mass_tlep, mass_wlep);
+                }
+
             } // end of cut of minimum
             delete reco;
         }
     }
 }
 
-void select_tree::write(){
+void select_tree::write_tree()
+{
     TTree *rawtree;
-    TTree *mytree = new TTree(tree_name, " tree with branches of "+tree_name);
+    TTree *mytree = new TTree(tree_name, " tree with branches of " + tree_name);
+    TH2D *h3, *h4;
+    TH1D *h1, *h2;
 
     mytree->Branch("lepton_eta", &lepton_eta, "lepton_eta/F");
     mytree->Branch("lepton_pt", &lepton_pt, "lepton_pt/F");
     mytree->Branch("lep_flavour", &lep_flavour, "lep_flavour/O");
-    mytree->Branch("jet_num", &jet_num,"jet_num/i"); // number of jets satisfy the  seletion criteria
+    mytree->Branch("jet_num", &jet_num, "jet_num/i"); // number of jets satisfy the  seletion criteria
 
     mytree->Branch("jet_btagDeepFlavB", jet_btagDeepFlavB, "jet_btagDeepFlavB[jet_num]/F");
     mytree->Branch("jet_eta", jet_eta, "jet_eta[jet_num]/F");
@@ -522,28 +604,35 @@ void select_tree::write(){
 
     mytree->Branch("rapidity_tt", &rapidity_tt, "rapidity_tt/F");
     mytree->Branch("mass_tt", &mass_tt, "mass_tt/F");
-    mytree->Branch("likelihood", &like, "likelihood/D" );
-    mytree->Branch("MtW",&MtW,"MtW/F");
+    mytree->Branch("likelihood", &like, "likelihood/D");
+    mytree->Branch("MtW", &MtW, "MtW/F");
 
     mytree->Branch("mass_whad", &mass_whad, "mass_whad/F");
     mytree->Branch("mass_wlep", &mass_wlep, "mass_wlep/F");
     mytree->Branch("mass_t", &mass_t, "mass_t/F");
     mytree->Branch("rectop_pt", &rectop_pt, "rectop_pt/F");
 
-    mytree->Branch("PV_npvsGood",&PV_npvsGood,"PV_npvsGood/I");
-    if(type == 0){
-        mytree->Branch("run",&run,"run/i");
-        mytree->Branch("luminosityBlock",&luminosityBlock,"luminosityBlock/i");
-        mytree->Branch("event",&event,"event/l");
+    mytree->Branch("PV_npvsGood", &PV_npvsGood, "PV_npvsGood/I");
+    if (reco_type == 1)
+        mytree->Branch("category", &category, "category/I");
+    if (data_type == 0)
+    {
+        mytree->Branch("run", &run, "run/i");
+        mytree->Branch("luminosityBlock", &luminosityBlock, "luminosityBlock/i");
+        mytree->Branch("event", &event, "event/l");
     }
-    if(type == 1|| type == 3){
+    if (data_type == 1 || data_type == 3)
+    {
         rawtree = new TTree("rawtree", "tree without selection");
         rawtree->Branch("nJet", &nJet, "nJet/i");
-        rawtree->Branch("Generator_weight",&Generator_weight,"Generator_weight/F");
-        rawtree->Branch("PV_npvsGood",&PV_npvsGood,"PV_npvsGood/I");
+        rawtree->Branch("Generator_weight", &Generator_weight, "Generator_weight/F");
+        rawtree->Branch("PV_npvsGood", &PV_npvsGood, "PV_npvsGood/I");
     }
-    if(type == 1){
-        if(input.Contains("TT")){
+    
+    if (data_type == 1)
+    {
+        if (input.Contains("TT"))
+        {
             mytree->Branch("top_pt", &top_pt, "top_pt/F");
         }
         mytree->Branch("muR_up", &muR_up, "muR_up/F");
@@ -560,42 +649,70 @@ void select_tree::write(){
         mytree->Branch("alphas_dn", &alphas_dn, "alphas_dn/F");*/
         mytree->Branch("nLHEPdfWeight", &nLHEPdfWeight, "nLHEPdfWeight/i");
         mytree->Branch("LHEPdfWeight", LHEPdfWeight, "LHEPdfWeight[nLHEPdfWeight]/F");
-        mytree->Branch("L1PreFiringWeight_Up",&L1PreFiringWeight_Up,"L1PreFiringWeight_Up/F");
-        mytree->Branch("L1PreFiringWeight_Dn",&L1PreFiringWeight_Dn,"L1PreFiringWeight_Dn/F");
+        mytree->Branch("L1PreFiringWeight_Up", &L1PreFiringWeight_Up, "L1PreFiringWeight_Up/F");
+        mytree->Branch("L1PreFiringWeight_Dn", &L1PreFiringWeight_Dn, "L1PreFiringWeight_Dn/F");
     }
-    if(type != 0){
-        if(input.Contains("TT")){
-            mytree->Branch("ctstar",&ctstar,"ctstar/F");
+    if (data_type != 0)
+    {
+        if (input.Contains("TT"))
+        {
+            mytree->Branch("ctstar", &ctstar, "ctstar/F");
             mytree->Branch("M_tt_gen", &M_tt_gen, "M_tt_gen/F");
-            mytree->Branch("delta_rapidity_gen", &delta_rapidity_gen,"delta_rapidity_gen/F");
+            mytree->Branch("delta_rapidity_gen", &delta_rapidity_gen, "delta_rapidity_gen/F");
         }
-        mytree->Branch("Generator_weight",&Generator_weight,"Generator_weight/F");
+        mytree->Branch("Generator_weight", &Generator_weight, "Generator_weight/F");
         mytree->Branch("jet_hadronFlavour", jet_hadronFlavour, "jet_hadronFlavour[jet_num]/I");
-        mytree->Branch("electron_deltaEtaSC",&electron_deltaEtaSC, "electron_deltaEtaSC/F");
-        mytree->Branch("L1PreFiringWeight_Nom",&L1PreFiringWeight_Nom,"L1PreFiringWeight_Nom/F");
-        mytree->Branch("Pileup_nPU",&Pileup_nPU,"Pileup_nPU/I");
+        mytree->Branch("electron_deltaEtaSC", &electron_deltaEtaSC, "electron_deltaEtaSC/F");
+        mytree->Branch("L1PreFiringWeight_Nom", &L1PreFiringWeight_Nom, "L1PreFiringWeight_Nom/F");
+        mytree->Branch("Pileup_nPU", &Pileup_nPU, "Pileup_nPU/I");
     }
 
-    loop(mytree, rawtree);
+    loop(mytree, rawtree, h3, h4, h1, h2);
     output->cd();
-    if(type == 1 || type == 3){
+    if (data_type == 1 || data_type == 3)
+    {
         rawtree->Write();
-        cout<<"there are "<<rawtree->GetEntries()<<" events"<<endl;
+        cout << "there are " << rawtree->GetEntries() << " events" << endl;
         delete rawtree;
     }
     mytree->Write();
-    cout<<mytree->GetEntries()<<" events selected"<<endl;
-    cout<<"there are "<<mytree->GetEntries("jet_num>=4")<<" events of 4 jets"<<endl;
+    cout << mytree->GetEntries() << " events selected" << endl;
+    cout << "there are " << mytree->GetEntries("jet_num>=4") << " events of 4 jets" << endl;
     delete mytree;
 }
-select_tree::~select_tree(){
-    if(type == 1){
-        delete[] GenJet_pt ;
+void select_tree::write_hist()
+{
+    TH2D* hist_h = new TH2D("mth_vs_mwh", "", 250, 0, 500, 250, 0, 500);
+    TH2D* hist_l = new TH2D("mtl_vs_mwl", "", 250, 0, 500, 250, 0, 500);
+    TH1D* hist_D = new TH1D("Dnu", "", 75, 0, 150);
+    TH1D* hist_h3 = new TH1D("mth_3jets", "", 50, 0, 500);
+    TTree *tree1, *tree2;
+    loop(tree1, tree2, hist_h, hist_l, hist_h3, hist_D);
+    output->cd();
+    hist_h->Write();
+    hist_l->Write();
+    hist_h3->Write();
+    hist_D->Write();
+    delete hist_D, hist_h3, hist_h, hist_l;
+}
+void select_tree::write()
+{
+    if (reco_type == 2)
+        write_hist();
+    else
+        write_tree();
+}
+select_tree::~select_tree()
+{
+    if (data_type == 1)
+    {
+        delete[] GenJet_pt;
         delete[] GenJet_mass;
         delete[] GenJet_phi;
         delete[] GenJet_eta;
     }
-    if(type != 0){
+    if (data_type != 0)
+    {
         delete[] jet_partonFlavour;
         delete[] Jet_partonFlavour;
         delete[] jet_hadronFlavour;
@@ -610,7 +727,7 @@ select_tree::~select_tree(){
     delete[] Electron_deltaEtaSC;
     delete[] Electron_dxy;
     delete[] Electron_dz;
-    
+
     delete[] Muon_mass;
     delete[] Muon_phi;
     delete[] Muon_pt;
@@ -637,4 +754,3 @@ select_tree::~select_tree(){
     output->Close();
     delete chain;
 }
-

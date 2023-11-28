@@ -21,7 +21,8 @@ private:
     TString input;
     TString tree_name;
     int year;
-    int type;
+    int data_type, reco_type;
+    bool reco_ttx;
     TChain* chain;
     TFile* output;
     Float_t btag_criteria;
@@ -70,7 +71,7 @@ private:
     Float_t mass_tlep, mass_thad, neutrino_pz;
     Float_t mass_wlep, mass_whad, mass_t, mass_at;
     Float_t mass_bjj, mass_jj, mass_lb;
-    Double_t like, chi;
+    Double_t like, chi, D_nu;
     Float_t M_tt_gen, delta_rapidity_gen;
     Int_t lep_charge;
     Float_t top_pt, top_eta, top_phi, top_mass; 
@@ -87,15 +88,18 @@ private:
     Float_t muR_up, muF_up, ISR_up, FSR_up;
     Float_t muR_down, muF_down, ISR_down, FSR_down;
     Float_t pdf_up, pdf_dn, alphas_dn, alphas_up;
+    int category;
     Bool_t select_jet();
     Bool_t select_lep();
-    void loop(TTree* tree1, TTree* tree2);
+    void loop(TTree* tree1, TTree* tree2, TH2D* hist_mh, TH2D* hist_ml, TH1D* hist_mh3, TH1D* hist_D);
     Bool_t is_lep_from_jet(TLorentzVector mom_lep);
     void read_LHE();
     void read_sys();
     void pdf_w(Float_t LHEPdfWeight[103], Float_t &alphas_up, Float_t &alphas_dn, Float_t &pdf_up, Float_t &pdf_dn);
 public:
-    select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, int s_type, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
+    select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, int data_types, int reco_types, bool reco_ttxs, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
+    void write_tree();
+    void write_hist();
     void write();
     ~select_tree(); 
 };
