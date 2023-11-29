@@ -1,15 +1,16 @@
 #include "reco.h"
 #include "NuSolver/NuSolveLJ.cpp"
-
-Double_t like_lep(Double_t *pz, Double_t* pars){
+// #define DEBUG_RECO // Uncomment to unleash debugging
+Double_t likelihood_lep(Double_t *pz, Double_t* pars){
+    double mw = 82.9, sw = 9.5, mt = 172.5, st = 16.3;
     TLorentzVector nu(pars[8], pars[9], pz[0], sqrt(pars[8] * pars[8] + pars[9] * pars[9] + pz[0] * pz[0]));
     TLorentzVector jet(pars[0], pars[1], pars[2], pars[3]);
     TLorentzVector lep(pars[4], pars[5], pars[6], pars[7]);
     Double_t m_w = (nu + lep).M();
     Double_t m_t = (nu + lep + jet).M();
-    Double_t pro_w = ROOT::Math::gaussian_pdf(m_w, 9.5, 82.9);
-    Double_t pro_t = ROOT::Math::gaussian_pdf(m_t, 16.3, 172.5);
-    Double_t log_nupz = -TMath::Log(pro_t) - TMath::Log(pro_w);
+    Double_t pro_w = (m_w - mw) * (m_w - mw) / (2 * sw * sw);
+    Double_t pro_t = (m_t - mt) * (m_t - mt) / (2 * st * st);
+    Double_t log_nupz = pro_t + pro_w;
     return log_nupz;
 }
 
@@ -17,7 +18,7 @@ double RECO::nusolver1(int index_bl)
 {
     double met_px = met_pt * cos(met_phi);
     double met_py = met_pt * sin(met_phi);
-    TF1 *likelihood_fun = new TF1("likelihood_fun", like_lep, -1000.0, 1000.0, 10);
+    TF1 *likelihood_fun = new TF1("likelihood_fun", likelihood_lep, -1000.0, 1000.0, 10);
     Double_t *pars = new Double_t[10];
     pars[0] = mom_jets[index_bl].Px();
     pars[1] = mom_jets[index_bl].Py();
@@ -32,67 +33,58 @@ double RECO::nusolver1(int index_bl)
     likelihood_fun->SetParameters(pars);
     double nupz = likelihood_fun->GetMinimumX(-1000.0, 1000.0);
     mom_nu.SetPxPyPzE(met_px, met_py, nupz, sqrt(met_px * met_px + met_py * met_py + nupz * nupz));
-    
+#ifdef DEBUG_RECO
+    cout << "nusolver1: " << nupz << " " << likelihood_fun->GetMinimum(-1000.0, 1000.0) << endl;
+#endif
     return likelihood_fun->GetMinimum(-1000.0, 1000.0);
 }
-bool RECO::nusolver2(int index_bl)
+double RECO::nusolver2(int index_bl)
 {
     NuSolveLJ ns;
     ns.MakeSolution(mom_jets[index_bl], mom_lep, met_pt, met_phi, 1, 1, 0);
     mom_nu = ns.Nu();
     D_nu = sqrt(ns.NuChi2());
+    double log_nupz;
     if(mom_nu.E() < 0)
-        return false;
-    return true;
+        log_nupz = -numeric_limits<double>::infinity();
+    else
+        log_nupz = D_nu * D_nu / (2 * 10 * 10);
+#ifdef DEBUG_RECO
+    cout << "nusolver2: " << mom_nu.Pz() << " " << D_nu << endl;
+#endif
+    return log_nupz;
 }
-void RECO::nusolver(int index_bl)
+double RECO::nusolver(int index_bl)
 {
     if (ttx)
-        nusolver2(index_bl);
+        return nusolver2(index_bl);
     else
-        nusolver1(index_bl);
+        return nusolver1(index_bl);
 }
-double RECO::likelihood(int bl, int bh, int j1, int j2)
+double RECO::likelihood_had(int bh, int j1, int j2)
 {
     Double_t mass_whad = (mom_jets[j1] + mom_jets[j2]).M();
     Double_t mass_thad = (mom_jets[j1] + mom_jets[j2] + mom_jets[bh]).M();
-    Double_t pro_whad = ROOT::Math::gaussian_pdf(mass_whad, 9.5, 82.9);
-    Double_t pro_thad = ROOT::Math::gaussian_pdf(mass_thad, 16.3, 172.5);
-    double log_nupz;
-    if (!ttx)
-        log_nupz = -TMath::Log(pro_thad) - TMath::Log(pro_whad) + nusolver1(bl);
-    else
-    {
-        if(nusolver2(bl))
-            log_nupz = -TMath::Log(pro_thad) - TMath::Log(pro_whad) + ROOT::Math::gaussian_pdf(D_nu, 10, 50);
-        else
-            log_nupz = numeric_limits<double>::max();
-    }
-    return log_nupz;
+    double mwh = 82.9, swh = 9.5, mth = 172.5, sth = 16.3;
+#ifdef DEBUG_RECO
+    cout << "mass: " << mass_whad << " " << mass_thad << endl;
+#endif
+    Double_t pro_whad = (mass_whad - mwh) * (mass_whad - mwh) / (2 * swh * swh);
+    Double_t pro_thad = (mass_thad - mth) * (mass_thad - mth) / (2 * sth * sth);
+    
+    return pro_whad + pro_thad;
 }
-double RECO::likelihood(int bl, int bh, int j1)
+double RECO::likelihood_had(int bh, int j1)
 {
     Double_t mass_thad = (mom_jets[j1] + mom_jets[bh]).M();
-    Double_t pro_thad = ROOT::Math::gaussian_pdf(mass_thad, 16.3, 172.5);
-    Double_t log_nupz;
-    if (!ttx)
-        log_nupz = -TMath::Log(pro_thad) + nusolver1(bl);
-    else
-    {
-        if (nusolver2(bl))
-            log_nupz = -TMath::Log(pro_thad) + ROOT::Math::gaussian_pdf(D_nu, 10, 50);
-        else
-            log_nupz = numeric_limits<double>::max();
-    }
-    return log_nupz;
+    double mth = 172.5, sth = 16.3;
+#ifdef DEBUG_RECO
+    cout << "mass: " << mass_whad << " " << mass_thad << endl;
+#endif
+    Double_t pro_thad = (mass_thad - mth) * (mass_thad - mth) / (2 * sth * sth);
+    return pro_thad;
 }
-double RECO::chi2(int bh, int j1, int j2)
-{
-    double m_bjj = (mom_jets[index[bh]] + mom_jets[index[j1]] + mom_jets[index[j2]]).M();
-    double m_jj = (mom_jets[index[j1]] + mom_jets[index[j2]]).M();
-    double chi2_v = ((m_bjj - 172.5) / 16.3) * ((m_bjj - 172.5) / 16.3) + ((m_jj - 82.9) / 9.5) * ((m_jj - 82.9) / 9.5);
-    return chi2_v;
-}
+
 void RECO::btag_sort()
 {
     set_index();
@@ -101,19 +93,25 @@ void RECO::btag_sort()
         int max = kk;
         for (int tt = kk + 1; tt < num_jets; tt++)
         {
-            if (btag_score[reco_index[tt]] > btag_score[reco_index[max]])
+            if (btag_score[index[tt]] > btag_score[index[max]])
                 max = tt;
         }
-        int tmp = reco_index[max];
+        int tmp = index[max];
         index[max] = index[kk];
         index[kk] = tmp;
     }
+#ifdef DEBUG_RECO
+    cout << "btag_sort: " << endl; 
+    for (int i = 0; i < num_jets; i++)
+        cout << index[i] << " ";
+    cout << endl;
+#endif
 }
 void RECO::chi2_sort()
 {
     btag_sort();
     int bjet_lep, bjet_had, ljet1, ljet2;
-    chi = numeric_limits<double>::max();
+    chi = numeric_limits<double>::infinity();
     double chi2_v;
     if (num_jets < 4)
     {
@@ -126,7 +124,7 @@ void RECO::chi2_sort()
         {
             for (int j2 = j1 + 1; j2 < num_jets; j2++)
             {
-                chi2_v = chi2(bh, j1, j2);
+                chi2_v = likelihood_had(bh, j1, j2);
                 if (chi > chi2_v)
                 {
                     chi = chi2_v;
@@ -148,21 +146,30 @@ void RECO::like_sort()
 {
     btag_sort();
     int bjet_lep, bjet_had, ljet1, ljet2;
-    like = numeric_limits<double>::max();
+    like = numeric_limits<double>::infinity();
     double minimum;
+    double minimum_lep;
+    TLorentzVector mom_nu_temp;
+    double D_nu_temp;
     // for at least 4 jets
     if (num_jets >= 4)
     {
         for (int bl = 0; bl < 2; bl++)
         {
+            minimum_lep = nusolver(index[bl]);
             for (int j1 = 2; j1 < num_jets; j1++)
             {
                 for (int j2 = j1 + 1; j2 < num_jets; j2++)
                 {
-                    minimum = likelihood(bl, 1 - bl, j1, j2);
+                    minimum = likelihood_had(index[1 - bl], index[j1], index[j2]) + minimum_lep;
+#ifdef DEBUG_RECO
+                    cout << index[bl] << ", " << index[1 - bl] << ", " << index[j1] << ", " << index[j2] << ", " << minimum << endl;
+#endif
                     if (like > minimum)
                     {
                         like = minimum;
+                        mom_nu_temp = mom_nu;
+                        D_nu_temp = D_nu;
                         bjet_lep = bl;
                         bjet_had = 1 - bl;
                         ljet1 = j1;
@@ -181,10 +188,15 @@ void RECO::like_sort()
     {
         for (int bl = 0; bl < 2; bl++)
         {
-            minimum = likelihood(bl, 1 - bl, 2);
+            minimum = likelihood_had(index[1 - bl], index[2]) + nusolver(index[bl]);
+#ifdef DEBUG_RECO
+            cout << index[bl] << ", " << index[1 - bl] << ", " << index[2]  << ", " << minimum << endl;
+#endif
             if (like > minimum)
             {
                 like = minimum;
+                mom_nu_temp = mom_nu;
+                D_nu_temp = D_nu;
                 bjet_lep = bl;
                 bjet_had = 1 - bl;
             }
@@ -193,33 +205,48 @@ void RECO::like_sort()
         reco_index[1] = index[bjet_had];
         reco_index[2] = index[2];
     }
+    mom_nu = mom_nu_temp;
+    D_nu = D_nu_temp;
+#ifdef DEBUG_RECO
+    cout << "like_sort:" << endl;
+    for (int i = 0; i < min(num_jets, 4); i++)
+        cout << reco_index[i] << " ";
+    cout << endl;
+#endif
 }
 void RECO::reco_top()
 {
     if (gen_reco)
-        category = !gen_sort(); //0: non-reco; 1: correct reco; 2: wrong reco
+    {
+        category = gen_sort(); //0: non-reco; 1: correct reco; 2: wrong reco
+    }
     if (gen_reco == 2)
     {
-        if (!category)
+        if (category)
         {
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < num_jets; i++)
                 reco_index[i] = gen_index[i];
+            nusolver(gen_index[0]);
         }
         else
             return;
     }
     else
         like_sort();
-
+    //cout << category << endl;
+#ifdef DEBUG_RECO
+    cout << "reco_sort:" << endl;
+    for (int i = 0; i < min(num_jets, 4); i++)
+        cout << reco_index[i] << " ";
+    cout << endl;
+#endif
     if (gen_reco == 1)
     {
-        if (!(gen_index[0] == index[0] && gen_index[1] == index[1]))
+        if (!(gen_index[0] == reco_index[0] && gen_index[1] == reco_index[1]) && category)
             category = 2;
-        if (!((gen_index[2] == index[2] && gen_index[3] == index[3]) || (gen_index[2] == index[3] && gen_index[3] == index[2])))
+        if (!((gen_index[2] == reco_index[2] && gen_index[3] == reco_index[3]) || (gen_index[2] == reco_index[3] && gen_index[3] == reco_index[2])) && category)
             category = 2;
     }
-
-    nusolver(reco_index[0]);
     TLorentzVector mom_top, mom_antitop;
     if (num_jets >= 4)
     {
@@ -262,7 +289,8 @@ void RECO::reco_top()
     mass_tt = (mom_antitop + mom_top).M();
     mass_t = mom_top.M();
     mass_at = mom_antitop.M();
-    // cout<<lep_charge<<" "<<mom_top.Pt()<<" "<<mom_antitop.Pt()<<endl;
+
+    //cout<<lep_charge<<" "<<mom_top.Pt()<<" "<<mom_antitop.Pt()<<endl;
 }
 void RECO::reco_chi()
 {
@@ -296,7 +324,7 @@ bool RECO::diff()
 }
 void RECO::reco()
 {
-    reco_chi();
+    //reco_chi();
     reco_top();
 }
 
@@ -316,13 +344,28 @@ bool RECO::gen_sort(){
     gen_index[1] = select_LHE(LHE_bh);
     gen_index[2] = select_LHE(LHE_j1);
     gen_index[3] = select_LHE(LHE_j2);
-
-    //non-reco or multi-reco
+#ifdef DEBUG_RECO
+    cout << "gen_sort:" << endl;
     for (int i = 0; i < 4; i++)
+        cout << gen_index[i] << " ";
+    cout << endl;
+#endif
+    //non-reco or multi-reco
+    int ngen_jets = 4;
+    if (num_jets == 3 && (gen_index[2] == -1 || gen_index[3] == -1))
+    {
+        ngen_jets = 3;
+        if (gen_index[2] == -1)
+        {
+            gen_index[2] = gen_index[3];
+            gen_index[3] = -1;
+        }
+    }
+    for (int i = 0; i < ngen_jets; i++)
     {
         if (gen_index[i] == -1)
             return false;
-        for (int j = i + 1; j < 4; j++)
+        for (int j = i + 1; j < ngen_jets; j++)
             if (gen_index[i] == gen_index[j])
                 return false;
     }

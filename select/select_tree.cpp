@@ -1,6 +1,6 @@
 #include "select_tree.h"
 #include "reco.cpp"
-
+// #define DEBUG_SELECT_TREE
 read_object::read_object(TString input, int type)
 {
     TChain *chain = new TChain("Events");
@@ -520,6 +520,18 @@ void select_tree::loop(TTree *mytree, TTree *rawtree, TH2D* hist_mh, TH2D* hist_
             if (data_type != 0)
                 read_LHE();
             RECO *reco = new RECO(jet_num, mom_jets, mom_lep, lep_c, MET_pt, MET_phi, jet_btagDeepFlavB);
+#ifdef DEBUG_SELECT_TREE
+            cout << "Jets : " << endl;
+            for (int i = 0; i < jet_num; i++)
+            {
+                cout << mom_jets[i].Px() << ", " << mom_jets[i].Py() << ", " << mom_jets[i].Pz() << ", " << mom_jets[i].E() << endl;
+                cout << jet_btagDeepFlavB[i] << endl;
+            }
+            cout << "lepton : " <<endl;
+            cout << mom_lep.Px() << ", " << mom_lep.Py() << ", " << mom_lep.Pz() << ", " << mom_lep.E() << endl;
+            cout << lep_c << " " << MET_pt << " " << MET_phi << endl;
+            cout << endl << endl << endl;
+#endif
             reco->set_gen(reco_type);
             if(reco_type != 0)
             {
@@ -529,9 +541,9 @@ void select_tree::loop(TTree *mytree, TTree *rawtree, TH2D* hist_mh, TH2D* hist_
                     reco->set_LHE(p4_antib, p4_b, p4_up, p4_down);
             }
             if(reco_ttx)
-                reco->set_ttx();
-            //reco->reco();
-            if (reco_type == 1)
+                reco->set_ttx(reco_ttx);
+            reco->reco();
+            if (reco_type != 0)
                 category = reco->category;
             mass_thad = reco->mass_thad;
             mass_tlep = reco->mass_tlep;
@@ -555,7 +567,6 @@ void select_tree::loop(TTree *mytree, TTree *rawtree, TH2D* hist_mh, TH2D* hist_
             lepton_eta = mom_lep.Eta();
             lepton_mass = mom_lep.M();
             lepton_phi = mom_lep.Phi();
-            // if(MtW<140){
             if (MtW < 140)
             {
                 // cout<<entry<<" "<<like<<" "<<neutrino_pz<<endl;
@@ -568,16 +579,27 @@ void select_tree::loop(TTree *mytree, TTree *rawtree, TH2D* hist_mh, TH2D* hist_
                 if (reco_type != 2 && like < 10000)
                     mytree->Fill();
                 
-                if (reco_type == 2)
+                if (reco_type == 2 && category != 0)
                 {
                     if (jet_num >= 4)
                         hist_mh->Fill(mass_thad, mass_whad);
                     else
                         hist_mh3->Fill(mass_thad);
                     if (reco_ttx)
+                    {
                         hist_D->Fill(D_nu);
+                        reco->set_ttx(!reco_ttx);
+                        reco->reco();
+                        hist_ml->Fill(reco->mass_tlep, reco->mass_wlep);
+                    }
                     else
+                    {
                         hist_ml->Fill(mass_tlep, mass_wlep);
+                        reco->set_ttx(!reco_ttx);
+                        reco->reco();
+                        hist_D->Fill(reco->D_nu);
+                    }
+                        
                 }
 
             } // end of cut of minimum

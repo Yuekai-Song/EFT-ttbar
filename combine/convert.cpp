@@ -105,7 +105,7 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
     const int nycut = ycut_user.size();
     int ycut[nycut + 1];
     for (int i = 1; i < nycut; i++)
-        ycut[i] = int((ycut_user[i] - 0.0) / 0.1);
+        ycut[i] = static_cast<int>(std::round(ycut_user[i] / 0.1));
     ycut[nycut] = 41;
     ycut[0] = -1;
 
@@ -122,7 +122,7 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
             else if (xbins_user[i][j] > 3000)
                 xbins[i][j] = 271;
             else
-                xbins[i][j] = int((xbins_user[i][j] - 300) / 10);
+                xbins[i][j] = int(std::round((xbins_user[i][j] - 300) / 10));
         }
     }
     TFile *f = new TFile(input);

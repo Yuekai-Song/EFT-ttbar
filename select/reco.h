@@ -32,12 +32,11 @@ private:
 
     void chi2_sort();
     void like_sort();
-    void nusolver(int index_bl);
+    double nusolver(int index_bl);
     double nusolver1(int index_bl);
-    bool nusolver2(int index_bl);
-    Double_t likelihood(int bl, int bh, int j1, int j2);
-    Double_t likelihood(int bl, int bh, int j1);
-    Double_t chi2(int bh, int j1, int j2);
+    double nusolver2(int index_bl);
+    Double_t likelihood_had(int bh, int j1, int j2);
+    Double_t likelihood_had(int bh, int j1);
     int select_LHE(TLorentzVector lhe_part);
     void reco_top();
     void reco_chi();
@@ -54,7 +53,7 @@ public:
     TLorentzVector mom_nu{0, 0, 0, -1};
     bool diff();
     RECO(int jet_num, TLorentzVector *mom_alljets, TLorentzVector mom_lepton, Int_t lep_c, Float_t MET_pt, Float_t MET_phi, Float_t *btag_scores);
-    void set_ttx();
+    void set_ttx(bool ttxs);
     void set_gen(int gen);
     void set_LHE(TLorentzVector LHE_bl, TLorentzVector LHE_bh, TLorentzVector LHE_j1, TLorentzVector LHE_j2);
     void reco();
@@ -72,9 +71,9 @@ void RECO::set_index()
         index[i] = i;
 }
 
-void RECO::set_ttx()
+void RECO::set_ttx(bool ttxs)
 {
-    ttx = true;
+    ttx = ttxs;
 }
 
 void RECO::set_LHE(TLorentzVector bl, TLorentzVector bh, TLorentzVector j1, TLorentzVector j2)
@@ -106,4 +105,6 @@ RECO::RECO(int jet_num, TLorentzVector *mom_alljets, TLorentzVector mom_lepton, 
 RECO::~RECO()
 {
     delete[] mom_jets;
+    delete[] index;
+    delete[] btag_score;
 }
