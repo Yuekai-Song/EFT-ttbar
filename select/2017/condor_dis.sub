@@ -1,4 +1,4 @@
-executable              = run_data.sh
+executable              = run_dis.sh
 arguments               = $(dir)
 Initialdir              = /afs/cern.ch/user/y/yuekai/EFT-ttbar/select/2017/condor_out_dis/$(dir)
 						

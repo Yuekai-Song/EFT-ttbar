@@ -1,4 +1,4 @@
-executable              = run_sys.sh
+executable              = run_dis.sh
 arguments               = $(dir)
 Initialdir              = /afs/cern.ch/user/y/yuekai/EFT-ttbar/select/2015/condor_out_sys/$(dir)
 						
