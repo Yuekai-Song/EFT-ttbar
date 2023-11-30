@@ -10,19 +10,32 @@
 #include<iostream>
 using namespace std;
 
+enum DATA_TYPE {
+    data,
+    MC,
+    tree_sys,
+    MC_sys
+};
+enum OP_TYPE {
+    select_reco,
+    select_reco_ttx,
+    dis_reco_need,
+    e_corr_3jets
+};
 class read_object{
 public:
     read_object(TString input, int type);
     UInt_t nj, ne, nm, ng;
 };
 
+
 class select_tree{
 private:
     TString input;
     TString tree_name;
     int year;
-    int data_type, reco_type;
-    bool reco_ttx;
+    DATA_TYPE data_type;
+    OP_TYPE op_type;
     TChain* chain;
     TFile* output;
     Float_t btag_criteria;
@@ -91,15 +104,16 @@ private:
     int category;
     Bool_t select_jet();
     Bool_t select_lep();
-    void loop(TTree* tree1, TTree* tree2, TH2D* hist_mh, TH2D* hist_ml, TH1D* hist_mh3, TH1D* hist_D);
+    void loop(TTree* trees[2], TH1* hists[10]);
     Bool_t is_lep_from_jet(TLorentzVector mom_lep);
     void read_LHE();
     void read_sys();
     void pdf_w(Float_t LHEPdfWeight[103], Float_t &alphas_up, Float_t &alphas_dn, Float_t &pdf_up, Float_t &pdf_dn);
 public:
-    select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, int data_types, int reco_types, bool reco_ttxs, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
-    void write_tree();
-    void write_hist();
+    select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, DATA_TYPE data_types, OP_TYPE op_types, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
+    void write_select();
+    void write_distribution();
+    void write_ecorr();
     void write();
     ~select_tree(); 
 };

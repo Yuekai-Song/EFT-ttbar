@@ -7,7 +7,6 @@ read_object::read_object(TString input, int type)
     UInt_t nMuon, nJet, nElectron, nGenJet;
     chain->Add(input);
     cout << input << " is reading and processing" << endl;
-    cout << "total number of events: " << chain->GetEntries() << endl;
     chain->SetBranchAddress("nMuon", &nMuon);
     chain->SetBranchAddress("nJet", &nJet);
     chain->SetBranchAddress("nElectron", &nElectron);
@@ -45,18 +44,17 @@ Bool_t select_tree::is_lep_from_jet(TLorentzVector mom_lep)
     }
     return flag;
 }
-select_tree::select_tree(TString inputFile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int sample_year, int data_types, int reco_types, bool reco_ttxs, int num_j, int num_e, int num_m, int num_g)
+select_tree::select_tree(TString inputFile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int sample_year, DATA_TYPE data_types, OP_TYPE op_types, int num_j, int num_e, int num_m, int num_g)
 { // type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
     input = outputFile;
     year = sample_year;
     tree_name = name_tree;
     data_type = data_types;
-    reco_type = reco_types;
-    reco_ttx = reco_ttxs;
+    op_type = op_types;
     Float_t btag_num[] = {0.2589, 0.2489, 0.3040, 0.2783};
     btag_criteria = btag_num[year - 2015];
     TString recreate;
-    if (data_type == 2)
+    if (data_type == tree_sys)
         recreate = "update";
     else
         recreate = "RECREATE";
@@ -71,7 +69,7 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     chain->SetBranchAddress("nJet", &nJet);
     chain->SetBranchAddress("nElectron", &nElectron);
 
-    if (data_type == 1)
+    if (data_type == MC)
     {
         GenJet_pt = new Float_t[ng];
         GenJet_mass = new Float_t[ng];
@@ -88,8 +86,10 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
         chain->SetBranchAddress("LHEScaleWeight", LHEScaleWeight);
         chain->SetBranchAddress("PSWeight", PSWeight);
         chain->SetBranchAddress("LHEPdfWeight", LHEPdfWeight);
+        chain->SetBranchAddress("L1PreFiringWeight_Up", &L1PreFiringWeight_Up);
+        chain->SetBranchAddress("L1PreFiringWeight_Dn", &L1PreFiringWeight_Dn);
     }
-    if (data_type != 0)
+    if (data_type != DATA_TYPE::data)
     {
         jet_partonFlavour = new Int_t[nj];
         Jet_partonFlavour = new Int_t[nj];
@@ -100,9 +100,6 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
         chain->SetBranchAddress("Generator_weight", &Generator_weight);
 
         chain->SetBranchAddress("L1PreFiringWeight_Nom", &L1PreFiringWeight_Nom);
-        chain->SetBranchAddress("L1PreFiringWeight_Up", &L1PreFiringWeight_Up);
-        chain->SetBranchAddress("L1PreFiringWeight_Dn", &L1PreFiringWeight_Dn);
-
         chain->SetBranchAddress("Pileup_nPU", &Pileup_nPU);
     }
     Electron_eta = new Float_t[ne];
@@ -251,7 +248,7 @@ Bool_t select_tree::select_jet()
             jet_mass[i] = Jet_mass[jet_index[i]];
             jet_btagDeepB[i] = Jet_btagDeepB[jet_index[i]];
             jet_btagDeepFlavB[i] = Jet_btagDeepFlavB[jet_index[i]];
-            if (data_type != 0)
+            if (data_type != DATA_TYPE::data)
             {
                 jet_partonFlavour[i] = Jet_partonFlavour[jet_index[i]];
                 jet_hadronFlavour[i] = Jet_hadronFlavour[jet_index[i]];
@@ -317,8 +314,6 @@ Bool_t select_tree::select_lep()
 
 void select_tree::read_LHE()
 {
-    if (!input.Contains("TT"))
-        return;
     LHE_nhad = 0;
     LHE_nlep = 0;
     for (int i = nLHEPart - 6; i < nLHEPart; i++)
@@ -422,26 +417,25 @@ void select_tree::read_LHE()
         p4_top = p4_b + p4_up + p4_downbar;
         p4_antitop = p4_antib + p4_upbar + p4_down;
     }
-    if (input.Contains("TT"))
-    {
-        top_pt = p4_top.Pt();
-        top_eta = p4_top.Eta();
-        top_phi = p4_top.Phi();
-        top_mass = p4_top.M();
-        antitop_pt = p4_antitop.Pt();
-        antitop_eta = p4_antitop.Eta();
-        antitop_phi = p4_antitop.Phi();
-        antitop_mass = p4_antitop.M();
-        TLorentzVector p4_top_cms = p4_top;
-        TLorentzVector p4_cms_lab = p4_antitop + p4_top;
-        TVector3 p3_cms = p4_cms_lab.BoostVector();
-        p4_top_cms.Boost(-p3_cms);
-        TVector3 p3_top_cms = p4_top_cms.Vect();
-        TVector3 p3_cms_lab = p4_cms_lab.Vect();
-        ctstar = p3_top_cms.Dot(p3_cms_lab) / (p3_top_cms.Mag() * p3_cms_lab.Mag());
-        M_tt_gen = (p4_top + p4_antitop).M();
-        delta_rapidity_gen = p4_top.Rapidity() - p4_antitop.Rapidity();
-    }
+
+    top_pt = p4_top.Pt();
+    top_eta = p4_top.Eta();
+    top_phi = p4_top.Phi();
+    top_mass = p4_top.M();
+    antitop_pt = p4_antitop.Pt();
+    antitop_eta = p4_antitop.Eta();
+    antitop_phi = p4_antitop.Phi();
+    antitop_mass = p4_antitop.M();
+    TLorentzVector p4_top_cms = p4_top;
+    TLorentzVector p4_cms_lab = p4_antitop + p4_top;
+    TVector3 p3_cms = p4_cms_lab.BoostVector();
+    p4_top_cms.Boost(-p3_cms);
+    TVector3 p3_top_cms = p4_top_cms.Vect();
+    TVector3 p3_cms_lab = p4_cms_lab.Vect();
+    ctstar = p3_top_cms.Dot(p3_cms_lab) / (p3_top_cms.Mag() * p3_cms_lab.Mag());
+    M_tt_gen = (p4_top + p4_antitop).M();
+    delta_rapidity_gen = p4_top.Rapidity() - p4_antitop.Rapidity();
+
 }
 void select_tree::pdf_w(Float_t LHEPdfWeight[103], Float_t &alphas_up, Float_t &alphas_dn, Float_t &pdf_up, Float_t &pdf_dn)
 {
@@ -472,15 +466,28 @@ void select_tree::read_sys()
     FSR_up = PSWeight[1];
     FSR_down = PSWeight[3];
 }
-void select_tree::loop(TTree *mytree, TTree *rawtree, TH2D* hist_mh, TH2D* hist_ml, TH1D* hist_mh3, TH1D* hist_D)
+void select_tree::loop(TTree *trees[2], TH1 *hists[10])
 {
+    TTree *rawtree = trees[0];
+    TTree *mytree = trees[1];
+    TH2D *hist_mh4 = (TH2D *)hists[0];
+    TH2D *hist_mh4_ttx = (TH2D *)hists[1];
+    TH2D *hist_ml4 = (TH2D *)hists[2];
+    TH1D *hist_D4 = (TH1D *)hists[3];
+    TH1D *hist_mh3 = (TH1D *)hists[4];
+    TH1D *hist_mh3_ttx = (TH1D *)hists[5];
+    TH2D *hist_ml3 = (TH2D *)hists[6];
+    TH1D *hist_D3 = (TH1D *)hists[7];
+    TH2D *hist_ecorr[2];
+    hist_ecorr[0] = (TH2D *)hists[8];
+    hist_ecorr[1] = (TH2D *)hists[9];
     Bool_t ele_trigger, mu_trigger;
     Bool_t jet_flag, lep_flag, trigger_flag;
     for (int entry = 0; entry < chain->GetEntries(); entry++)
     {
         nLHEPart = 0;
         chain->GetEntry(entry);
-        if ((data_type == 1 || data_type == 3) && reco_type != 2)
+        if ((data_type == MC || data_type == MC_sys) && (op_type == select_reco || op_type == select_reco_ttx))
             rawtree->Fill();
         index = entry;
         if (year == 2018)
@@ -516,10 +523,10 @@ void select_tree::loop(TTree *mytree, TTree *rawtree, TH2D* hist_mh, TH2D* hist_
                 trigger_flag = true;
             if (!trigger_flag || PV_npvsGood < 1)
                 continue;
-            
-            if (data_type != 0)
+
+            if (data_type != DATA_TYPE::data && input.Contains("TT"))
                 read_LHE();
-            RECO *reco = new RECO(jet_num, mom_jets, mom_lep, lep_c, MET_pt, MET_phi, jet_btagDeepFlavB);
+            RECO *reco = new RECO(jet_num, mom_jets, mom_lep, MET_pt, MET_phi, jet_btagDeepFlavB);
 #ifdef DEBUG_SELECT_TREE
             cout << "Jets : " << endl;
             for (int i = 0; i < jet_num; i++)
@@ -527,93 +534,137 @@ void select_tree::loop(TTree *mytree, TTree *rawtree, TH2D* hist_mh, TH2D* hist_
                 cout << mom_jets[i].Px() << ", " << mom_jets[i].Py() << ", " << mom_jets[i].Pz() << ", " << mom_jets[i].E() << endl;
                 cout << jet_btagDeepFlavB[i] << endl;
             }
-            cout << "lepton : " <<endl;
+            cout << "lepton : " << endl;
             cout << mom_lep.Px() << ", " << mom_lep.Py() << ", " << mom_lep.Pz() << ", " << mom_lep.E() << endl;
             cout << lep_c << " " << MET_pt << " " << MET_phi << endl;
-            cout << endl << endl << endl;
+            cout << endl
+                 << endl
+                 << endl;
 #endif
-            reco->set_gen(reco_type);
-            if(reco_type != 0)
+            if (input.Contains("TTToSemi") && data_type == MC)
             {
                 if (lep_charge == 1)
                     reco->set_LHE(p4_b, p4_antib, p4_up, p4_down);
                 else
                     reco->set_LHE(p4_antib, p4_b, p4_up, p4_down);
             }
-            if(reco_ttx)
-                reco->set_ttx(reco_ttx);
-            reco->reco();
-            if (reco_type != 0)
-                category = reco->category;
-            mass_thad = reco->mass_thad;
-            mass_tlep = reco->mass_tlep;
-            mass_whad = reco->mass_whad;
-            mass_wlep = reco->mass_wlep;
-            mass_t = reco->mass_t;
-            mass_at = reco->mass_at;
-            mass_bjj = reco->mass_bjj;
-            mass_jj = reco->mass_jj;
-            mass_lb = reco->mass_lb;
-            rectop_pt = reco->rectop_pt;
-            recantitop_pt = reco->recantitop_pt;
-            mass_tt = reco->mass_tt;
-            rapidity_tt = reco->rapidity_tt;
-            like = reco->like;
-            chi = reco->chi;
-            double nu_px = (reco->mom_nu).Px();
-            double nu_py = (reco->mom_nu).Py();
-            MtW = sqrt(2 * (mom_lep.Pt() * MET_pt - mom_lep.Px() * nu_px - mom_lep.Py() * nu_py));
-            lepton_pt = mom_lep.Pt();
-            lepton_eta = mom_lep.Eta();
-            lepton_mass = mom_lep.M();
-            lepton_phi = mom_lep.Phi();
-            if (MtW < 140)
+            if (op_type == select_reco || op_type == select_reco_ttx)
             {
-                // cout<<entry<<" "<<like<<" "<<neutrino_pz<<endl;
-                if (data_type == 1)
-                {
-                    read_sys();
-                    // pdf_w(LHEPdfWeight, alphas_up, alphas_dn, pdf_up, pdf_dn);
+                TLorentzVector mom_t, mom_at;
+                reco->set_gen(0);
+                if (op_type == select_reco)
+                    reco->set_ttx(0);
+                else
+                    reco->set_ttx(1);
+                if (!reco->reco()){
+                    delete reco;
+                    continue;
                 }
-                
-                if (reco_type != 2 && like < 10000)
+                if (input.Contains("TTToSemi") && data_type == MC)
+                    category = reco->category;
+                if (op_type == select_reco_ttx)
+                    D_nu = reco->D_nu;
+                mass_thad = reco->mom_th.M();
+                mass_tlep = reco->mom_tl.M();
+                mass_whad = reco->mom_wh.M();
+                mass_wlep = reco->mom_wl.M();
+                if(lep_c > 0)
+                {
+                    mom_t = reco->mom_tl;
+                    mom_at = reco->mom_th;
+                }
+                else
+                {
+                    mom_t = reco->mom_th;
+                    mom_at = reco->mom_tl;
+                }
+                mass_t = mom_t.M();
+                mass_at = mom_at.M();
+                rectop_pt = mom_t.Pt();
+                recantitop_pt = mom_at.Pt();
+                mass_tt = (mom_t + mom_at).M();
+                rapidity_tt = mom_t.Rapidity() - mom_at.Rapidity();
+
+                like = reco->like;
+                chi = reco->chi;
+                double nu_px = (reco->mom_nu).Px();
+                double nu_py = (reco->mom_nu).Py();
+                MtW = sqrt(2 * (mom_lep.Pt() * MET_pt - mom_lep.Px() * nu_px - mom_lep.Py() * nu_py));
+                lepton_pt = mom_lep.Pt();
+                lepton_eta = mom_lep.Eta();
+                lepton_mass = mom_lep.M();
+                lepton_phi = mom_lep.Phi();
+                if (MtW < 140 && like < 10000)
+                {
+                    if (data_type == 1)
+                    {
+                        read_sys();
+                        // pdf_w(LHEPdfWeight, alphas_up, alphas_dn, pdf_up, pdf_dn);
+                    }
                     mytree->Fill();
-                
-                if (reco_type == 2 && category != 0)
+                }
+            }
+            else if (op_type == dis_reco_need)
+            {
+                reco->set_gen(1);
+                reco->set_ttx(0);
+                if (reco->reco())
+                {
+                    if (jet_num >= 4){
+                        hist_mh4->Fill(reco->mom_th.M(), reco->mom_wh.M());
+                        hist_ml4->Fill(reco->mom_tl.M(), reco->mom_wl.M());
+                    }
+                    else{
+                        hist_mh3->Fill(reco->mom_th.M());
+                        hist_ml3->Fill(reco->mom_tl.M(), reco->mom_wl.M());
+                    }
+                }
+                reco->set_ttx(1);
+                if (reco->reco())
                 {
                     if (jet_num >= 4)
-                        hist_mh->Fill(mass_thad, mass_whad);
-                    else
-                        hist_mh3->Fill(mass_thad);
-                    if (reco_ttx)
                     {
-                        hist_D->Fill(D_nu);
-                        reco->set_ttx(!reco_ttx);
-                        reco->reco();
-                        hist_ml->Fill(reco->mass_tlep, reco->mass_wlep);
+                        hist_mh4_ttx->Fill(reco->mom_th.M(), reco->mom_wh.M());
+                        hist_D4->Fill(reco->D_nu);
                     }
                     else
                     {
-                        hist_ml->Fill(mass_tlep, mass_wlep);
-                        reco->set_ttx(!reco_ttx);
-                        reco->reco();
-                        hist_D->Fill(reco->D_nu);
+                        hist_mh3_ttx->Fill(reco->mom_th.M());
+                        hist_D3->Fill(reco->D_nu);
                     }
-                        
+                    cout << reco->D_nu << endl;
                 }
-
-            } // end of cut of minimum
+                
+            }
+            else if (jet_num == 3 && data_type == MC && input.Contains("TT"))
+            {
+                reco->set_gen(0);
+                double rm, ecorr;
+                for (int i = 0; i < 2; i++)
+                {
+                    reco->set_ttx(i);
+                    if (reco->reco())
+                    {
+                        rm = 172.0 / (reco->mom_th.M());
+                        if (lep_charge > 0)
+                            ecorr = p4_antitop.E()/(reco->mom_th.E());
+                        else
+                            ecorr = p4_top.E()/(reco->mom_th.E());
+                        hist_ecorr[i]->Fill(rm, ecorr);
+                    }
+                }
+            }
             delete reco;
         }
     }
 }
 
-void select_tree::write_tree()
+void select_tree::write_select()
 {
+    TTree *trees[2];
     TTree *rawtree;
     TTree *mytree = new TTree(tree_name, " tree with branches of " + tree_name);
-    TH2D *h3, *h4;
-    TH1D *h1, *h2;
+    TH1 *hists[7];
 
     mytree->Branch("lepton_eta", &lepton_eta, "lepton_eta/F");
     mytree->Branch("lepton_pt", &lepton_pt, "lepton_pt/F");
@@ -631,27 +682,31 @@ void select_tree::write_tree()
 
     mytree->Branch("mass_whad", &mass_whad, "mass_whad/F");
     mytree->Branch("mass_wlep", &mass_wlep, "mass_wlep/F");
+    mytree->Branch("mass_thad", &mass_thad, "mass_thad/F");
+    mytree->Branch("mass_tlep", &mass_tlep, "mass_tlep/F");
     mytree->Branch("mass_t", &mass_t, "mass_t/F");
     mytree->Branch("rectop_pt", &rectop_pt, "rectop_pt/F");
 
     mytree->Branch("PV_npvsGood", &PV_npvsGood, "PV_npvsGood/I");
-    if (reco_type == 1)
+    if (input.Contains("TTToSemi") && data_type == MC)
         mytree->Branch("category", &category, "category/I");
-    if (data_type == 0)
+    if (op_type == select_reco_ttx)
+        mytree->Branch("D_nu", &D_nu, "D_nu/D");
+    if (data_type == DATA_TYPE::data)
     {
         mytree->Branch("run", &run, "run/i");
         mytree->Branch("luminosityBlock", &luminosityBlock, "luminosityBlock/i");
         mytree->Branch("event", &event, "event/l");
     }
-    if (data_type == 1 || data_type == 3)
+    if (data_type == MC || data_type == MC_sys)
     {
         rawtree = new TTree("rawtree", "tree without selection");
         rawtree->Branch("nJet", &nJet, "nJet/i");
         rawtree->Branch("Generator_weight", &Generator_weight, "Generator_weight/F");
         rawtree->Branch("PV_npvsGood", &PV_npvsGood, "PV_npvsGood/I");
     }
-    
-    if (data_type == 1)
+
+    if (data_type == MC)
     {
         if (input.Contains("TT"))
         {
@@ -674,7 +729,7 @@ void select_tree::write_tree()
         mytree->Branch("L1PreFiringWeight_Up", &L1PreFiringWeight_Up, "L1PreFiringWeight_Up/F");
         mytree->Branch("L1PreFiringWeight_Dn", &L1PreFiringWeight_Dn, "L1PreFiringWeight_Dn/F");
     }
-    if (data_type != 0)
+    if (data_type != DATA_TYPE::data)
     {
         if (input.Contains("TT"))
         {
@@ -688,10 +743,11 @@ void select_tree::write_tree()
         mytree->Branch("L1PreFiringWeight_Nom", &L1PreFiringWeight_Nom, "L1PreFiringWeight_Nom/F");
         mytree->Branch("Pileup_nPU", &Pileup_nPU, "Pileup_nPU/I");
     }
-
-    loop(mytree, rawtree, h3, h4, h1, h2);
+    trees[0] = rawtree;
+    trees[1] = mytree;
+    loop(trees, hists);
     output->cd();
-    if (data_type == 1 || data_type == 3)
+    if (data_type == MC || data_type == MC_sys)
     {
         rawtree->Write();
         cout << "there are " << rawtree->GetEntries() << " events" << endl;
@@ -702,27 +758,46 @@ void select_tree::write_tree()
     cout << "there are " << mytree->GetEntries("jet_num>=4") << " events of 4 jets" << endl;
     delete mytree;
 }
-void select_tree::write_hist()
+void select_tree::write_distribution()
 {
-    TH2D* hist_h = new TH2D("mth_vs_mwh", "", 250, 0, 500, 250, 0, 500);
-    TH2D* hist_l = new TH2D("mtl_vs_mwl", "", 250, 0, 500, 250, 0, 500);
-    TH1D* hist_D = new TH1D("Dnu", "", 75, 0, 150);
-    TH1D* hist_h3 = new TH1D("mth_3jets", "", 50, 0, 500);
-    TTree *tree1, *tree2;
-    loop(tree1, tree2, hist_h, hist_l, hist_h3, hist_D);
+    TH1 *hists[10]; 
+    hists[0] = new TH2D("mth_vs_mwh_4", "", 250, 0, 500, 250, 0, 500);
+    hists[1] = new TH2D("mth_vs_mwh_ttx_4", "", 250, 0, 500, 250, 0, 500);
+    hists[2] = new TH2D("mtl_vs_mwl_4", "", 250, 0, 500, 250, 0, 500);
+    hists[3] = new TH1D("Dnu_4", "", 75, 0, 150);
+    hists[4] = new TH1D("mth_3", "", 50, 0, 500);
+    hists[5] = new TH1D("mth_ttx_3", "", 50, 0, 500);
+    hists[6] = new TH2D("mtl_vs_mwl_3", "", 250, 0, 500, 250, 0, 500);
+    hists[7] = new TH1D("Dnu_3", "", 75, 0, 150);
+    TTree *trees[2];
+    loop(trees, hists);
     output->cd();
-    hist_h->Write();
-    hist_l->Write();
-    hist_h3->Write();
-    hist_D->Write();
-    delete hist_D, hist_h3, hist_h, hist_l;
+    for (int i = 0; i < 8; i++)
+    {
+        hists[i]->Write();
+        delete hists[i];
+    }
+}
+void select_tree::write_ecorr()
+{
+    TH1 *hists[10]; 
+    hists[8] = new TH2D("ecorr_vs_rm", "", 120, 0, 3, 120, 0, 3);
+    hists[9] = new TH2D("ecorr_vs_rm_ttx", "", 120, 0, 3, 120, 0, 3);
+    TTree *trees[2];
+    loop(trees, hists);
+    output->cd();
+    hists[8]->Write();
+    hists[9]->Write();
+    delete hists[8], hists[9];
 }
 void select_tree::write()
 {
-    if (reco_type == 2)
-        write_hist();
+    if (op_type == dis_reco_need)
+        write_distribution();
+    else if(op_type == select_reco || op_type == select_reco_ttx)
+        write_select();
     else
-        write_tree();
+        write_ecorr();
 }
 select_tree::~select_tree()
 {

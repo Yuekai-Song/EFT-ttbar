@@ -145,7 +145,7 @@ void RECO::chi2_sort()
 void RECO::like_sort()
 {
     btag_sort();
-    int bjet_lep, bjet_had, ljet1, ljet2;
+    int bjet_lep = 0, bjet_had = 0, ljet1 = 0, ljet2 = 0;
     like = numeric_limits<double>::infinity();
     double minimum;
     double minimum_lep;
@@ -165,7 +165,7 @@ void RECO::like_sort()
 #ifdef DEBUG_RECO
                     cout << index[bl] << ", " << index[1 - bl] << ", " << index[j1] << ", " << index[j2] << ", " << minimum << endl;
 #endif
-                    if (like > minimum)
+                    if (like > minimum && minimum >= 0)
                     {
                         like = minimum;
                         mom_nu_temp = mom_nu;
@@ -192,7 +192,7 @@ void RECO::like_sort()
 #ifdef DEBUG_RECO
             cout << index[bl] << ", " << index[1 - bl] << ", " << index[2]  << ", " << minimum << endl;
 #endif
-            if (like > minimum)
+            if (like > minimum && minimum >= 0)
             {
                 like = minimum;
                 mom_nu_temp = mom_nu;
@@ -214,83 +214,64 @@ void RECO::like_sort()
     cout << endl;
 #endif
 }
-void RECO::reco_top()
+bool RECO::reco_top()
 {
-    if (gen_reco)
-    {
+    if (LHE)
         category = gen_sort(); //0: non-reco; 1: correct reco; 2: wrong reco
-    }
-    if (gen_reco == 2)
+    if (gen_reco)
     {
         if (category)
         {
             for (int i = 0; i < num_jets; i++)
                 reco_index[i] = gen_index[i];
-            nusolver(gen_index[0]);
+            if (nusolver(gen_index[0]) < 0)
+                return false;
         }
         else
-            return;
+            return false;
     }
     else
+    {
         like_sort();
-    //cout << category << endl;
+        if (like > numeric_limits<double>::max()) //like = +inf, every configuration is wrong
+            return false;
+        if (category)
+        {
+            if (!(gen_index[0] == reco_index[0] && gen_index[1] == reco_index[1]))
+                category = 2;
+            if (num_jets >= 4)
+            {
+                if (!((gen_index[2] == reco_index[2] && gen_index[3] == reco_index[3]) || (gen_index[2] == reco_index[3] && gen_index[3] == reco_index[2])))
+                    category = 2;
+            }
+            else
+            {
+                if (!(gen_index[2] == reco_index[2] || gen_index[3] == reco_index[2]))
+                    category = 2;
+            }
+        }
+    }
+
 #ifdef DEBUG_RECO
     cout << "reco_sort:" << endl;
     for (int i = 0; i < min(num_jets, 4); i++)
         cout << reco_index[i] << " ";
     cout << endl;
 #endif
-    if (gen_reco == 1)
-    {
-        if (!(gen_index[0] == reco_index[0] && gen_index[1] == reco_index[1]) && category)
-            category = 2;
-        if (!((gen_index[2] == reco_index[2] && gen_index[3] == reco_index[3]) || (gen_index[2] == reco_index[3] && gen_index[3] == reco_index[2])) && category)
-            category = 2;
-    }
-    TLorentzVector mom_top, mom_antitop;
+    
+    mom_tl = mom_nu + mom_lep + mom_jets[reco_index[0]];
+    mom_wl = mom_nu + mom_lep;
     if (num_jets >= 4)
     {
-        mass_tlep = (mom_nu + mom_lep + mom_jets[reco_index[0]]).M();
-        mass_wlep = (mom_nu + mom_lep).M();
-        mass_thad = (mom_jets[reco_index[2]] + mom_jets[reco_index[3]] + mom_jets[reco_index[1]]).M();
-        mass_whad = (mom_jets[reco_index[2]] + mom_jets[reco_index[3]]).M();
-        if (lep_charge > 0)
-        {
-            mom_top = mom_nu + mom_lep + mom_jets[reco_index[0]];
-            mom_antitop = mom_jets[reco_index[2]] + mom_jets[reco_index[3]] + mom_jets[reco_index[1]];
-        }
-        else
-        {
-            mom_top = mom_jets[reco_index[2]] + mom_jets[reco_index[3]] + mom_jets[reco_index[1]];
-            mom_antitop = mom_nu + mom_lep + mom_jets[reco_index[0]];
-        }
-        // cout<<mom_jets[reco_index[0]].Pt()<<" "<<mom_jets[reco_index[1]].Pt()<<" "<<mom_jets[reco_index[2]].Pt()<<" "<<mom_jets[reco_index[3]].Pt()<<endl;
+        mom_th = mom_jets[reco_index[2]] + mom_jets[reco_index[3]] + mom_jets[reco_index[1]];
+        mom_wh = mom_jets[reco_index[2]] + mom_jets[reco_index[3]];
     }
     else
     {
-        mass_tlep = (mom_nu + mom_lep + mom_jets[reco_index[0]]).M();
-        mass_wlep = (mom_nu + mom_lep).M();
-        mass_thad = (mom_jets[reco_index[2]] + mom_jets[reco_index[1]]).M();
-        mass_whad = (mom_jets[reco_index[2]]).M();
-        if (lep_charge > 0)
-        {
-            mom_top = mom_nu + mom_lep + mom_jets[reco_index[0]];
-            mom_antitop = mom_jets[reco_index[2]] + mom_jets[reco_index[1]];
-        }
-        else
-        {
-            mom_top = mom_jets[reco_index[2]] + mom_jets[reco_index[1]];
-            mom_antitop = mom_nu + mom_lep + mom_jets[reco_index[0]];
-        }
+        mom_th = mom_jets[reco_index[2]] + mom_jets[reco_index[1]];
+        mom_wh = mom_jets[reco_index[2]];
     }
-    rectop_pt = mom_top.Pt();
-    recantitop_pt = mom_antitop.Pt();
-    rapidity_tt = mom_top.Rapidity() - mom_antitop.Rapidity();
-    mass_tt = (mom_antitop + mom_top).M();
-    mass_t = mom_top.M();
-    mass_at = mom_antitop.M();
-
-    //cout<<lep_charge<<" "<<mom_top.Pt()<<" "<<mom_antitop.Pt()<<endl;
+    return true;
 }
 void RECO::reco_chi()
 {
@@ -322,10 +303,10 @@ bool RECO::diff()
         return true;
     }
 }
-void RECO::reco()
+bool RECO::reco()
 {
     //reco_chi();
-    reco_top();
+    return reco_top();
 }
 
 int RECO::select_LHE(TLorentzVector lhe_part)

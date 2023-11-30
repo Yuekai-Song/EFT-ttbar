@@ -16,7 +16,7 @@ void process_gen(TString outdir, TString outputFile, TString input, int year){
     num_m = 20;
     num_g = 50;*/
 
-    s = new select_tree(input, outdir+"/"+"new_"+outputFile, tree_name, jet_name, MET_name, year, 1, 0, 0, num_j, num_e, num_m, num_g);
+    s = new select_tree(input, outdir+"/"+"new_"+outputFile, tree_name, jet_name, MET_name, year, MC, dis_reco_need, num_j, num_e, num_m, num_g);
     s->write();
     delete s;
 

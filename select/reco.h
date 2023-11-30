@@ -13,12 +13,12 @@ class RECO
 {
 private:
     int num_jets;
-    Int_t lep_charge;
     TLorentzVector LHE_bl, LHE_bh, LHE_j1, LHE_j2;
     Float_t *btag_score;
     int *index;
     bool ttx = false;
-    int gen_reco = 0; // 0: not using gen; 1: reco using likelihood and compare with gen; 2:reco using gen
+    bool gen_reco = 0; // 0: reco using likelihood and compare with gen; 1:reco using gen
+    bool LHE = 0;
     // static is only due to I have to use the function pointer likelihood that is needed to be (Double_t *, Double_t* )
     TLorentzVector *mom_jets;
     TLorentzVector mom_lep;
@@ -38,29 +38,28 @@ private:
     Double_t likelihood_had(int bh, int j1, int j2);
     Double_t likelihood_had(int bh, int j1);
     int select_LHE(TLorentzVector lhe_part);
-    void reco_top();
+    bool reco_top();
     void reco_chi();
 
 public:
     Double_t mass_bjj, mass_jj, mass_lb;
-    Double_t mass_tlep, mass_thad, mass_whad, mass_wlep;
-    Double_t mass_t, mass_at;
-    Double_t rectop_pt, mass_tt, rapidity_tt, recantitop_pt;
+    TLorentzVector mom_th, mom_tl, mom_wh, mom_wl;
+
     double like = 0;
     double D_nu = 0;
     double chi = 0;
     int category = 0; // 0: non_reco; 1: correct reco; 2: wrong reco
     TLorentzVector mom_nu{0, 0, 0, -1};
     bool diff();
-    RECO(int jet_num, TLorentzVector *mom_alljets, TLorentzVector mom_lepton, Int_t lep_c, Float_t MET_pt, Float_t MET_phi, Float_t *btag_scores);
+    RECO(int jet_num, TLorentzVector *mom_alljets, TLorentzVector mom_lepton, Float_t MET_pt, Float_t MET_phi, Float_t *btag_scores);
     void set_ttx(bool ttxs);
-    void set_gen(int gen);
+    void set_gen(bool gen);
     void set_LHE(TLorentzVector LHE_bl, TLorentzVector LHE_bh, TLorentzVector LHE_j1, TLorentzVector LHE_j2);
-    void reco();
+    bool reco();
     ~RECO();
 };
 
-void RECO::set_gen(int gen)
+void RECO::set_gen(bool gen)
 {
     gen_reco = gen;
 }
@@ -82,12 +81,12 @@ void RECO::set_LHE(TLorentzVector bl, TLorentzVector bh, TLorentzVector j1, TLor
     LHE_bh = bh;
     LHE_j1 = j1;
     LHE_j2 = j2;
+    LHE = true;
 }
 
-RECO::RECO(int jet_num, TLorentzVector *mom_alljets, TLorentzVector mom_lepton, Int_t lep_c, Float_t MET_pt, Float_t MET_phi, Float_t *btag_scores)
+RECO::RECO(int jet_num, TLorentzVector *mom_alljets, TLorentzVector mom_lepton, Float_t MET_pt, Float_t MET_phi, Float_t *btag_scores)
 {
     num_jets = jet_num;
-    lep_charge = lep_c;
     mom_lep = mom_lepton;
     mom_jets = new TLorentzVector[jet_num];
     index = new int[jet_num];
