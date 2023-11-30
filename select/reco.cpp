@@ -222,7 +222,7 @@ bool RECO::reco_top()
     {
         if (category)
         {
-            for (int i = 0; i < num_jets; i++)
+            for (int i = 0; i < min(num_jets, 4); i++)
                 reco_index[i] = gen_index[i];
             if (nusolver(gen_index[0]) < 0)
                 return false;
