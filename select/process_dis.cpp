@@ -1,5 +1,5 @@
 #include "select_tree.cpp"
-void process_gen(TString outdir, TString outputFile, TString input, int year){
+void process_dis(TString outdir, TString outputFile, TString input, int year){
     TString tree_name = "mytree";
     TString jet_name = "Jet_pt_nom";
     TString MET_name = "MET_T1Smear_pt";
