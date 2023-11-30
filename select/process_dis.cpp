@@ -1,8 +1,8 @@
 #include "select_tree.cpp"
 void process_dis(TString outdir, TString outputFile, TString input, int year){
     TString tree_name = "mytree";
-    TString jet_name = "Jet_pt_nom";
-    TString MET_name = "MET_T1Smear_pt";
+    TString jet_name = "Jet_pt";
+    TString MET_name = "MET_pt";
     
     int num_j, num_e, num_m, num_g;
     read_object r(input, 1);
