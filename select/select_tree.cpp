@@ -632,9 +632,7 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[10])
                         hist_mh3_ttx->Fill(reco->mom_th.M());
                         hist_D3->Fill(reco->D_nu);
                     }
-                    cout << reco->D_nu << endl;
                 }
-                
             }
             else if (jet_num == 3 && data_type == MC && input.Contains("TT"))
             {
