@@ -307,7 +307,7 @@ bool RECO::reco_top()
             }
             else
             {
-                if (!(gen_index[2] == reco_index[2] || gen_index[3] == reco_index[2]))
+                if (!(gen_index[2] == reco_index[2]))
                     category = 2;
             }
         }
