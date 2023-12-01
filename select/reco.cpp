@@ -8,9 +8,21 @@ Double_t likelihood_lep(Double_t *pz, Double_t* pars){
     TLorentzVector lep(pars[4], pars[5], pars[6], pars[7]);
     Double_t m_w = (nu + lep).M();
     Double_t m_t = (nu + lep + jet).M();
-    Double_t pro_w = (m_w - mw) * (m_w - mw) / (2 * sw * sw);
-    Double_t pro_t = (m_t - mt) * (m_t - mt) / (2 * st * st);
-    Double_t log_nupz = pro_t + pro_w;
+    //Double_t pro_w = (m_w - mw) * (m_w - mw) / (2 * sw * sw);
+    //Double_t pro_t = (m_t - mt) * (m_t - mt) / (2 * st * st);
+    //Double_t log_nupz = pro_t + pro_w;
+    int bin;
+    Double_t log_nupz;
+    if (pars[10] > 0)
+    {
+        bin = RECO::mtl_vs_mwl_4->FindBin(m_t, m_w);
+        log_nupz = -log(RECO::mtl_vs_mwl_4->GetBinContent(bin));
+    }
+    else
+    {
+        bin = RECO::mtl_vs_mwl_3->FindBin(m_t, m_w);
+        log_nupz = -log(RECO::mtl_vs_mwl_3->GetBinContent(bin));
+    }
     return log_nupz;
 }
 
@@ -18,8 +30,8 @@ double RECO::nusolver1(int index_bl)
 {
     double met_px = met_pt * cos(met_phi);
     double met_py = met_pt * sin(met_phi);
-    TF1 *likelihood_fun = new TF1("likelihood_fun", likelihood_lep, -1000.0, 1000.0, 10);
-    Double_t *pars = new Double_t[10];
+    TF1 *likelihood_fun = new TF1("likelihood_fun", likelihood_lep, -1000.0, 1000.0, 11);
+    Double_t *pars = new Double_t[11];
     pars[0] = mom_jets[index_bl].Px();
     pars[1] = mom_jets[index_bl].Py();
     pars[2] = mom_jets[index_bl].Pz();
@@ -30,6 +42,7 @@ double RECO::nusolver1(int index_bl)
     pars[7] = mom_lep.E();
     pars[8] = met_px;
     pars[9] = met_py;
+    pars[10] = num_jets >= 4 ? 1 : -1;
     likelihood_fun->SetParameters(pars);
     double nupz = likelihood_fun->GetMinimumX(-1000.0, 1000.0);
     mom_nu.SetPxPyPzE(met_px, met_py, nupz, sqrt(met_px * met_px + met_py * met_py + nupz * nupz));
@@ -45,10 +58,22 @@ double RECO::nusolver2(int index_bl)
     mom_nu = ns.Nu();
     D_nu = sqrt(ns.NuChi2());
     double log_nupz;
+    int bin;
     if(mom_nu.E() < 0)
-        log_nupz = -numeric_limits<double>::infinity();
+        log_nupz = numeric_limits<double>::infinity();
     else
-        log_nupz = D_nu * D_nu / (2 * 10 * 10);
+    {   
+        if(num_jets >= 4)
+        {
+            bin = Dnu_4->FindBin(D_nu);
+            log_nupz = -log(Dnu_4->GetBinContent(bin));
+        }
+        else
+        {
+            bin = Dnu_3->FindBin(D_nu);
+            log_nupz = -log(Dnu_3->GetBinContent(bin));
+        }
+    }
 #ifdef DEBUG_RECO
     cout << "nusolver2: " << mom_nu.Pz() << " " << D_nu << endl;
 #endif
@@ -63,28 +88,64 @@ double RECO::nusolver(int index_bl)
 }
 double RECO::likelihood_had(int bh, int j1, int j2)
 {
-    Double_t mass_whad = (mom_jets[j1] + mom_jets[j2]).M();
-    Double_t mass_thad = (mom_jets[j1] + mom_jets[j2] + mom_jets[bh]).M();
-    double mwh = 82.9, swh = 9.5, mth = 172.5, sth = 16.3;
+    Double_t m_w = (mom_jets[j1] + mom_jets[j2]).M();
+    Double_t m_t = (mom_jets[j1] + mom_jets[j2] + mom_jets[bh]).M();
+    int bin;
+    double log_nupz;
 #ifdef DEBUG_RECO
-    cout << "mass: " << mass_whad << " " << mass_thad << endl;
+    cout << "In likelihood for 4 jets: hadronic mass: " << m_w << " " << m_t << endl;
 #endif
-    Double_t pro_whad = (mass_whad - mwh) * (mass_whad - mwh) / (2 * swh * swh);
-    Double_t pro_thad = (mass_thad - mth) * (mass_thad - mth) / (2 * sth * sth);
-    
-    return pro_whad + pro_thad;
+    //double mwh = 82.9, swh = 9.5, mth = 172.5, sth = 16.3;
+    //Double_t pro_whad = (m_w - mwh) * (m_w - mwh) / (2 * swh * swh);
+    //Double_t pro_thad = (m_t - mth) * (m_t - mth) / (2 * sth * sth);
+    if (!ttx)
+    {
+        bin = mth_vs_mwh_4->FindBin(m_t, m_w);
+        log_nupz = -log(mth_vs_mwh_4->GetBinContent(bin));
+    }
+    else
+    {
+        bin = mth_vs_mwh_ttx_4->FindBin(m_t, m_w);
+        log_nupz = -log(mth_vs_mwh_ttx_4->GetBinContent(bin));
+    }
+    return log_nupz;
 }
 double RECO::likelihood_had(int bh, int j1)
 {
-    Double_t mass_thad = (mom_jets[j1] + mom_jets[bh]).M();
-    double mth = 172.5, sth = 16.3;
+    Double_t m_t = (mom_jets[j1] + mom_jets[bh]).M();
+    int bin;
+    double log_nupz;
 #ifdef DEBUG_RECO
-    cout << "mass: " << mass_whad << " " << mass_thad << endl;
+    cout << "In likelihood for 3 jets: hadronic mass: " << m_t << endl;
 #endif
-    Double_t pro_thad = (mass_thad - mth) * (mass_thad - mth) / (2 * sth * sth);
-    return pro_thad;
+    //double mth = 172.5, sth = 16.3;
+    //Double_t pro_thad = (m_t - mth) * (m_t - mth) / (2 * sth * sth);
+    if (!ttx)
+    {
+        bin = mth_3->FindBin(m_t);
+        log_nupz = -log(mth_3->GetBinContent(bin));
+    }
+    else
+    {
+        bin = mth_ttx_3->FindBin(m_t);
+        log_nupz = -log(mth_ttx_3->GetBinContent(bin));
+    }
+    return log_nupz;
 }
-
+double RECO::chi2(int bh, int j1, int j2)
+{
+    Double_t m_w = (mom_jets[j1] + mom_jets[j2]).M();
+    Double_t m_t = (mom_jets[j1] + mom_jets[j2] + mom_jets[bh]).M();
+    int bin;
+    double log_nupz;
+#ifdef DEBUG_RECO
+    cout << "In chi2: mass: " << m_w << " " << m_t << endl;
+#endif
+    double mwh = 82.9, swh = 9.5, mth = 172.5, sth = 16.3;
+    Double_t pro_whad = (m_w - mwh) * (m_w - mwh) / (2 * swh * swh);
+    Double_t pro_thad = (m_t - mth) * (m_t - mth) / (2 * sth * sth);
+    return pro_whad + pro_thad;
+}
 void RECO::btag_sort()
 {
     set_index();
@@ -124,7 +185,7 @@ void RECO::chi2_sort()
         {
             for (int j2 = j1 + 1; j2 < num_jets; j2++)
             {
-                chi2_v = likelihood_had(bh, j1, j2);
+                chi2_v = chi2(bh, j1, j2);
                 if (chi > chi2_v)
                 {
                     chi = chi2_v;
@@ -165,7 +226,7 @@ void RECO::like_sort()
 #ifdef DEBUG_RECO
                     cout << index[bl] << ", " << index[1 - bl] << ", " << index[j1] << ", " << index[j2] << ", " << minimum << endl;
 #endif
-                    if (like > minimum && minimum >= 0)
+                    if (like > minimum)
                     {
                         like = minimum;
                         mom_nu_temp = mom_nu;
@@ -192,7 +253,7 @@ void RECO::like_sort()
 #ifdef DEBUG_RECO
             cout << index[bl] << ", " << index[1 - bl] << ", " << index[2]  << ", " << minimum << endl;
 #endif
-            if (like > minimum && minimum >= 0)
+            if (like > minimum)
             {
                 like = minimum;
                 mom_nu_temp = mom_nu;
@@ -224,7 +285,7 @@ bool RECO::reco_top()
         {
             for (int i = 0; i < min(num_jets, 4); i++)
                 reco_index[i] = gen_index[i];
-            if (nusolver(gen_index[0]) < 0)
+            if (nusolver(gen_index[0]) > numeric_limits<double>::max())
                 return false;
         }
         else

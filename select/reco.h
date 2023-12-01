@@ -9,6 +9,7 @@
 #include <TH2F.h>
 #include <iostream>
 using namespace std;
+
 class RECO
 {
 private:
@@ -37,11 +38,14 @@ private:
     double nusolver2(int index_bl);
     Double_t likelihood_had(int bh, int j1, int j2);
     Double_t likelihood_had(int bh, int j1);
+    Double_t chi2(int bh, int j1, int j2);
     int select_LHE(TLorentzVector lhe_part);
     bool reco_top();
     void reco_chi();
 
 public:
+    static TH2D *mth_vs_mwh_4, *mtl_vs_mwl_4, *mtl_vs_mwl_3, *mth_vs_mwh_ttx_4;
+    static TH1D *Dnu_4, *Dnu_3, *mth_ttx_3, *mth_3;
     Double_t mass_bjj, mass_jj, mass_lb;
     TLorentzVector mom_th, mom_tl, mom_wh, mom_wl;
 
@@ -100,6 +104,16 @@ RECO::RECO(int jet_num, TLorentzVector *mom_alljets, TLorentzVector mom_lepton, 
     met_pt = MET_pt;
     met_phi = MET_phi;
 }
+
+TH2D *RECO::mth_vs_mwh_ttx_4 = NULL;
+TH2D *RECO::mth_vs_mwh_4 = NULL;
+TH2D *RECO::mtl_vs_mwl_4 = NULL;
+TH2D *RECO::mtl_vs_mwl_3 = NULL;
+TH1D *RECO::mth_3 = NULL;
+TH1D *RECO::mth_ttx_3 = NULL;
+TH1D *RECO::Dnu_4 = NULL;
+TH1D *RECO::Dnu_3 = NULL;
+
 
 RECO::~RECO()
 {

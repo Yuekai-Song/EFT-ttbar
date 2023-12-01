@@ -26,6 +26,15 @@ void process(TString outdir, TString outputFile, TString input, int year, int da
     num_e = 20;
     num_m = 20;
     num_g = 50;*/
+    TFile* file = TFile::Open("./dis/dis.root");
+    RECO::mth_vs_mwh_ttx_4 = (TH2D*)file->Get("mth_vs_mwh_ttx_4");
+    RECO::mth_vs_mwh_4 = (TH2D*)file->Get("mth_vs_mwh_4");
+    RECO::mtl_vs_mwl_4 = (TH2D*)file->Get("mtl_vs_mwl_4");
+    RECO::mtl_vs_mwl_3 = (TH2D*)file->Get("mtl_vs_mwl_3");
+    RECO::mth_3 = (TH1D*)file->Get("mth_3");
+    RECO::mth_ttx_3 = (TH1D*)file->Get("mth_ttx_3");
+    RECO::Dnu_4 = (TH1D*)file->Get("Dnu_4");
+    RECO::Dnu_3 = (TH1D*)file->Get("Dnu_3");
     if(data_type == 0){
         s = new select_tree(input, outdir+"/"+"new_"+outputFile, tree_name[0], jet_name[0], MET_name[0], year, DATA_TYPE::data, op_type, num_j, num_e, num_m);
         s->write();
@@ -57,4 +66,5 @@ void process(TString outdir, TString outputFile, TString input, int year, int da
         s->write();
         delete s;
     }
+    file->Close();
 }
