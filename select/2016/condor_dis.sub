@@ -8,6 +8,6 @@ log                     = run.log
 						
 RequestMemory           = 2000
 ShouldTransferFiles     = NO
-+JobFlavour             = "nextweek"
++JobFlavour             = "tomorrow"
 x509userproxy           = $ENV(HOME)/temp/x509up
 Queue dir from ./condor_list_dis.txt
