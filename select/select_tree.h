@@ -104,7 +104,7 @@ private:
     int category;
     Bool_t select_jet();
     Bool_t select_lep();
-    void loop(TTree* trees[2], TH1* hists[12]);
+    void loop(TTree* trees[2], TH1* hists[20]);
     Bool_t is_lep_from_jet(TLorentzVector mom_lep);
     void read_LHE();
     void read_sys();

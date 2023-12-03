@@ -15,7 +15,7 @@ void process_corr(TString outdir, TString outputFile, TString input, int year){
     num_e = 20;
     num_m = 20;
     num_g = 50;*/
-    TFile* file = TFile::Open("./dis/dis.root");
+    TFile* file = TFile::Open(Form("./dis/dis_%d.root", year));
     RECO::mth_vs_mwh_ttx_4 = (TH2D*)file->Get("mth_vs_mwh_ttx_4");
     RECO::mth_vs_mwh_4 = (TH2D*)file->Get("mth_vs_mwh_4");
     RECO::mtl_vs_mwl_4 = (TH2D*)file->Get("mtl_vs_mwl_4");

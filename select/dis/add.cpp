@@ -15,7 +15,6 @@ void add()
 {
     TString files[] = {"dis_2015.root", "dis_2016.root", "dis_2017.root", "dis_2018.root"};
     Double_t lumis[] = {0.142, 0.122, 0.301, 0.435};
-    double bin_width[] = {4, 4, 4, 2, 10, 10, 4, 2};
     TString hists[] = {"mth_vs_mwh_4", "mth_vs_mwh_ttx_4", "mtl_vs_mwl_4", "Dnu_4", "mth_3", "mth_ttx_3", "mtl_vs_mwl_3", "Dnu_3"};
     TH1 *hist;
     TH1 *h1[4];
@@ -30,7 +29,7 @@ void add()
         for (int j = 0; j < 4; j++)
         {
             h1[j] = (TH1 *)file[j]->Get(hists[i]);
-            h1[j]->Scale(lumis[j] / (bin_width[i] * h1[j]->GetSumOfWeights()));
+            h1[j]->Scale(lumis[j]);
             if (j == 0)
                 hist = h1[j];
             else

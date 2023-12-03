@@ -466,7 +466,7 @@ void select_tree::read_sys()
     FSR_up = PSWeight[1];
     FSR_down = PSWeight[3];
 }
-void select_tree::loop(TTree *trees[2], TH1 *hists[12])
+void select_tree::loop(TTree *trees[2], TH1 *hists[14])
 {
     TTree *rawtree = trees[0];
     TTree *mytree = trees[1];
@@ -478,12 +478,21 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[12])
     TH1D *hist_mh3_ttx = (TH1D *)hists[5];
     TH2D *hist_ml3 = (TH2D *)hists[6];
     TH1D *hist_D3 = (TH1D *)hists[7];
-    TH2D *hist_ecorr[2], *hist_ecorr_cut;
-    TH1D *raw_nJets; 
+    TH2D *hist_ecorr[2], *hist_ecorr_cut_like, *hist_ecorr_cut_like_Jet, *hist_ecorr_cut_like_jet;
+    TH2D *hist_ecorr_gen[2], *hist_ecorr_cut_like_gen, *hist_ecorr_cut_like_Jet_gen, *hist_ecorr_cut_like_jet_gen;
+    TH1D *raw_nJets, *raw_nJets_gen; 
     hist_ecorr[0] = (TH2D *)hists[8];
     hist_ecorr[1] = (TH2D *)hists[9];
-    hist_ecorr_cut = (TH2D *)hists[10];
-    raw_nJets = (TH1D *)hists[11];
+    hist_ecorr_cut_like = (TH2D *)hists[10];
+    hist_ecorr_cut_like_Jet = (TH2D *)hists[11];
+    hist_ecorr_cut_like_jet = (TH2D *)hists[12];
+    raw_nJets = (TH1D *)hists[13];
+    hist_ecorr_gen[0] = (TH2D *)hists[14];
+    hist_ecorr_gen[1] = (TH2D *)hists[15];
+    hist_ecorr_cut_like_gen = (TH2D *)hists[16];
+    hist_ecorr_cut_like_Jet_gen = (TH2D *)hists[17];
+    hist_ecorr_cut_like_jet_gen = (TH2D *)hists[18];
+    raw_nJets_gen = (TH1D *)hists[19];
     Bool_t ele_trigger, mu_trigger;
     Bool_t jet_flag, lep_flag, trigger_flag;
     for (int entry = 0; entry < chain->GetEntries(); entry++)
@@ -493,7 +502,10 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[12])
         if ((data_type == MC || data_type == MC_sys) && (op_type == select_reco || op_type == select_reco_ttx))
             rawtree->Fill();
         if (data_type == MC && op_type == e_corr_3jets && input.Contains("TT"))
-            raw_nJets->Fill(nJet, Generator_weight);
+        {
+            raw_nJets->Fill(nJet);
+            raw_nJets_gen->Fill(nJet, Generator_weight);
+        }
         index = entry;
         if (year == 2018)
         {
@@ -653,9 +665,24 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[12])
                             ecorr = p4_antitop.E()/(reco->mom_th.E());
                         else
                             ecorr = p4_top.E()/(reco->mom_th.E());
-                        hist_ecorr[i]->Fill(rm, ecorr, Generator_weight);
+                        hist_ecorr[i]->Fill(rm, ecorr);
+                        hist_ecorr_gen[i]->Fill(rm, ecorr, Generator_weight);
                         if (i == 1 && reco->like < 13)
-                            hist_ecorr_cut->Fill(rm, ecorr, Generator_weight);
+                        {
+                            hist_ecorr_cut_like->Fill(rm, ecorr);
+                            hist_ecorr_cut_like_gen->Fill(rm, ecorr, Generator_weight);
+                            if (Jet_pt[0] > 50)
+                            {
+                                hist_ecorr_cut_like_Jet->Fill(rm, ecorr);
+                                hist_ecorr_cut_like_Jet_gen->Fill(rm, ecorr, Generator_weight);
+                            }
+                            if (jet_pt[0] > 50)
+                            {
+                                hist_ecorr_cut_like_jet->Fill(rm, ecorr);
+                                hist_ecorr_cut_like_jet_gen->Fill(rm, ecorr, Generator_weight);
+                            }   
+                        }
+
                     }
                 }
             }
@@ -669,7 +696,7 @@ void select_tree::write_select()
     TTree *trees[2];
     TTree *rawtree;
     TTree *mytree = new TTree(tree_name, " tree with branches of " + tree_name);
-    TH1 *hists[12];
+    TH1 *hists[20];
 
     mytree->Branch("lepton_eta", &lepton_eta, "lepton_eta/F");
     mytree->Branch("lepton_pt", &lepton_pt, "lepton_pt/F");
@@ -765,7 +792,7 @@ void select_tree::write_select()
 }
 void select_tree::write_distribution()
 {
-    TH1 *hists[10]; 
+    TH1 *hists[20]; 
     hists[0] = new TH2D("mth_vs_mwh_4", "", 250, 0, 500, 250, 0, 500);
     hists[1] = new TH2D("mth_vs_mwh_ttx_4", "", 250, 0, 500, 250, 0, 500);
     hists[2] = new TH2D("mtl_vs_mwl_4", "", 250, 0, 500, 250, 0, 500);
@@ -785,19 +812,27 @@ void select_tree::write_distribution()
 }
 void select_tree::write_ecorr()
 {
-    TH1 *hists[12]; 
+    TH1 *hists[20]; 
     hists[8] = new TH2D("ecorr_vs_rm", "", 120, 0, 3, 120, 0, 3);
     hists[9] = new TH2D("ecorr_vs_rm_ttx", "", 120, 0, 3, 120, 0, 3);
-    hists[10] = new TH2D("ecorr_vs_rm_ttx_cut", "", 120, 0, 3, 120, 0, 3);
-    hists[11] = new TH1D("raw_nJets", "", 50, 0, 100);
+    hists[10] = new TH2D("ecorr_vs_rm_ttx_like_cut", "", 120, 0, 3, 120, 0, 3);
+    hists[11] = new TH2D("ecorr_vs_rm_ttx_like_Jet_cut", "", 120, 0, 3, 120, 0, 3);
+    hists[12] = new TH2D("ecorr_vs_rm_ttx_like_jet_cut", "", 120, 0, 3, 120, 0, 3);
+    hists[13] = new TH1D("raw_nJets", "", 50, 0, 100);
+    hists[14] = new TH2D("ecorr_vs_rm_gw", "", 120, 0, 3, 120, 0, 3);
+    hists[15] = new TH2D("ecorr_vs_rm_ttx_gw", "", 120, 0, 3, 120, 0, 3);
+    hists[16] = new TH2D("ecorr_vs_rm_ttx_like_cut_gw", "", 120, 0, 3, 120, 0, 3);
+    hists[17] = new TH2D("ecorr_vs_rm_ttx_like_Jet_cut_gw", "", 120, 0, 3, 120, 0, 3);
+    hists[18] = new TH2D("ecorr_vs_rm_ttx_like_jet_cut_gw", "", 120, 0, 3, 120, 0, 3);
+    hists[19] = new TH1D("raw_nJets_gw", "", 50, 0, 100);
     TTree *trees[2];
     loop(trees, hists);
     output->cd();
-    hists[8]->Write();
-    hists[9]->Write();
-    hists[10]->Write();
-    hists[11]->Write();
-    delete hists[8], hists[9], hists[10], hists[11];
+    for (int i = 0; i < 12; i++)
+    {
+        hists[8 + i]->Write();
+        delete hists[8 + i];
+    }
 }
 void select_tree::write()
 {
