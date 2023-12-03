@@ -466,7 +466,7 @@ void select_tree::read_sys()
     FSR_up = PSWeight[1];
     FSR_down = PSWeight[3];
 }
-void select_tree::loop(TTree *trees[2], TH1 *hists[14])
+void select_tree::loop(TTree *trees[2], TH1 *hists[20])
 {
     TTree *rawtree = trees[0];
     TTree *mytree = trees[1];
@@ -581,6 +581,12 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[14])
                     category = reco->category;
                 if (op_type == select_reco_ttx)
                     D_nu = reco->D_nu;
+                mass_tt_uncorr = (reco->mom_th + reco->mom_tl).M();
+                if (jet_num == 3 && select_reco_ttx)
+                    corr_f = (*ecorr)(172/(reco->mom_th).M());
+                else
+                    corr_f = 1;
+                reco->mom_th = corr_f * reco->mom_th;
                 mass_thad = reco->mom_th.M();
                 mass_tlep = reco->mom_tl.M();
                 mass_whad = reco->mom_wh.M();
@@ -611,7 +617,7 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[14])
                 lepton_eta = mom_lep.Eta();
                 lepton_mass = mom_lep.M();
                 lepton_phi = mom_lep.Phi();
-                if (MtW < 140 && like < 10000)
+                if (MtW < 140 && like < 10000 && ((jet_num >= 4) || (jet_num == 3 && jet_pt[0] > 50)))
                 {
                     if (data_type == 1)
                     {
@@ -711,7 +717,10 @@ void select_tree::write_select()
     mytree->Branch("mass_tt", &mass_tt, "mass_tt/F");
     mytree->Branch("likelihood", &like, "likelihood/D");
     mytree->Branch("MtW", &MtW, "MtW/F");
+    mytree->Branch("corr_f", &corr_f, "corr_f/D");
+    mytree->Branch("lepton_charge", &lep_c, "lepton_charge/I");
 
+    mytree->Branch("mass_tt_uncorr", &mass_tt_uncorr, "mass_tt_uncorr/F");
     mytree->Branch("mass_whad", &mass_whad, "mass_whad/F");
     mytree->Branch("mass_wlep", &mass_wlep, "mass_wlep/F");
     mytree->Branch("mass_thad", &mass_thad, "mass_thad/F");

@@ -80,6 +80,8 @@ private:
     Float_t max_score;
     Float_t MtW;
     Float_t electron_deltaEtaSC;
+    Float_t mass_tt_uncorr;
+    Double_t corr_f;
     Float_t rectop_pt, mass_tt, rapidity_tt, recantitop_pt;
     Float_t mass_tlep, mass_thad, neutrino_pz;
     Float_t mass_wlep, mass_whad, mass_t, mass_at;
@@ -110,6 +112,7 @@ private:
     void read_sys();
     void pdf_w(Float_t LHEPdfWeight[103], Float_t &alphas_up, Float_t &alphas_dn, Float_t &pdf_up, Float_t &pdf_dn);
 public:
+    static TF1* ecorr;
     select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, DATA_TYPE data_types, OP_TYPE op_types, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
     void write_select();
     void write_distribution();
@@ -117,3 +120,5 @@ public:
     void write();
     ~select_tree(); 
 };
+
+TF1* select_tree::ecorr = NULL;
