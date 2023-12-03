@@ -1,6 +1,7 @@
 #include "select_tree.cpp"
-void process(TString outdir, TString outputFile, TString input, int year, int data_type, bool ttx){
+void process(TString outdir, TString outputFile, TString input, int year, int data_type){
     OP_TYPE op_type;
+    bool ttx = true;
     if (ttx)
         op_type = select_reco_ttx;
     else
