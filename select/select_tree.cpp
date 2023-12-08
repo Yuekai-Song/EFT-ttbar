@@ -583,9 +583,19 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
                     D_nu = reco->D_nu;
                 mass_tt_uncorr = (reco->mom_th + reco->mom_tl).M();
                 if (jet_num == 3 && select_reco_ttx)
-                    corr_f = (*ecorr)(172/(reco->mom_th).M());
+                {
+                    double rm =  172.0/(reco->mom_th).M();
+                    if(rm <= ecorr->GetXmax() && rm >= ecorr->GetXmin())
+                        corr_f = (*ecorr)(rm);
+                    else if (rm > ecorr->GetXmax())
+                        corr_f = (*ecorr)(ecorr->GetXmax());
+                    else
+                        corr_f = (*ecorr)(ecorr->GetXmin());
+                }
                 else
+                {
                     corr_f = 1;
+                }
                 reco->mom_th = corr_f * reco->mom_th;
                 mass_thad = reco->mom_th.M();
                 mass_tlep = reco->mom_tl.M();
