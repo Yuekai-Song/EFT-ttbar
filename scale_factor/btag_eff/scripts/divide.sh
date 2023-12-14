@@ -1,8 +1,9 @@
 #!bin/bash
+#bash EW_un.sh
 #writen by Yuekai Song in Jul 21,2023
 # to write dataset files into .txt and divide
-type_name=$1
-input=$type_name.txt
+input=MC.txt
+cd ../20$1 || exit 1
 i=0
 for dataset in `cat $input`
 do 
@@ -14,9 +15,6 @@ do
     if [[ $dataset =~ "-pythia" ]]
     then
         temp=${dataset%%-pythia8*}
-    else
-        temp=${dataset/\/Run/_Run}
-        temp=${temp%%-UL*}
     fi
     process=${temp:1}
     #dasgoclient --query "file dataset=$dataset" > ${process}.txt
@@ -58,11 +56,29 @@ do
     done
     cd ../
 done
-out=condor_out_$type_name
+out=condor_out
 rm -rf $out
 mkdir $out
 exp="mv *_{1.."$max"} "$out
 eval $exp 2> /dev/null
 rm -rf Chunk*
-ls $out  > condor_list_$type_name.txt
+ls $out  > condor_list.txt
 echo "directories are written into condor_list.txt"
+
+rm -f condor.sub
+cat >condor.sub <<EOF
+executable              = ../scripts/run.sh
+arguments               = \$(dir) $1
+Initialdir              = /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/btag_eff/20${1}/condor_out/\$(dir)
+
+output                  = run.out
+error                   = run.err
+log                     = run.log
+
+RequestMemory           = 2000
+ShouldTransferFiles     = NO
++JobFlavour             = "testmatch"
+x509userproxy           = $ENV(HOME)/temp/x509up
+Queue dir from ./condor_list.txt
+
+EOF

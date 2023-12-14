@@ -70,11 +70,29 @@ do
     done
     cd ../
 done
-out=condor_out_MC
+out=condor_out
 rm -rf $out
 mkdir $out
 exp="mv *_{1.."$max"} "$out
 eval $exp 2> /dev/null
 rm -rf Chunk*
-ls $out  > condor_list_MC.txt
+ls $out  > condor_list.txt
 echo "directories are written into condor_list.txt"
+
+rm -f condor.sub
+cat >condor.sub <<EOF
+executable              = ./run.sh
+arguments               = \$(dir)
+Initialdir              = /afs/cern.ch/user/y/yuekai/EFT-ttbar/EW_un/condor_out/\$(dir)
+
+output                  = run.out
+error                   = run.err
+log                     = run.log
+
+RequestMemory           = 2000
+ShouldTransferFiles     = NO
++JobFlavour             = "testmatch"
+x509userproxy           = $ENV(HOME)/temp/x509up
+Queue dir from ./condor_list.txt
+
+EOF

@@ -1,17 +1,17 @@
 #!/bin/bash
 #voms-proxy-init --voms cms -valid 192:00 -out ~/temp/x509up
 # sumbit asssinment: condor_submit condor.sub
-#source /cvmfs/sft.cern.ch/lcg/app/releases/ROOT/6.18.04/x86_64-centos7-gcc48-opt/bin/thisroot.sh
+#source /cvmfs/sft.cern.ch/lcg/app/releases/ROOT/6.${2}.04/x86_64-centos7-gcc48-opt/bin/thisroot.sh
 mkdir -p myout
 output=$PWD/myout
 echo "output: $output"
 wrong="f"
-cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/btag_eff/2015/condor_out_MC/$1
+cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES/20${2}/condor_out_data/$1
 file=$(ls ${1}.txt)
 dir_f=$(cat $file)
 #dir="root://cms-xrd-global.cern.ch/"$dir
 dir="root://xrootd-cms.infn.it/"$dir_f
-eos="/eos/user/y/yuekai/ttbar/btag_eff/2015/"
+eos="/eos/user/y/yuekai/ttbar/QCD_ES/20${2}/data"
 inputFile=${file%.txt*}
 inputFile=${inputFile}.root
 echo $dir >$output/out1.txt
@@ -21,6 +21,7 @@ jug=`cat $output/out1.txt|grep "ERROR"`
 n=$(ls $output|grep root|wc -l)
 if [[ $n -ne 1 || $jug != "" ]]
 then
+    rm -f $output/*.root
     dir="root://cms-xrd-global.cern.ch/"$dir_f
     echo $dir >$output/out2.txt
     xrdcp $dir $output 2>>$output/out2.txt
@@ -29,6 +30,7 @@ then
     n=$(ls $output|grep root|wc -l)
     if [[ $n -ne 1 || $jug != "" ]]
     then
+        rm -f $output/*.root
         dir="root://cmsxrootd.fnal.gov/"$dir_f
         echo $dir >$output/out3.txt
         xrdcp $dir $output 2>>$output/out3.txt
@@ -41,16 +43,23 @@ then
         fi
     fi
 fi
-mv $output/out*.txt /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/btag_eff/2015/condor_out_MC/$1
+mv $output/out*.txt /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES/20${2}/condor_out_data/$1
 if [[ $wrong == "f" ]]
 then
-    input=$(ls $output/*root)
-    cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/btag_eff
-    root -l -q -b pre_eff.cpp"(\"$output\",\"$inputFile\",\"$input\", 2015)";
-    num=$(ls $output | grep btageff_ | wc -l)
-    if [[ $num -eq 1 ]]
+    echo "input file: $dir"
+    cd /afs/cern.ch/user/y/yuekai/cmssw/CMSSW_13_3_0/src
+    eval `scramv1 runtime -sh`
+    cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES
+    input=$(ls $output|grep root)
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},2)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},3)"
+    num=$(ls $output|grep new|wc -l)
+    if [ $num -gt 0 ]
     then
-        mv $(ls $output/btageff*.root) $eos
+        mv $(ls $output/new*.root) $eos
+    else
+	    echo "Failed. task unfinished"
     fi
 fi
 rm -rf $output

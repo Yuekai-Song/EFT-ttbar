@@ -6,12 +6,12 @@ mkdir -p myout
 output=$PWD/myout
 echo "output: $output"
 wrong="f"
-cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/pileup/2015/condor_out_MC/$1
+cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/btag_eff/2018/condor_out/$1
 file=$(ls ${1}.txt)
 dir_f=$(cat $file)
 #dir="root://cms-xrd-global.cern.ch/"$dir
 dir="root://xrootd-cms.infn.it/"$dir_f
-eos="/eos/user/y/yuekai/ttbar/pileup/2015"
+eos="/eos/user/y/yuekai/ttbar/btag_eff/2018/"
 inputFile=${file%.txt*}
 inputFile=${inputFile}.root
 echo $dir >$output/out1.txt
@@ -41,16 +41,16 @@ then
         fi
     fi
 fi
-mv $output/out*.txt /afs/cern.ch/user/y/yuekai/EFT-ttbar/pileup/2015/condor_out_MC/$1
+mv $output/out*.txt /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/btag_eff/2018/condor_out/$1
 if [[ $wrong == "f" ]]
 then
     input=$(ls $output/*root)
-    cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/pileup
-    root -l -q -b derive_mu.cpp"(\"$output\", \"$input\", \"$inputFile\")";
-    num=$(ls $output | grep Mu_ | wc -l)
+    cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/btag_eff
+    root -l -q -b pre_eff.cpp"(\"$output\",\"$inputFile\",\"$input\", 2018)";
+    num=$(ls $output | grep btageff_ | wc -l)
     if [[ $num -eq 1 ]]
     then
-        mv $(ls $output/Mu_*.root) $eos
+        mv $(ls $output/btageff*.root) $eos
     fi
 fi
 rm -rf $output

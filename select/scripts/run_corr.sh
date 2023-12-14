@@ -1,18 +1,17 @@
 #!/bin/bash
 #voms-proxy-init --voms cms -valid 192:00 -out ~/temp/x509up
 # sumbit asssinment: condor_submit condor.sub
-#source /cvmfs/sft.cern.ch/lcg/app/releases/ROOT/6.${year}.04/x86_64-centos7-gcc48-opt/bin/thisroot.sh
+#source /cvmfs/sft.cern.ch/lcg/app/releases/ROOT/6.${2}.04/x86_64-centos7-gcc48-opt/bin/thisroot.sh
 mkdir -p myout
 output=$PWD/myout
 echo "output: $output"
 wrong="f"
-year=$2
-cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/select/20${year}/condor_out_corr/$1
+cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/select/20${2}/condor_out_corr/$1
 file=$(ls ${1}.txt)
 dir_f=$(cat $file)
 #dir="root://cms-xrd-global.cern.ch/"$dir
 dir="root://xrootd-cms.infn.it/"$dir_f
-eos="/eos/user/y/yuekai/ttbar/select/20${year}/corr"
+eos="/eos/user/y/yuekai/ttbar/select/20${2}/corr"
 inputFile=${file%.txt*}
 inputFile=${inputFile}.root
 echo $dir >$output/out1.txt
@@ -44,7 +43,7 @@ then
         fi
     fi
 fi
-mv $output/out*.txt /afs/cern.ch/user/y/yuekai/EFT-ttbar/select/20${year}/condor_out_corr/$1
+mv $output/out*.txt /afs/cern.ch/user/y/yuekai/EFT-ttbar/select/20${2}/condor_out_corr/$1
 if [[ $wrong == "f" ]]
 then
     echo "input file: $dir"
@@ -52,7 +51,7 @@ then
     cd /afs/cern.ch/user/y/yuekai/cmssw/CMSSW_13_3_0/src/
     eval `scramv1 runtime -sh`
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/select
-    root -l -q -b ./process_corr.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${year})"
+    root -l -q -b ./process_corr.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2})"
     num=$(ls $output|grep new|wc -l)
     if [ $num -eq 1 ]
     then

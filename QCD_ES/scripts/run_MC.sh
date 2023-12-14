@@ -1,17 +1,17 @@
 #!/bin/bash
 #voms-proxy-init --voms cms -valid 192:00 -out ~/temp/x509up
 # sumbit asssinment: condor_submit condor.sub
-#source /cvmfs/sft.cern.ch/lcg/app/releases/ROOT/6.18.04/x86_64-centos7-gcc48-opt/bin/thisroot.sh
+#source /cvmfs/sft.cern.ch/lcg/app/releases/ROOT/6.${2}.04/x86_64-centos7-gcc48-opt/bin/thisroot.sh
 mkdir -p myout
 output=$PWD/myout
 echo "output: $output"
 wrong="f"
-cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES/2015/condor_out_MC/$1
+cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES/20${2}/condor_out_MC/$1
 file=$(ls ${1}.txt)
 dir_f=$(cat $file)
 #dir="root://cms-xrd-global.cern.ch/"$dir
 dir="root://xrootd-cms.infn.it/"$dir_f
-eos="/eos/user/y/yuekai/ttbar/QCD_ES/2015/MC"
+eos="/eos/user/y/yuekai/ttbar/QCD_ES/20${2}/MC"
 inputFile=${file%.txt*}
 inputFile=${inputFile}.root
 echo $dir >$output/out1.txt
@@ -43,22 +43,24 @@ then
         fi
     fi
 fi
-mv $output/out*.txt /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES/2015/condor_out_MC/$1
+mv $output/out*.txt /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES/20${2}/condor_out_MC/$1
 if [[ $wrong == "f" ]]
 then
     echo "input file: $dir"
+    cd /afs/cern.ch/user/y/yuekai/cmssw/CMSSW_13_3_0/src
+    eval `scramv1 runtime -sh`
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES
     input=$(ls $output|grep root)
     if [[ $inputFile =~ "QCD" ]];then
-        root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",2015,0)"
+        root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0)"
     fi
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",2015,1)"
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",2015,2)"
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",2015,3)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},2)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},3)"
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/code
     for outputFile in $(ls $output/new*.root)
     do
-        root -l -q -b ./SF_add.cpp"(\"$outputFile\",1,2015)"
+        root -l -q -b ./SF_add.cpp"(\"$outputFile\",1,20${2})"
         #root -l -q -b ../../../EW_weight/add_weight_branch.c"(\"$outputFile\")"
     done
     if [[ $inputFile =~ "TTTo" ]]
@@ -66,13 +68,13 @@ then
         cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/nnlo
         for outputFile in $(ls $output/new*.root)
         do
-            root -l -q -b ./nnlo_add.cpp"(\"$outputFile\",1,2015)"
+            root -l -q -b ./nnlo_add.cpp"(\"$outputFile\",1,20${2})"
         done
     fi
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/pileup
     for outputFile in $(ls $output/new*.root)
     do
-        root -l -q -b add_pu.cpp"(\"$outputFile\",2015,1)"
+        root -l -q -b add_pu.cpp"(\"$outputFile\",20${2},1)"
     done
     num=$(ls $output|grep new|wc -l)
     if [ $num -gt 0 ]
