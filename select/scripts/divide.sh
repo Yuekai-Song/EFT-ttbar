@@ -2,7 +2,7 @@
 #writen by Yuekai Song in Jul 21,2023
 # to write dataset files into .txt and divide
 type_name=$1
-cd 20$2
+cd ../20$2
 input=${type_name}.txt
 i=0
 for dataset in `cat $input`
