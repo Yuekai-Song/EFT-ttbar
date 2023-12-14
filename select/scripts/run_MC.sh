@@ -48,9 +48,9 @@ if [[ $wrong == "f" ]]
 then
     echo "input file: $dir"
     ofile=$(ls $output/*.root)
-    cd /afs/cern.ch/user/y/yuekai/cmssw/CMSSW_13_3_0/src/PhysicsTools/mytools/scripts
+    cd /afs/cern.ch/user/y/yuekai/cmssw/CMSSW_13_3_0/src/PhysicsTools/mytools/scripts/jme
     eval `scramv1 runtime -sh`
-    python3 jme_${2}.py $output $ofile
+    source jme_${2}.sh $output $ofile
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/select
     input=$(ls $output|grep Skim)
     #input=$(ls $output|grep root)
