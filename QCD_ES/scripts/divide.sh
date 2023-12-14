@@ -81,7 +81,6 @@ log                     = run.log
 RequestMemory           = 2000
 ShouldTransferFiles     = NO
 +JobFlavour             = "testmatch"
-x509userproxy           = $ENV(HOME)/temp/x509up
+x509userproxy           = \$ENV(HOME)/temp/x509up
 Queue dir from ./condor_list_${type_name}.txt
-
 EOF
