@@ -51,7 +51,7 @@ then
     cd /afs/cern.ch/user/y/yuekai/cmssw/CMSSW_13_3_0/src/
     eval `scramv1 runtime -sh`
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/select
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,$3)"
     num=$(ls $output|grep new|wc -l)
     if [ $num -eq 1 ]
     then

@@ -24,11 +24,9 @@ void process_dis(TString outdir, TString outputFile, TString input, int year){
     RECO::mth_ttx_3 = (TH1D*)dis_file->Get("mth_ttx_3");
     RECO::Dnu_4 = (TH1D*)dis_file->Get("Dnu_4");
     RECO::Dnu_3 = (TH1D*)dis_file->Get("Dnu_3");
-    TFile* tf_file = TFile::Open(Form("./corr/tf_%d.root", year));
-    select_tree::ecorr = (TF1 *)tf_file->Get("Func");
+
     s = new select_tree(input, outdir+"/"+"new_"+outputFile, tree_name, jet_name, MET_name, year, MC, dis_reco_need, num_j, num_e, num_m, num_g);
     s->write();
     delete s;
     dis_file->Close();
-    tf_file->Close();
 }

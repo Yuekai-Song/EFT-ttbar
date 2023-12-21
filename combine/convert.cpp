@@ -98,8 +98,8 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
 {
     // convert
     int like_cut;
-    if (likelihood_cut <= 50.0 && likelihood_cut >= 13.0)
-        like_cut = int(likelihood_cut - 13.0);
+    if (likelihood_cut <= 45.0 && likelihood_cut >= 5.0)
+        like_cut = static_cast<int>(std::round(likelihood_cut - 5.0));
     else
         like_cut = -1;
     const int nycut = ycut_user.size();

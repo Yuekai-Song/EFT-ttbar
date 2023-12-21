@@ -1,7 +1,6 @@
 #include "select_tree.cpp"
-void process(TString outdir, TString outputFile, TString input, int year, int data_type){
+void process(TString outdir, TString outputFile, TString input, int year, int data_type, bool ttx){
     OP_TYPE op_type;
-    bool ttx = true;
     if (ttx)
         op_type = select_reco_ttx;
     else
@@ -36,8 +35,12 @@ void process(TString outdir, TString outputFile, TString input, int year, int da
     RECO::mth_ttx_3 = (TH1D*)dis_file->Get("mth_ttx_3");
     RECO::Dnu_4 = (TH1D*)dis_file->Get("Dnu_4");
     RECO::Dnu_3 = (TH1D*)dis_file->Get("Dnu_3");
-    TFile* tf_file = TFile::Open(Form("./corr/tf_%d.root", year));
-    select_tree::ecorr = (TF1 *)tf_file->Get("Func");
+    TFile* tf_file;
+    if (ttx)
+        tf_file = TFile::Open(Form("./corr/tf_ttx/tf_%d.root", year));
+    else
+        tf_file = TFile::Open(Form("./corr/tf/tf_%d.root", year));
+    select_tree::h_ecorr = (TF1 *)tf_file->Get("Func");
     if(data_type == 0){
         s = new select_tree(input, outdir+"/"+"new_"+outputFile, tree_name[0], jet_name[0], MET_name[0], year, DATA_TYPE::data, op_type, num_j, num_e, num_m);
         s->write();

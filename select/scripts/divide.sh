@@ -3,6 +3,7 @@
 # to write dataset files into .txt and divide
 type_name=$1
 cd ../20$2 || exit 1
+ttx=$3
 input=${type_name}.txt
 i=0
 for dataset in $(cat $input); do
@@ -64,7 +65,7 @@ echo "directories are written into condor_list.txt"
 rm -f condor_${type_name}.sub
 cat >condor_${type_name}.sub <<EOF
 executable              = ../scripts/run_${type_name}.sh
-arguments               = \$(dir) $2
+arguments               = \$(dir) $2 $3
 Initialdir              = /afs/cern.ch/user/y/yuekai/EFT-ttbar/select/20${2}/condor_out_${type_name}/\$(dir)
 
 output                  = run.out

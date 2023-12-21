@@ -585,12 +585,12 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
                 if (jet_num == 3 && select_reco_ttx)
                 {
                     double rm =  172.0/(reco->mom_th).M();
-                    if(rm <= ecorr->GetXmax() && rm >= ecorr->GetXmin())
-                        corr_f = (*ecorr)(rm);
-                    else if (rm > ecorr->GetXmax())
-                        corr_f = (*ecorr)(ecorr->GetXmax());
+                    if(rm <= h_ecorr->GetXmax() && rm >= h_ecorr->GetXmin())
+                        corr_f = (*h_ecorr)(rm);
+                    else if (rm > h_ecorr->GetXmax())
+                        corr_f = (*h_ecorr)(h_ecorr->GetXmax());
                     else
-                        corr_f = (*ecorr)(ecorr->GetXmin());
+                        corr_f = (*h_ecorr)(h_ecorr->GetXmin());
                 }
                 else
                 {

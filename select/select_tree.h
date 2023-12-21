@@ -112,7 +112,7 @@ private:
     void read_sys();
     void pdf_w(Float_t LHEPdfWeight[103], Float_t &alphas_up, Float_t &alphas_dn, Float_t &pdf_up, Float_t &pdf_dn);
 public:
-    static TF1* ecorr;
+    static TF1* h_ecorr;
     select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, DATA_TYPE data_types, OP_TYPE op_types, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
     void write_select();
     void write_distribution();
@@ -121,4 +121,4 @@ public:
     ~select_tree(); 
 };
 
-TF1* select_tree::ecorr = NULL;
+TF1* select_tree::h_ecorr = NULL;

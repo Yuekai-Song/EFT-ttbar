@@ -54,7 +54,7 @@ then
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/select
     input=$(ls $output|grep Skim)
     #input=$(ls $output|grep root)
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,$3)"
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/code
     for outputFile in $(ls $output/new*.root)
     do

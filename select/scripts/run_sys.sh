@@ -53,7 +53,7 @@ then
     source jme_${2}.sh $output $ofile
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/select
     input=$(ls $output|grep Skim)
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},2)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},2,$3)"
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/code
     for outputFile in $(ls $output/new*.root)
     do
