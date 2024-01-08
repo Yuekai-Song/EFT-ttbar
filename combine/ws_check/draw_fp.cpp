@@ -5,35 +5,6 @@
 #include <map>
 #include <string>
 #include "draw_pre.cpp"
-bool contains(const std::string& str, const std::string& substr) {
-    return str.find(substr) != std::string::npos;
-}
-
-void get_ch(TString datacard, std::map<TString, TString> &channelToTag) {
-    std::ifstream file(datacard);
-    std::string line;
-    
-    if (file.is_open()) {
-        while (std::getline(file, line)) {
-            if (contains(line, "shapes"))
-            {
-                std::istringstream iss(line);
-                std::string shapes, asterisk, channel, rootFile, process1, process2;
-                if (!(iss >> shapes >> asterisk >> channel >> rootFile >> process1 >> process2)) { 
-                    break;
-                }
-                size_t pos = rootFile.find("_");
-                std::string tag = rootFile.substr(pos + 1);
-                pos = tag.find(".");
-                tag = tag.substr(0, pos);
-                channelToTag[channel] = tag;
-            }
-        }
-        file.close();
-    } else {
-        std::cout << "Unable to open file" << std::endl;
-    }
-}
 
 void draw_fp(TString dir)
 {
@@ -52,20 +23,20 @@ void draw_fp(TString dir)
         return;
     }
     map<TString, vector<double>> fp_vals = {{"y", {0, -1, -0.5, 0.5, 1}}, {"z", {0, -1, -0.5, 0.5, 1}}, 
-                            {"k", {0, -2, -1, 1, 2}}, {"norm", {1, 0.5, 0.8, 1.2, 1.5}}, {"mtop3", {0, -1, -0.5, 0.5, 1}}};
+                            {"k", {0, -2, -1, 1, 2}}, {"norm", {1, 0.5, 0.8, 1.2, 1.5}}};
 
     TH1D *h1[5];
     TString ws_name = dir + "/workspace_ttbar.root";
     TString datacard = dir + "/ttbar.txt";
     get_ch(datacard, channelToTag);
     TFile *ws_file = TFile::Open(ws_name);
-
+    RooWorkspace *w = (RooWorkspace *)ws_file->Get("w");
     for (int ch_index = 0; ch_index < channelToTag.size(); ch_index++)
     {
         for (auto const& pair : fp_vals)
         {
             for (int i = 0; i < 5; i++)
-                get_th(h1[i], ws_file, vector<TString> {pair.first}, vector<double> {pair.second[i]}, ch_index);
+                get_th(h1[i], w, vector<TString> {pair.first}, vector<double> {pair.second[i]}, ch_index);
             TString legend[4];
             for (int i = 0; i < 4; i++)
                 legend[i] = pair.first + " = " + Form("%.1f", pair.second[i]);
@@ -75,5 +46,6 @@ void draw_fp(TString dir)
                 delete h1[i];
         }
     }
+    delete w;
     ws_file->Close();
 }

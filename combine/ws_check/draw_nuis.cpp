@@ -5,61 +5,12 @@
 #include <map>
 #include <string>
 #include "draw_pre.cpp"
-bool contains(const std::string& str, const std::string& substr) {
-    return str.find(substr) != std::string::npos;
-}
 
-void get_ch_sys(TString datacard, std::map<std::string, TString> &channelToTag, std::vector<TString> &nuis) {
-    std::ifstream file(datacard);
-    std::string line;
-    int line_num = 0;
-    int line_rate = 10000;
-    
-    if (file.is_open()) {
-        while (std::getline(file, line)) {
-            if (contains(line, "shapes"))
-            {
-                std::istringstream iss(line);
-                std::string shapes, asterisk, channel, rootFile, process1, process2;
-                if (!(iss >> shapes >> asterisk >> channel >> rootFile >> process1 >> process2)) { 
-                    break;
-                }
-                size_t pos = rootFile.find("_");
-                std::string tag = rootFile.substr(pos + 1);
-                pos = tag.find(".");
-                tag = tag.substr(0, pos);
-                channelToTag[channel] = tag;
-            }
-            if (contains(line, "rate"))
-                line_rate = line_num;
-            if (line_num >= line_rate + 2 && line != "" && !contains(line, "shapeU"))
-            {
-                std::string sys;
-                size_t pos = line.find(" ");
-                sys = line.substr(0, pos);
-                nuis.push_back(sys);
-            }
-            line_num++;
-        }
-        file.close();
-    } else {
-        std::cout << "Unable to open file" << std::endl;
-    }
-
-    
-    for (auto const& pair : channelToTag) {
-        std::cout << pair.first << " corresponds to " << pair.second << std::endl;
-    }
-    for (auto const& s : nuis) {
-        std::cout << s << std::endl;
-    }
-    
-}
 void draw_nuis(TString dir)
 {
-    std::map<std::string, TString> channelToTag;
-    std::vector<TString> nuis;
-   // gSystem->Load("libHiggsAnalysisCombinedLimit.so");//cmsenv needed!
+    std::map<TString, TString> channelToTag;
+    std::vector<TString> sys;
+    gSystem->Load("libHiggsAnalysisCombinedLimit.so");//cmsenv needed!
     gStyle->SetOptStat(0);
     gStyle->SetOptTitle(0);
     vector<double> ycuts;
@@ -79,15 +30,22 @@ void draw_nuis(TString dir)
     double vals[5] = {0, -1, -0.5, 0.5, 1};
     TString ws_name = dir + "/workspace_ttbar.root";
     TString datacard = dir + "/ttbar.txt";
-    get_ch_sys(datacard, channelToTag, nuis);
+    get_ch(datacard, channelToTag);
     TFile *ws_file = TFile::Open(ws_name);
-
+    RooWorkspace *w = (RooWorkspace *)ws_file->Get("w");
+    const RooArgSet *nuis = w->set("nuisances");
+    TIterator* iter = nuis->createIterator();
+    RooRealVar* var;
+    while ((var = dynamic_cast<RooRealVar*>(iter->Next()))) {
+        if (var)
+            sys.push_back(var->GetName());
+    }
     for (int ch_index = 0; ch_index < channelToTag.size(); ch_index++)
     {
-        for (auto const& sys_name : nuis)
+        for (auto const& sys_name : sys)
         {
             for (int i = 0; i < 5; i++)
-                get_th(h1[i], ws_file, vector<TString> {sys_name}, vector<double> {vals[i]}, ch_index);
+                get_th(h1[i], w, vector<TString> {sys_name}, vector<double> {vals[i]}, ch_index);
             TString legend[4];
             for (int i = 0; i < 4; i++)
                 legend[i] = sys_name + " = " + Form("%.1f", vals[i + 1]);
@@ -100,5 +58,6 @@ void draw_nuis(TString dir)
                 delete h1[i];
         }
     }
+    delete w;
     ws_file->Close();
 }

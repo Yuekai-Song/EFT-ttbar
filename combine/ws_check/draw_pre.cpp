@@ -19,10 +19,43 @@
 #include <RooSimultaneous.h>
 #include <RooWorkspace.h>
 #include <RooCategory.h>
-void get_th(TH1D *&h1, TFile *file, vector<TString> var_name, vector<double> vals, int ch_index)
+
+bool contains(const std::string& str, const std::string& substr) {
+    return str.find(substr) != std::string::npos;
+}
+
+void get_ch(TString datacard, std::map<TString, TString> &channelToTag) {
+    std::ifstream file(datacard);
+    std::string line;
+    
+    if (file.is_open()) {
+        while (std::getline(file, line)) {
+            if (contains(line, "shapes"))
+            {
+                std::istringstream iss(line);
+                std::string shapes, asterisk, channel, rootFile, process1, process2;
+                if (!(iss >> shapes >> asterisk >> channel >> rootFile >> process1 >> process2)) { 
+                    break;
+                }
+                size_t pos = rootFile.find("_");
+                std::string tag = rootFile.substr(pos + 1);
+                pos = tag.find(".");
+                tag = tag.substr(0, pos);
+                channelToTag[channel] = tag;
+            }
+        }
+        file.close();
+    } else {
+        std::cout << "Unable to open file" << std::endl;
+    }
+
+    /*for (auto const& pair : channelToTag) {
+        std::cout << pair.first << " corresponds to " << pair.second << std::endl;
+    }*/
+}
+void get_th(TH1D *&h1, RooWorkspace *w, vector<TString> var_name, vector<double> vals, int ch_index)
 {
-    TH1D *h1_b;
-    RooWorkspace *w = (RooWorkspace *)file->Get("w");
+    TH1D *h1_b, *h1_sb;
     RooSimultaneous *sbpdf = (RooSimultaneous *)w->pdf("model_s");
     RooSimultaneous *bpdf = (RooSimultaneous *)w->pdf("model_b");
 
@@ -33,11 +66,13 @@ void get_th(TH1D *&h1, TFile *file, vector<TString> var_name, vector<double> val
     {
         vars[i] = w->var(var_name[i]);
         vars[i]->setVal(vals[i]);
+
     }
     chan->setIndex(ch_index);
     RooAbsPdf *sbcatpdf = sbpdf->getPdf(chan->getLabel());
     RooAbsPdf *bcatpdf = bpdf->getPdf(chan->getLabel());
-    h1 = (TH1D *)sbcatpdf->createHistogram("CMS_th1x");
+    h1_sb = (TH1D *)sbcatpdf->createHistogram("CMS_th1x");
+    h1 = (TH1D *)h1_sb->Clone();
     h1->SetDirectory(0);
     h1_b = (TH1D *)bcatpdf->createHistogram("CMS_th1x");
     h1->Add(h1_b, -1);
