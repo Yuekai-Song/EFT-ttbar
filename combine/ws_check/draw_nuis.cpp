@@ -12,8 +12,8 @@ bool contains(const std::string& str, const std::string& substr) {
 void get_ch_sys(TString datacard, std::map<std::string, TString> &channelToTag, std::vector<TString> &nuis) {
     std::ifstream file(datacard);
     std::string line;
-    int line_num = 10000;
-    int line_rate;
+    int line_num = 0;
+    int line_rate = 10000;
     
     if (file.is_open()) {
         while (std::getline(file, line)) {
@@ -46,20 +46,20 @@ void get_ch_sys(TString datacard, std::map<std::string, TString> &channelToTag, 
         std::cout << "Unable to open file" << std::endl;
     }
 
-    /*
+    
     for (auto const& pair : channelToTag) {
         std::cout << pair.first << " corresponds to " << pair.second << std::endl;
     }
     for (auto const& s : nuis) {
         std::cout << s << std::endl;
     }
-    */
+    
 }
 void draw_nuis(TString dir)
 {
     std::map<std::string, TString> channelToTag;
     std::vector<TString> nuis;
-    gSystem->Load("libHiggsAnalysisCombinedLimit.so");//cmsenv needed!
+   // gSystem->Load("libHiggsAnalysisCombinedLimit.so");//cmsenv needed!
     gStyle->SetOptStat(0);
     gStyle->SetOptTitle(0);
     vector<double> ycuts;
