@@ -79,7 +79,7 @@ void get_th(TH1D *&h1, RooWorkspace *w, vector<TString> var_name, vector<double>
     h1_b = (TH1D *)bcatpdf->createHistogram("CMS_th1x");
     h1->Add(h1_b, -1);
     //cout << h1->GetSumOfWeights() << endl;
-    delete h1_b;
+    delete h1_b, h1_sb;
 }
 void draw_pre(TH1D *hsm, TH1D *hmc[4], TString legend[4], TString pdf_name, double range0, vector<vector<double>> xbins, vector<double> ycuts)
 {
