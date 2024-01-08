@@ -62,17 +62,19 @@ void get_th(TH1D *&h1, RooWorkspace *w, vector<TString> var_name, vector<double>
     RooCategory *chan = w->cat("CMS_channel");
     RooRealVar *mass_tt = w->var("CMS_th1x");
     RooRealVar *vars[var_name.size()];
+    TString name = "";
     for (int i = 0; i < var_name.size(); i++)
     {
         vars[i] = w->var(var_name[i]);
         vars[i]->setVal(vals[i]);
-
+        name = name + var_name[i] + vals[i];
     }
     chan->setIndex(ch_index);
     RooAbsPdf *sbcatpdf = sbpdf->getPdf(chan->getLabel());
     RooAbsPdf *bcatpdf = bpdf->getPdf(chan->getLabel());
     h1_sb = (TH1D *)sbcatpdf->createHistogram("CMS_th1x");
     h1 = (TH1D *)h1_sb->Clone();
+    h1->SetName(name);
     h1->SetDirectory(0);
     h1_b = (TH1D *)bcatpdf->createHistogram("CMS_th1x");
     h1->Add(h1_b, -1);
