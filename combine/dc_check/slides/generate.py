@@ -1,6 +1,7 @@
 import generate_ew
 import generate_sys
 import os
+import sys
 
 
 # To obtain the str needed in latex file
@@ -16,8 +17,9 @@ def obtain_initial(filename):
 
 if __name__ == "__main__":
     path = os.path.abspath("")
-    dir_sys = path + "/../sys_pdf/sys_kappa_same"
-    dir_ew = path + "/../ew_pdf"
+    name = sys.argv[1]
+    dir_sys = path + "/../sys_pdf/datacard_" + name
+    dir_ew = path + "/../ew_pdf/datacard_" + name
     modelfile = obtain_initial('./temp/temp.tex')
     filename = "./ttbar/ttbar.tex"
 

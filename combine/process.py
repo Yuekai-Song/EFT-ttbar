@@ -17,8 +17,7 @@ def sym(hup: ROOT.TH1D, hdn: ROOT.TH1D) -> None:
     for i in range(0, hup.GetNbinsX()):
         val = max(math.fabs(hup.GetBinContent(i + 1) - 1), math.fabs(hdn.GetBinContent(i + 1) - 1))
         hup.SetBinContent(i + 1, val + 1)
-        hdn.SetBinContent(i + 1, 1 - val)
-
+        hdn.SetBinContent(i + 1, max(1 - val, 0))
 
 def lowess(hist: ROOT.TH1D, frac: float) -> None:
     x_values, y_values = [], []
@@ -79,6 +78,13 @@ def xs_fix(hist_up: ROOT.TH1D, hist_dn: ROOT.TH1D, scale: tuple) -> None:
     hist_up.Scale(scale[0])
     hist_dn.Scale(scale[1])
 
+def same_year(hist_up: ROOT.TH1D, hist_dn: ROOT.TH1D, hist_nom: ROOT.TH1D, hist_base: list) -> None:
+    hist_base[1].Divide(hist_base[0])
+    hist_base[2].Divide(hist_base[0])
+    for i in range(0, hist_nom.GetNbinsX()):
+        hist_up.SetBinContent(i + 1, hist_base[1].GetBinContent(i + 1) * hist_nom.GetBinContent(i + 1))
+        hist_dn.SetBinContent(i + 1, hist_base[2].GetBinContent(i + 1) * hist_nom.GetBinContent(i + 1))
+
 
 def get_sys_name(h1_sys_name: str) -> None:
     pos = 0
@@ -92,21 +98,17 @@ def get_sys_name(h1_sys_name: str) -> None:
 
 
 def process(file_name: str, original: str, flat_bg: bool, sys_type: dict,
-            sys_xs_fix: dict) -> None:
+            sys_xs_fix: dict, start: list, base_file: str, sys_same_year: list) -> None:
     file = ROOT.TFile(file_name, "recreate")
     old_file = ROOT.TFile(original, "read")
+    base = ROOT.TFile(base_file, "read")
     hist_map = dict()
     sys_contained = set()
-    if "ttx" in file_name:
-        start = [0, 16, 23]
-    elif "test" in file_name:
-        start = [0, 7, 16, 25, 33]
-    else:
-        start = [0, 9, 20, 30, 41]
     for key in old_file.GetListOfKeys():
         hist = key.ReadObj()
         hist_name = hist.GetName()
-        hist_map[hist_name] = hist.Clone()
+        hist_map[hist_name] = hist
+        hist_map[hist_name].SetDirectory(0)
         if ("Up" in hist_name or "Down" in hist_name):
             hist_name = hist_name.replace("Up", "")
             hist_name = hist_name.replace("Down", "")
@@ -114,6 +116,7 @@ def process(file_name: str, original: str, flat_bg: bool, sys_type: dict,
         else:
             file.cd()
             hist_map[hist_name].Write()
+    old_file.Close()
 
     for sys in sys_contained:
         sys_name = get_sys_name(sys)
@@ -121,16 +124,19 @@ def process(file_name: str, original: str, flat_bg: bool, sys_type: dict,
         if "pdf" in sys_name:
             sys_name = "pdf"
         if sys_name in sys_xs_fix.keys():
-            xs_fix(hist_map[sys + "Up"], hist_map[sys + "Down"],
-                   sys_xs_fix[sys_name])
+            xs_fix(hist_map[sys + "Up"], hist_map[sys + "Down"], sys_xs_fix[sys_name])
+        
+        if sys_name in sys_same_year:
+            hist_base = [base.Get(nom_name), base.Get(sys + "Up"), base.Get(sys + "Down")]
+            same_year(hist_map[sys + "Up"], hist_map[sys + "Down"], hist_map[nom_name], hist_base)
+    
         if flat_bg and "ttbar" not in nom_name:
             option = [2, 1]
         elif sys_name not in sys_type.keys():
             option = [0, 0]
         else:
             option = sys_type[sys_name]
-        smooth_sys(hist_map[sys + "Up"], hist_map[sys + "Down"],
-                    hist_map[nom_name], start, option)
+        smooth_sys(hist_map[sys + "Up"], hist_map[sys + "Down"], hist_map[nom_name], start, option)
         file.cd()
         hist_map[sys + "Up"].Write()
         hist_map[sys + "Down"].Write()

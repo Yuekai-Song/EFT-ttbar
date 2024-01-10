@@ -179,7 +179,7 @@ __MACOSX
 *.synctex.gz
 *.nav
 run_log
-combine/*sh
+combine/**/*sh
 combine/output*
 combine/impact*
 combine/datacard*
@@ -203,3 +203,4 @@ tangmin
 ttbar.tex
 Eigen
 *.sub
+lhcut_check

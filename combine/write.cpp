@@ -141,7 +141,7 @@ void write_card(ofstream &card, TString category, std::vector<process> pro_v, ma
     card << "---------------------------------" << endl;
     card << endl;
     card << "shapes * " << category << " "
-         << "../../" + category + ".root $PROCESS $PROCESS_$SYSTEMATIC" << endl;
+         << "./" + category + ".root $PROCESS $PROCESS_$SYSTEMATIC" << endl;
     card << "---------------------------------" << endl;
     card << "bin           " << category << endl;
     card << "observation   "
@@ -164,9 +164,9 @@ void write_card(ofstream &card, TString category, std::vector<process> pro_v, ma
     // writeline(qcd_n, card);
 }
 
-void write(TString datacard_name, TString type, TString cut_name, int year, bool lnN_bg, vector<TString> saved, vector<TString> sys_of_shapeU)
+void write(TString datacard_name, TString cut_name, int year, bool lnN_bg, vector<TString> saved, vector<TString> sys_of_shapeU)
 {
-    TString path = "./" + datacard_name + type + "/";
+    TString path = "./" + datacard_name;
     TString category = "ttbar" + cut_name + Form("_%d", year);
     cout << path + category + ".txt" << endl;
 

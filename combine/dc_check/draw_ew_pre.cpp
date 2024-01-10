@@ -166,14 +166,13 @@ void model(TH1D *h1, TH1D *h2[5], double y, double z, double k)
         h1->SetBinError(bin + 1, 0);
     }
 }
-void draw_pre(TString cutname, int year, TString sys, int type, double value[5], int index[5], bool rel, vector<vector<double>> xbins, vector<double> ycuts)
+void draw_pre(TString datacard_name, TString cutname, int year, int type, double value[5], int index[5], bool rel, vector<vector<double>> xbins, vector<double> ycuts)
 {
     double low2, high2;
     TString process[] = {"ttbar_ci0100", "ttbar_ci0010", "ttbar_ci0001", "ttbar_ci0000", "ttbar_ci0200"};
-    TString inpath = "./";
-    TString outpath = "./ew_pdf/" + cutname + Form("_%d/", year);
+    TString outpath = "./ew_pdf/" + datacard_name + "/" + cutname + Form("_%d/", year);
     TString filename = "ttbar_" + cutname + Form("_%d.root", year);
-    TFile *file = TFile::Open(inpath + "/datacard/sys_kappa_same/" + filename);
+    TFile *file = TFile::Open("../" + datacard_name + "/original/" + filename);
     TH1D *hmc1[5], *h1[5], *hd1[5];
     TH1D *hno, *hd;
     int color[] = {2, 1, 8, 4, 6};
@@ -209,14 +208,13 @@ void draw_pre(TString cutname, int year, TString sys, int type, double value[5],
 
     for (int c = 0; c < 5; c++)
     {
-        h1[c] = (TH1D *)file->Get(process[c] + sys);
+        h1[c] = (TH1D *)file->Get(process[c]);
     }
     if (rel == true)
         hno = (TH1D *)file->Get("EW_no");
-    else if (sys != "")
-        hno = (TH1D *)file->Get("ttbar_ci0000");
     else
-        hno = (TH1D *)h1[3]->Clone();
+        hno = (TH1D *)file->Get("ttbar_ci0000");
+    
     hno->SetName("hno");
     hd = (TH1D *)hno->Clone();
     hd->SetName("hd");
@@ -300,8 +298,7 @@ void draw_pre(TString cutname, int year, TString sys, int type, double value[5],
         format_line(l2[d]);
         l2[d]->Draw("same");
     }
-    sys.ReplaceAll("Up", "");
-    c2->Print(outpath + name[type] + sys + ".pdf");
+    c2->Print(outpath + name[type] + ".pdf");
     for (int d = 0; d < ndiv; d++)
     {
         delete l1[d];

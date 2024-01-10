@@ -27,5 +27,5 @@ void write_datacard(TString datacard_name, TString cut_name, int year, TString d
     else if (dir == "mtop3_only")
         sys_saved = {"mtop3"};
     vector<TString> sys_of_shapeU = {"mtop", "mtop3"};
-    write(datacard_name, dir, cut_name, year, lnN_bg, sys_saved, sys_of_shapeU);
+    write(datacard_name, cut_name, year, lnN_bg, sys_saved, sys_of_shapeU);
 }

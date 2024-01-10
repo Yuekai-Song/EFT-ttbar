@@ -9,7 +9,7 @@ year = int(sys.argv[3])
 bg_flat = int(sys.argv[4])
 
 sys_type_4cuts = {
-    "TuneCP5": [2, 0],
+    "TuneCP5": [2, 1],
     "mtop": [1, 0, [0.5]],
     "mtop3": [1, 0, [0.5]],
     "hdamp": [1, 0, [0.5]],
@@ -24,10 +24,10 @@ sys_type_4cuts = {
     "jes_RelativeBal": [1, 0, [0.5]],
     "jes_RelativeSample_{0}".format(year): [1, 0, [0.5]],
     "jer": [1, 0, [0.5]],
-    "unclus": [2, 0]
+    "unclus": [2, 1]
 }
 sys_type_2cuts = {
-    "TuneCP5": [2, 0],
+    "TuneCP5": [2, 1],
     "mtop": [1, 0, [0.4]],
     "mtop3": [1, 0, [0.4]],
     "hdamp": [1, 0, [0.6]],
@@ -42,14 +42,21 @@ sys_type_2cuts = {
     "jes_RelativeBal": [1, 0, [0.3]],
     "jes_RelativeSample_{0}".format(year): [1, 0, [0.3]],
     "jer": [1, 0, [0.5]],
-    "unclus": [2, 0]
+    "unclus": [2, 1]
 }
 sys_xs_fix = dict()
+sys_same_year = ["hdamp"]
 flat_name = {0: "", 1: "_bg_flat"}
-sys_types = {"datacard_ttx/": sys_type_2cuts, "datacard/": sys_type_4cuts}
 
-file_name = name_datacard + "processed" + flat_name[bg_flat] + "/ttbar" + cut_name+"_{0}.root".format(year)
-original = name_datacard + "original/ttbar" + cut_name+"_{0}.root".format(year)
-sys_type = sys_types[name_datacard]
+new_file = name_datacard + "processed" + flat_name[bg_flat] + "/ttbar" + cut_name + "_{0}.root".format(year)
+base_file = name_datacard + "original/ttbar" + cut_name + ".root"
+original = name_datacard + "original/ttbar" + cut_name + "_{0}.root".format(year)
 
-process.process(file_name, original, bg_flat, sys_type, sys_xs_fix)
+if "2cuts" in name_datacard:
+    sys_type = sys_type_2cuts
+    start = [0, 16, 23]
+else:
+    sys_type = sys_type_4cuts
+    start = [0, 7, 16, 25, 33]
+
+process.process(new_file, original, bg_flat, sys_type, sys_xs_fix, start, base_file, sys_same_year)
