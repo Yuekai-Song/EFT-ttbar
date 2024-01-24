@@ -30,27 +30,38 @@ read_object::read_object(TString input, int type)
     }
     delete chain;
 }
-Bool_t select_tree::is_lep_from_jet(TLorentzVector mom_lep)
+Bool_t select_tree::is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type)
 {
     Bool_t flag = false;
-    for (int i = 0; i < jet_num; i++)
+    if (object_type == OBJECT_TYPE::jet)
     {
-
-        if (mom_lep.DeltaR(mom_jets[i]) < 0.4)
+        if (order == OBJECT_SELECT_ORDER::lepton_jet)
+            flag = (mom.DeltaR(mom_lep) < 0.4);
+    }
+    else
+    {
+        if (order == OBJECT_SELECT_ORDER::jet_lepton)
         {
-            flag = true;
-            break;
+            for (int i = 0; i < jet_num; i++)
+            {
+                if (mom.DeltaR(mom_jets[i]) < 0.4)
+                {
+                    flag = true;
+                    break;
+                }
+            }
         }
     }
     return flag;
 }
-select_tree::select_tree(TString inputFile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int sample_year, DATA_TYPE data_types, OP_TYPE op_types, int num_j, int num_e, int num_m, int num_g)
+select_tree::select_tree(TString inputFile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int sample_year, DATA_TYPE data_types, OP_TYPE op_types, OBJECT_SELECT_ORDER order_type, int num_j, int num_e, int num_m, int num_g)
 { // type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
     input = outputFile;
     year = sample_year;
     tree_name = name_tree;
     data_type = data_types;
     op_type = op_types;
+    order = order_type;
     Float_t btag_num[] = {0.2589, 0.2489, 0.3040, 0.2783};
     btag_criteria = btag_num[year - 2015];
     TString recreate;
@@ -225,7 +236,9 @@ Bool_t select_tree::select_jet()
     Bool_t jet_flag = false;
     for (int i = 0; i < nJet; i++)
     {
-        if (fabs(Jet_eta[i]) < 2.4 && Jet_pt[i] > 30 && Jet_jetId[i] == 6)
+        TLorentzVector mom_jet;
+        mom_jet.SetPtEtaPhiM(Jet_pt[jet_index[i]], Jet_eta[jet_index[i]], Jet_phi[jet_index[i]], Jet_mass[jet_index[i]]);
+        if (fabs(Jet_eta[i]) < 2.4 && Jet_pt[i] > 30 && Jet_jetId[i] == 6 && !is_lep_from_jet(mom_jet, OBJECT_TYPE::jet))
         {
             // mom_jets[i].SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i],Jet_mass[i]);
             jet_index[jet_num] = i;
@@ -269,7 +282,7 @@ Bool_t select_tree::select_lep()
         if (i < nElectron)
         {
             p4_lepton.SetPtEtaPhiM(Electron_pt[i], Electron_eta[i], Electron_phi[i], Electron_mass[i]);
-            is_from_jet = is_lep_from_jet(p4_lepton);
+            is_from_jet = is_lep_from_jet(p4_lepton, OBJECT_TYPE::lepton);
             if (Electron_cutBased[i] >= 2 && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 15)
             {
                 if ((fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) < 1.479 && fabs(Electron_dxy[i]) < 0.05 && fabs(Electron_dz[i]) < 0.1) || (fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) >= 1.479 && fabs(Electron_dxy[i]) < 0.1 && fabs(Electron_dz[i]) < 0.2))
@@ -289,7 +302,7 @@ Bool_t select_tree::select_lep()
         else
         {
             p4_lepton.SetPtEtaPhiM(Muon_pt[i - nElectron], Muon_eta[i - nElectron], Muon_phi[i - nElectron], Muon_mass[i - nElectron]);
-            is_from_jet = is_lep_from_jet(p4_lepton);
+            is_from_jet = is_lep_from_jet(p4_lepton, OBJECT_TYPE::lepton);
             if (Muon_looseId[i - nElectron] == 1 && Muon_pfRelIso04_all[i - nElectron] <= 0.25 && Muon_pt[i - nElectron] > 15 && fabs(Muon_eta[i - nElectron]) < 2.4)
             {
                 num_select++;
@@ -529,12 +542,24 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
         }
         if ((mu_trigger || ele_trigger) && met_match)
         {
-            jet_flag = select_jet();
-            if (!jet_flag)
-                continue;
-            lep_flag = select_lep();
-            if (!lep_flag)
-                continue;
+            if (order == OBJECT_SELECT_ORDER::jet_lepton)
+            {
+                jet_flag = select_jet();
+                if (!jet_flag)
+                    continue;
+                lep_flag = select_lep();
+                if (!lep_flag)
+                    continue;
+            }
+            else
+            {
+                lep_flag = select_lep();
+                if (!lep_flag)
+                    continue;
+                jet_flag = select_jet();
+                if (!jet_flag)
+                    continue;    
+            }
             trigger_flag = false;
             if (((!lep_flavour) && ele_trigger) || (lep_flavour && mu_trigger))
                 trigger_flag = true;

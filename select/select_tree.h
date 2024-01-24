@@ -22,6 +22,14 @@ enum OP_TYPE {
     dis_reco_need,
     e_corr_3jets
 };
+enum OBJECT_SELECT_ORDER {
+    jet_lepton,
+    lepton_jet
+};
+enum OBJECT_TYPE {
+    lepton,
+    jet
+};
 class read_object{
 public:
     read_object(TString input, int type);
@@ -36,6 +44,7 @@ private:
     int year;
     DATA_TYPE data_type;
     OP_TYPE op_type;
+    OBJECT_SELECT_ORDER order;
     TChain* chain;
     TFile* output;
     Float_t btag_criteria;
@@ -107,13 +116,13 @@ private:
     Bool_t select_jet();
     Bool_t select_lep();
     void loop(TTree* trees[2], TH1* hists[20]);
-    Bool_t is_lep_from_jet(TLorentzVector mom_lep);
+    Bool_t is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type);
     void read_LHE();
     void read_sys();
     void pdf_w(Float_t LHEPdfWeight[103], Float_t &alphas_up, Float_t &alphas_dn, Float_t &pdf_up, Float_t &pdf_dn);
 public:
     static TF1* h_ecorr;
-    select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, DATA_TYPE data_types, OP_TYPE op_types, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
+    select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, DATA_TYPE data_types, OP_TYPE op_types, OBJECT_SELECT_ORDER order_type, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
     void write_select();
     void write_distribution();
     void write_ecorr();
