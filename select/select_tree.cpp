@@ -237,8 +237,8 @@ Bool_t select_tree::select_jet()
     for (int i = 0; i < nJet; i++)
     {
         TLorentzVector mom_jet;
-        mom_jet.SetPtEtaPhiM(Jet_pt[jet_index[i]], Jet_eta[jet_index[i]], Jet_phi[jet_index[i]], Jet_mass[jet_index[i]]);
-        if (fabs(Jet_eta[i]) < 2.4 && Jet_pt[i] > 30 && Jet_jetId[i] == 6 && !is_lep_from_jet(mom_jet, OBJECT_TYPE::jet))
+        mom_jet.SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i], Jet_mass[i]);
+        if (fabs(Jet_eta[i]) < 2.4 && Jet_pt[i] > 30 && Jet_jetId[i] == 6 && (!is_lep_from_jet(mom_jet, OBJECT_TYPE::jet)))
         {
             // mom_jets[i].SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i],Jet_mass[i]);
             jet_index[jet_num] = i;
