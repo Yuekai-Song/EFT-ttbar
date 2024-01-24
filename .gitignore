@@ -204,3 +204,4 @@ ttbar.tex
 Eigen
 *.sub
 lhcut_check
+select_analysis/**/*.sh
