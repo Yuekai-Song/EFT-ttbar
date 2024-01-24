@@ -132,7 +132,7 @@ bool is_small_effect(TH1D hist_nom, TH1D hist_up, TH1D hist_dn)
     }
     return !is_big;
 }
-void write_card(ofstream &card, TString category, std::vector<process> pro_v, map<TString, std::vector<TString>> sys_shape, vector<TString> sys_of_shapeU, map<TString, map<TString, TString>> sys_lnN)
+void write_card(ofstream &card, TString dir, TString category, std::vector<process> pro_v, map<TString, std::vector<TString>> sys_shape, vector<TString> sys_of_shapeU, map<TString, map<TString, TString>> sys_lnN)
 {
     card << "Datacard for event category: " << category << endl;
     card << "imax 1 number of channels" << endl;
@@ -140,8 +140,12 @@ void write_card(ofstream &card, TString category, std::vector<process> pro_v, ma
     card << "kmax * number of nuisance parameters" << endl;
     card << "---------------------------------" << endl;
     card << endl;
-    card << "shapes * " << category << " "
-         << "./" + category + ".root $PROCESS $PROCESS_$SYSTEMATIC" << endl;
+    if (dir != "")
+        card << "shapes * " << category << " " 
+             << "../" + category + ".root $PROCESS $PROCESS_$SYSTEMATIC" << endl;
+    else
+        card << "shapes * " << category << " " 
+             << "./" + category + ".root $PROCESS $PROCESS_$SYSTEMATIC" << endl;
     card << "---------------------------------" << endl;
     card << "bin           " << category << endl;
     card << "observation   "
@@ -164,15 +168,15 @@ void write_card(ofstream &card, TString category, std::vector<process> pro_v, ma
     // writeline(qcd_n, card);
 }
 
-void write(TString datacard_name, TString cut_name, int year, bool lnN_bg, vector<TString> saved, vector<TString> sys_of_shapeU)
+void write(TString datacard_name, TString dir, TString cut_name, int year, bool lnN_bg, vector<TString> lnNed_sys, vector<TString> saved, vector<TString> sys_of_shapeU)
 {
-    TString path = "./" + datacard_name;
+    TString path = "./" + datacard_name + "/" + dir;
     TString category = "ttbar" + cut_name + Form("_%d", year);
     cout << path + category + ".txt" << endl;
 
     ofstream card;
     card.open(path + category + ".txt");
-    TFile *file = TFile::Open("./" + datacard_name + category + ".root");
+    TFile *file = TFile::Open("./" + datacard_name + "/" + category + ".root");
     TList *list = file->GetListOfKeys();
     TKey *key;
     TIter iter(list);
@@ -207,12 +211,14 @@ void write(TString datacard_name, TString cut_name, int year, bool lnN_bg, vecto
         {
             hist_name.ReplaceAll("Up", "");
             sys_and_nom(hist_name, sys_name, nom_name);
-            if (!Find_contains(saved, sys_name))
+            if (find(saved.begin(), saved.end(), sys_name) == saved.end())
                 continue;
-            //if (sys_name.Contains("pdf") && is_small_effect(hist_map[nom_name], hist_map[hist_name + "Up"], hist_map[hist_name + "Down"]))
-            //    sys_lnN[sys_name][nom_name] = Form("%.3f/%.3f", hist_map[hist_name + "Up"].GetSumOfWeights() / hist_map[nom_name].GetSumOfWeights(),
-            //                                    hist_map[hist_name + "Down"].GetSumOfWeights() / hist_map[nom_name].GetSumOfWeights());
-            //else
+            if (find(lnNed_sys.begin(), lnNed_sys.end(), sys_name) != lnNed_sys.end())//is_small_effect(hist_map[nom_name], hist_map[hist_name + "Up"], hist_map[hist_name + "Down"]))
+            {
+                sys_lnN[sys_name][nom_name] = Form("%.6f/%.6f", hist_map[hist_name + "Up"].GetSumOfWeights() / hist_map[nom_name].GetSumOfWeights(),
+                                                hist_map[hist_name + "Down"].GetSumOfWeights() / hist_map[nom_name].GetSumOfWeights());
+                continue;
+            }
             if (!nom_name.Contains("ttbar") && lnN_bg)
                 continue;
             sys_shape[sys_name].push_back(nom_name);
@@ -234,13 +240,18 @@ void write(TString datacard_name, TString cut_name, int year, bool lnN_bg, vecto
             }
             pro_v.push_back(pro);
             // need to add some lnN sys manually
-            sys_lnN["cms_lumi"][hist_name] = sys_lumi_year[year];
+            if (find(saved.begin(), saved.end(), "cms_lumi") != saved.end())
+                sys_lnN["cms_lumi"][hist_name] = sys_lumi_year[year];
+
+            if (find(saved.begin(), saved.end(), "stat") != saved.end() && hist_name.Contains("ttbar"))
+                sys_lnN["stat"][hist_name] = "1.000001";
+            
             if (!hist_name.Contains("ttbar") && lnN_bg)
                 sys_lnN[hist_name + "_norm"][hist_name] = sys_norm_bg[hist_name]; 
         }
     }
     sort(pro_v.begin(), pro_v.end(), compare);
-    write_card(card, category, pro_v, sys_shape, sys_of_shapeU, sys_lnN);
+    write_card(card, dir, category, pro_v, sys_shape, sys_of_shapeU, sys_lnN);
     card.close();
     file->Close();
 }

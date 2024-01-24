@@ -46,6 +46,10 @@ sys_type_2cuts = {
 }
 sys_xs_fix = dict()
 sys_same_year = ["hdamp"]
+for syss in sys_same_year:
+    if "{0}".format(year) in syss:
+        exit()
+    
 flat_name = {0: "", 1: "_bg_flat"}
 
 new_file = name_datacard + "processed" + flat_name[bg_flat] + "/ttbar" + cut_name + "_{0}.root".format(year)

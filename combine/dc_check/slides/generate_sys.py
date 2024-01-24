@@ -16,7 +16,7 @@ def sys_and_nom(h1_sys_name: str) -> tuple:
     while h1_sys_name_new[pos] != '_':
         pos += 1
     #pdf_w, jes_, SF_
-    odds = ["pdf", "jes", "SF", "nnlo", "EW"]
+    odds = ["pdf_w", "jes", "SF", "nnlo", "EW"]
     for odd in odds:
         if odd in h1_sys_name_new:
             pos += 1
@@ -36,17 +36,25 @@ def get_channel_name(path_name: str) -> str:
         pos = pos - 1
     return path_name[pos + 1 :]
 
+def sys_type(sys: str) -> str:
+    if "pdf-w" not in sys:
+        return "sys"
+    elif int(sys.replace("pdf-w", "")) < 50:
+        return "pdf_l50"
+    else:
+        return "pdf_g50"
+
 def list_files(dir: str) -> tuple:
     pdfdict = dict()
-    sys_nom = dict()
+    sys_nom = {"sys": dict(), "pdf_l50": dict(), "pdf_g50": dict()}
     for root, dirs, files in os.walk(dir):
         if dirs == []:
             for file in files:
                 if file.endswith('.pdf'):
                     sys, nom = sys_and_nom(file)
-                    if sys not in sys_nom.keys():
-                        sys_nom[sys] = set()
-                    sys_nom[sys].add(nom)
+                    if sys not in sys_nom[sys_type(sys)].keys():
+                        sys_nom[sys_type(sys)][sys] = set()
+                    sys_nom[sys_type(sys)][sys].add(nom) 
                     channel = get_channel_name(root)
                     pdfdict[sys + "_" + channel + "_" + nom] = os.path.join(root, file)
     return pdfdict, sys_nom
@@ -60,10 +68,7 @@ def gentex(filename: str, filedict: dict, sys: str,
 
     with open(filename, 'a', encoding='utf-8') as f:
         f.write('\n')
-        if "pdf" not in sys:
-            f.write('\\subsection{%s}\n' % sys)
-        elif "pdf_0" in sys:
-            f.write('\\subsection{pdf}}\n')
+        f.write('\\subsection{%s}\n' % sys)
 
         for process in processes:
             #f.write('\\subsection{%s}\n' % process)
@@ -108,15 +113,19 @@ def sort_dict_by_key(input_dict):
     return sorted_dict
 
 def sys_add(dir: str, filename: str) -> None:
-    with open(filename, 'a', encoding='utf-8') as f:
-        f.write('\n')
-        f.write('\\section{Distributions of the systematics}\n')
-    f.close()
+    pdfdict, sys_noms = list_files(dir)
+    title = {"sys": "\\section{Distributions of the systematics}\n",
+             "pdf_l50": "\\section{Distributions of the pdfs before 50}\n",
+             "pdf_g50": "\\section{Distributions of the pdfs after 50}\n"}
 
-    pdfdict, sys_nom = list_files(dir)
-    sys_nom_sorted = sort_dict_by_key(sys_nom)
-    for sys, noms in sys_nom_sorted.items():
-        nom_list = list(noms)
-        nom_list.sort(key=position)
-        if "pdf" not in sys:
+    for sys_t, sys_nom in sys_noms.items():
+        sys_nom_sorted = sort_dict_by_key(sys_nom)
+
+        with open(filename, 'a', encoding='utf-8') as f:
+            f.write('\n')
+            f.write(title[sys_t])
+        f.close()
+        for sys, noms in sys_nom_sorted.items():
+            nom_list = list(noms)
+            nom_list.sort(key=position)
             gentex(filename, pdfdict, sys, nom_list)

@@ -98,8 +98,8 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
 {
     // convert
     int like_cut;
-    if (likelihood_cut <= 45.0 && likelihood_cut >= 5.0)
-        like_cut = static_cast<int>(std::round(likelihood_cut - 5.0));
+    if (likelihood_cut <= 33.0 && likelihood_cut > 8.0)
+        like_cut = static_cast<int>(std::round((likelihood_cut - 8.0) / 0.25));
     else
         like_cut = -1;
     const int nycut = ycut_user.size();
@@ -131,6 +131,7 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
     TKey *key;
     TIter iter(list); // or TIter iter(list->MakeIterator());
     static TString classname("TH3D");
+    map<TString, vector<TH1D>> hist_pdf;
     int start[nycut + 1];
     int bin_num = 0;
     for (int i = 0; i < nycut; i++)
@@ -165,7 +166,10 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
                     get_TH1D(hist1[f], hist_name + Form("_%d", f), hist3, like_cut, ycut[f] + 1, ycut[f + 1], xbins[f], nbins[f]);
                 }
                 sum_TH1D(hists, hist1, start, nycut);
-                hist_map[hist_name] = *hists;
+                if (!hist_name.Contains("pdf") || hist_name.Contains("ttbar"))
+                    hist_map[hist_name] = *hists;
+                else
+                    hist_pdf[sys_to_nom(hist_name)].push_back(*hists);
                 delete hist3;
                 delete hists;
                 for (int i = 0; i < nycut; i++)
@@ -192,6 +196,45 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
             outFile->cd();
             iter->second.Write();
         }
+    }
+    for (map<TString, vector<TH1D>>::iterator iter = hist_pdf.begin(); iter != hist_pdf.end(); iter++)
+    {
+        TH1D *hists_up = new TH1D(iter->first + "_pdf" + TString(iter->first[0]) + "Up", "", bin_num, 0, bin_num);
+        TH1D *hists_dn = new TH1D(iter->first + "_pdf" + TString(iter->first[0]) + "Down", "", bin_num, 0, bin_num);
+        double nom, up, dn, temp, err;
+        for (int bin = 0; bin < bin_num; bin++)
+        {
+            nom = hist_map[iter->first].GetBinContent(bin + 1);
+            up = nom;
+            for (vector<TH1D>::iterator it = iter->second.begin(); it != iter->second.end(); it++)
+            {
+                temp = it->GetBinContent(bin + 1);
+                if (temp < nom)
+                {
+                    if (temp == 0)
+                        temp = 2 * nom;
+                    else
+                        temp = nom * nom / temp;
+                }
+                if (temp > up)
+                {
+                    up = temp;
+                    err = it->GetBinError(bin + 1);
+                }
+            }
+            if (up == 0)
+                dn = 0;
+            else
+                dn = nom * nom / up;
+            hists_up->SetBinContent(bin + 1, up);
+            hists_up->SetBinError(bin + 1, err);
+            hists_dn->SetBinContent(bin + 1, dn);
+            hists_dn->SetBinError(bin + 1, err);
+        }
+        outFile->cd();
+        hists_up->Write();
+        hists_dn->Write();
+        delete hists_up, hists_dn;
     }
     outFile->Close();
 }
