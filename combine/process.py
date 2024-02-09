@@ -74,10 +74,6 @@ def smooth_sys(hist_up: ROOT.TH1D, hist_dn: ROOT.TH1D, hist_nom: ROOT.TH1D, star
     hist_up.ResetStats()
     hist_dn.ResetStats()
 
-def xs_fix(hist_up: ROOT.TH1D, hist_dn: ROOT.TH1D, scale: tuple) -> None:
-    hist_up.Scale(scale[0])
-    hist_dn.Scale(scale[1])
-
 def same_year(hist_up: ROOT.TH1D, hist_dn: ROOT.TH1D, hist_nom: ROOT.TH1D, hist_base: list) -> None:
     hist_base[1].Divide(hist_base[0])
     hist_base[2].Divide(hist_base[0])
@@ -98,7 +94,7 @@ def get_sys_name(h1_sys_name: str) -> None:
 
 
 def process(file_name: str, original: str, flat_bg: bool, sys_type: dict,
-            sys_xs_fix: dict, start: list, base_file: str, sys_same_year: list) -> None:
+            xs_22014: dict, xs_self: dict, start: list, base_file: str, sys_same_year: list) -> None:
     file = ROOT.TFile(file_name, "recreate")
     old_file = ROOT.TFile(original, "read")
     base = ROOT.TFile(base_file, "read")
@@ -107,8 +103,16 @@ def process(file_name: str, original: str, flat_bg: bool, sys_type: dict,
     for key in old_file.GetListOfKeys():
         hist = key.ReadObj()
         hist_name = hist.GetName()
+        if (hist_name == "EW_no" or "ttbar" in hist_name or hist_name == "data_obs"):
+            nom_name = "ttbar"
+        elif ("Up" in hist_name or "Down" in hist_name):
+            nom_name = hist_name.replace("_" + get_sys_name(hist_name), "")
+        else:
+            nom_name = hist_name
+
         hist_map[hist_name] = hist
         hist_map[hist_name].SetDirectory(0)
+        hist_map[hist_name].Scale(xs_22014[nom_name] / xs_self[nom_name])
         if ("Up" in hist_name or "Down" in hist_name):
             hist_name = hist_name.replace("Up", "")
             hist_name = hist_name.replace("Down", "")
@@ -123,8 +127,6 @@ def process(file_name: str, original: str, flat_bg: bool, sys_type: dict,
         nom_name = sys.replace("_" + sys_name, "")
         if "pdf" in sys_name:
             sys_name = "pdf"
-        if sys_name in sys_xs_fix.keys():
-            xs_fix(hist_map[sys + "Up"], hist_map[sys + "Down"], sys_xs_fix[sys_name])
         
         if sys_name in sys_same_year:
             hist_base = [base.Get(nom_name), base.Get(sys + "Up"), base.Get(sys + "Down")]

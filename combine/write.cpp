@@ -219,7 +219,7 @@ void write(TString datacard_name, TString dir, TString cut_name, int year, bool 
                                                 hist_map[hist_name + "Down"].GetSumOfWeights() / hist_map[nom_name].GetSumOfWeights());
                 continue;
             }
-            if (!nom_name.Contains("ttbar") && lnN_bg)
+            if (!nom_name.Contains("ttbar") && !nom_name.Contains("QCD") && lnN_bg)
                 continue;
             sys_shape[sys_name].push_back(nom_name);
         }
@@ -246,8 +246,8 @@ void write(TString datacard_name, TString dir, TString cut_name, int year, bool 
             if (find(saved.begin(), saved.end(), "stat") != saved.end() && hist_name.Contains("ttbar"))
                 sys_lnN["stat"][hist_name] = "1.000001";
             
-            if (!hist_name.Contains("ttbar") && lnN_bg)
-                sys_lnN[hist_name + "_norm"][hist_name] = sys_norm_bg[hist_name]; 
+            if (!hist_name.Contains("ttbar") && !hist_name.Contains("QCD") && lnN_bg)
+                sys_lnN[hist_name + "_norm"][hist_name] = sys_norm_bg[hist_name];
         }
     }
     sort(pro_v.begin(), pro_v.end(), compare);

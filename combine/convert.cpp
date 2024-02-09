@@ -23,6 +23,7 @@
 #include <vector>
 #include <map>
 using namespace std;
+
 TString sys_to_nom(TString h1_sys_name)
 {
     int pos = 0;
@@ -94,12 +95,12 @@ bool pdf_convert(TH1D hist, TH1D hist_nom, TH1D *hist_up, TH1D *hist_dn)
     }
     return !same;
 }
-void convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user)
+void convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user, bool fake_qcd)
 {
     // convert
     int like_cut;
-    if (likelihood_cut <= 33.0 && likelihood_cut > 8.0)
-        like_cut = static_cast<int>(std::round((likelihood_cut - 8.0) / 0.25));
+    if (likelihood_cut <= 29.0 && likelihood_cut > 4.0)
+        like_cut = static_cast<int>(std::round((likelihood_cut - 4.0) / 0.25));
     else
         like_cut = -1;
     const int nycut = ycut_user.size();
@@ -235,6 +236,43 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
         hists_up->Write();
         hists_dn->Write();
         delete hists_up, hists_dn;
+    }
+    if (fake_qcd)
+    {
+        TH1D *hist_qcd = (TH1D *)hist_map["STop"].Clone();
+        hist_qcd->SetName("QCD");
+        hist_qcd->Add(&hist_map["DYJets"]);
+        hist_qcd->Add(&hist_map["WJets"]);
+        TH1D *hist_qcdnup = (TH1D *)hist_qcd->Clone();
+        TH1D *hist_qcdndn = (TH1D *)hist_qcd->Clone();
+        if (output.Contains("_M_"))
+        {
+            if (output.Contains("4jets") && (output.Contains("2018") || output.Contains("2016")))
+            {
+                hist_qcdnup->Scale(2.5);
+                hist_qcdndn->Scale(1.0/2.5);
+            }
+            else
+            {
+                hist_qcdnup->Scale(1.2);
+                hist_qcdndn->Scale(1.0/1.2);
+            }
+            hist_qcdnup->SetName("QCD_qcdnMUp");
+            hist_qcdndn->SetName("QCD_qcdnMDown");
+        }
+        else
+        {
+            hist_qcdnup->Scale(2.0);
+            hist_qcdndn->Scale(1.0/2.0);
+            hist_qcdnup->SetName("QCD_qcdnEUp");
+            hist_qcdndn->SetName("QCD_qcdnEDown");
+        }
+        outFile->cd();
+        hist_qcd->Write();
+        hist_qcdnup->Write();
+        hist_qcdndn->Write();
+        delete hist_qcd;
+        delete hist_qcdnup; delete hist_qcdndn;
     }
     outFile->Close();
 }
