@@ -29,7 +29,7 @@ private:
     ifstream if_muon_m_reco, if_muon_l_reco, if_muon_l_id;
     Json::Reader reader_muon_m_reco, reader_muon_l_reco, reader_muon_l_id;
     Json::Value root_muon_m_reco, root_muon_l_reco, root_muon_l_id;
-    BTagCalibration_offReader *reader, *reader_it;
+    BTagCalibration_offReader *reader, *reader_bc, *reader_l, *reader_it;
     void get_string1(Float_t pt, Float_t eta, TString s[2]);
     void get_string2(Float_t eta, TString s[2]);
     void sf_electronreco(Float_t pt, Float_t eta, Float_t weight[3]);
@@ -37,10 +37,10 @@ private:
     void sf_muoniso(Float_t pt, Float_t eta, Float_t weight[3]);
     void sf_muonid(Float_t pt, Float_t eta, Float_t weight[3]);
     void sf_muonreco(Float_t pt, Float_t eta, Float_t weight[3]);
-    void sf_btag(BTagEntry_off::JetFlavor flav, Float_t pt, Float_t eta, Float_t sf[3]);
+    void sf_btag(BTagEntry_off::JetFlavor flav, Float_t pt, Float_t eta, Float_t sf[13]);
     Float_t btag_eff(Int_t flav, Float_t pt, Float_t eta);
     void sf_lep(Float_t pt, Float_t eta, Bool_t flavour, Float_t weight[3]);
-    void sf_jet(Float_t *pt, Float_t *eta, Int_t *flavour, Float_t* score, UInt_t jet_num, Float_t weight[3]);
+    void sf_jet(Float_t *pt, Float_t *eta, Int_t *flavour, Float_t* score, UInt_t jet_num, Float_t weight[13]);
     void sf_jet_it(Float_t *pt, Float_t *eta, Int_t *flavour, Float_t* score, UInt_t jet_num, Float_t* weight);
     void set_dir();
 public:
