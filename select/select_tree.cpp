@@ -120,7 +120,7 @@ Bool_t select_tree::is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type)
     }
     else
     {
-        if (order == OBJECT_SELECT_ORDER::jet_lepton)
+        if (order == OBJECT_SELECT_ORDER::jet_lepton && (cate == CATEGORY::A || cate == CATEGORY::B))
         {
             for (int i = 0; i < jet_num; i++)
             {
@@ -289,6 +289,8 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     chain->SetBranchAddress("luminosityBlock", &luminosityBlock);
     chain->SetBranchAddress("event", &event);
     chain->SetBranchAddress("run", &run);
+    chain->SetBranchAddress("HLT_Mu27", &HLT_Mu27);//new
+    chain->SetBranchAddress("HLT_Ele23_CaloIdM_TrackIdM_PFJet30", &HLT_Ele23_CaloIdM_TrackIdM_PFJet30);//new
     if (year == 2018)
     {
         chain->SetBranchAddress("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf);
@@ -410,14 +412,12 @@ Bool_t select_tree::select_lep()
         is_from_jet = is_lep_from_jet(p4_lepton, OBJECT_TYPE::lepton);
         elec_iso_id = iso_select(i);
         //Electron_cutBased[i] >= 2
-        //loose_noiso(i) && (elec_iso_id >= 1)
-        if (Electron_cutBased[i] >= 2 && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 15)
+        if (loose_noiso(i) && (elec_iso_id >= 1) && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 15)
         {
             if ((fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) < 1.479 && fabs(Electron_dxy[i]) < 0.05 && fabs(Electron_dz[i]) < 0.1) || (fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) >= 1.479 && fabs(Electron_dxy[i]) < 0.1 && fabs(Electron_dz[i]) < 0.2))
             {
                 //Electron_cutBased[i] == 4
-                //tight_noiso(i) && (elec_iso_id == 2) 
-                if (Electron_cutBased[i] == 4 && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 30 && (!is_from_jet))
+                if (tight_noiso(i) && (elec_iso_id == 2) && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 30 && (!is_from_jet))
                     index_selected.push_back(i);
                 num_veto++;
             }
@@ -833,6 +833,7 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
                         // pdf_w(LHEPdfWeight, alphas_up, alphas_dn, pdf_up, pdf_dn);
                     }
                     mytree->Fill();
+                    //cout << entry << endl;
                 }
             }
             else if (op_type == dis_reco_need)

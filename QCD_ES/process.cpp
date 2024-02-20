@@ -1,7 +1,7 @@
 #include "../select/select_tree.cpp"
 void process(TString outdir, TString outputFile, TString input, int year, int data_type, bool ttx, int cates){
     int num_j, num_e, num_m, num_g = 0;
-    //read_object r(input, data_type);
+    read_object r(input, data_type);
     OP_TYPE op_type;
     OBJECT_SELECT_ORDER order_type;
     if (ttx)
@@ -15,10 +15,10 @@ void process(TString outdir, TString outputFile, TString input, int year, int da
         order_type = OBJECT_SELECT_ORDER::jet_lepton;
     }
     select_tree *s;
-    // num_j = r.nj;
-    // num_e = r.ne;
-    // num_m = r.nm;
-    // num_g = r.ng;
+    num_j = r.nj;
+    num_e = r.ne;
+    num_m = r.nm;
+    num_g = r.ng;
     CATEGORY cate;
     switch (cates)
     {
@@ -37,10 +37,10 @@ void process(TString outdir, TString outputFile, TString input, int year, int da
     }
     TString names[] = {"_A.root", "_B.root", "_C.root", "_D.root"};
     outputFile.ReplaceAll(".root", names[cates]);
-    num_j = 50;
-    num_e = 20;
-    num_m = 20;
-    num_g = 50;
+    // num_j = 50;
+    // num_e = 20;
+    // num_m = 20;
+    // num_g = 50;
     TFile* dis_file = TFile::Open(Form("../select/dis/dis_%d.root", year));
     RECO::mth_vs_mwh_ttx_4 = (TH2D*)dis_file->Get("mth_vs_mwh_ttx_4");
     RECO::mth_vs_mwh_4 = (TH2D*)dis_file->Get("mth_vs_mwh_4");
