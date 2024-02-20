@@ -30,6 +30,86 @@ read_object::read_object(TString input, int type)
     }
     delete chain;
 }
+Bool_t select_tree::loose_noiso(Int_t i)
+{
+    Bool_t flag = true;
+    int bitmap = Electron_vidNestedWPBitmap[i];
+    for (int i = 0; i < 10; i++)
+    {
+        if (i != 7)
+        {
+            if ((bitmap >> (3 * i)) % 8 < 2)
+            {
+                flag = false;
+                break;
+            }
+        }
+    }
+    return flag;
+}
+Bool_t select_tree::tight_noiso(Int_t i)
+{
+    Bool_t flag = true;
+    int bitmap = Electron_vidNestedWPBitmap[i];
+    for (int i = 0; i < 10; i++)
+    {
+        if (i != 7)
+        {
+            if ((bitmap >> (3 * i)) % 8 < 4)
+            {
+                flag = false;
+                break;
+            }
+        }
+    }
+    return flag;
+}
+Int_t select_tree::iso_select(Int_t i)
+{
+    Float_t eta_sc = Electron_deltaEtaSC[i] + Electron_eta[i];
+    Float_t iso_value = Electron_pfRelIso03_all[i];
+    Float_t pt = Electron_pt[i];
+    if (cate == CATEGORY::A || cate == CATEGORY::B)
+    {
+        if (fabs(eta_sc) <= 1.479)
+        {
+            if (iso_value < 0.0287 + 0.506 / pt)
+                return 2;
+            // selection
+            else if (iso_value < 0.112 + 0.506 / pt)
+                return 1;
+            // veto
+            else
+                return 0;
+        }
+        else
+        {
+            if (iso_value < 0.0445 + 0.963 / pt)
+                return 2;
+            else if (iso_value < 0.108 + 0.963 / pt)
+                return 1;
+            else
+                return 0;
+        }
+    }
+    else
+    {
+        if (fabs(eta_sc) <= 1.479)
+        {
+            if (iso_value > 0.0287 + 0.506 / pt)
+                return 2;
+            else
+                return 1;
+        }
+        else
+        {
+            if (iso_value > 0.0445 + 0.963 / pt)
+                return 2;
+            else
+                return 1;
+        }
+    }
+}
 Bool_t select_tree::is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type)
 {
     Bool_t flag = false;
@@ -54,8 +134,9 @@ Bool_t select_tree::is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type)
     }
     return flag;
 }
-select_tree::select_tree(TString inputFile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int sample_year, DATA_TYPE data_types, OP_TYPE op_types, OBJECT_SELECT_ORDER order_type, int num_j, int num_e, int num_m, int num_g)
+select_tree::select_tree(TString inputFile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int sample_year, DATA_TYPE data_types, OP_TYPE op_types, OBJECT_SELECT_ORDER order_type, CATEGORY cates, int num_j, int num_e, int num_m, int num_g)
 { // type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
+    cate = cates;
     input = outputFile;
     year = sample_year;
     tree_name = name_tree;
@@ -122,6 +203,8 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     Electron_deltaEtaSC = new Float_t[ne];
     Electron_dxy = new Float_t[ne];
     Electron_dz = new Float_t[ne];
+    Electron_pfRelIso03_all = new Float_t[ne];
+    Electron_vidNestedWPBitmap = new Int_t[ne];
 
     Muon_mass = new Float_t[nm];
     Muon_phi = new Float_t[nm];
@@ -187,6 +270,8 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     chain->SetBranchAddress("Electron_deltaEtaSC", Electron_deltaEtaSC);
     chain->SetBranchAddress("Electron_dz", Electron_dz);
     chain->SetBranchAddress("Electron_dxy", Electron_dxy);
+    chain->SetBranchAddress("Electron_vidNestedWPBitmap",Electron_vidNestedWPBitmap);
+    chain->SetBranchAddress("Electron_pfRelIso03_all",Electron_pfRelIso03_all);
     chain->SetBranchAddress("PV_npvsGood", &PV_npvsGood);
     chain->SetBranchAddress("PV_npvs", &PV_npvs);
 
@@ -207,21 +292,34 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     if (year == 2018)
     {
         chain->SetBranchAddress("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf);
+        chain->SetBranchAddress("HLT_Ele115_CaloIdVT_GsfTrkIdT", &HLT_Ele115_CaloIdVT_GsfTrkIdT);
         chain->SetBranchAddress("HLT_IsoMu24", &HLT_IsoMu24);
+        chain->SetBranchAddress("HLT_Mu50", &HLT_Mu50);
+        chain->SetBranchAddress("HLT_OldMu100", &HLT_OldMu100);
+        chain->SetBranchAddress("HLT_TkMu100", &HLT_TkMu100);
         chain->SetBranchAddress("Flag_ecalBadCalibFilter", &Flag_met[10]);
         nFlag_met = 11;
     }
     else if (year == 2016 || year == 2015)
     { // 2015 means 2016_pre
         chain->SetBranchAddress("HLT_Ele27_WPTight_Gsf", &HLT_Ele27_WPTight_Gsf);
+        chain->SetBranchAddress("HLT_Ele115_CaloIdVT_GsfTrkIdT", &HLT_Ele115_CaloIdVT_GsfTrkIdT);
+        chain->SetBranchAddress("HLT_Photon175", &HLT_Photon175);
         chain->SetBranchAddress("HLT_IsoMu24", &HLT_IsoMu24);
         chain->SetBranchAddress("HLT_IsoTkMu24", &HLT_IsoTkMu24);
+        chain->SetBranchAddress("HLT_Mu50", &HLT_Mu50);
+        chain->SetBranchAddress("HLT_TkMu50", &HLT_TkMu50);
         nFlag_met = 10;
     }
     else
     {
         chain->SetBranchAddress("HLT_Ele35_WPTight_Gsf", &HLT_Ele35_WPTight_Gsf);
+        chain->SetBranchAddress("HLT_Ele115_CaloIdVT_GsfTrkIdT", &HLT_Ele115_CaloIdVT_GsfTrkIdT);
+        chain->SetBranchAddress("HLT_Photon200", &HLT_Photon200);
         chain->SetBranchAddress("HLT_IsoMu27", &HLT_IsoMu27);
+        chain->SetBranchAddress("HLT_Mu50", &HLT_Mu50);
+        chain->SetBranchAddress("HLT_OldMu100", &HLT_OldMu100);
+        chain->SetBranchAddress("HLT_TkMu100", &HLT_TkMu100);
         chain->SetBranchAddress("Flag_ecalBadCalibFilter", &Flag_met[10]);
         nFlag_met = 11;
     }
@@ -234,6 +332,17 @@ Bool_t select_tree::select_jet()
     max_score = 0;
     int jet_index[nj];
     Bool_t jet_flag = false;
+    Int_t bnum_up, bnum_dn;
+    if (cate == CATEGORY::A || cate == CATEGORY::C)
+    {
+        bnum_up = nj;
+        bnum_dn = 2;
+    }
+    else
+    {
+        bnum_up = 0;
+        bnum_dn = 0;
+    }
     for (int i = 0; i < nJet; i++)
     {
         TLorentzVector mom_jet;
@@ -249,7 +358,7 @@ Bool_t select_tree::select_jet()
                 max_score = Jet_btagDeepFlavB[i];
         }
     }
-    if (jet_num >= 3 && nBtag >= 2)
+    if (jet_num >= 3 && nBtag >= bnum_dn && nBtag <= bnum_up)
     {
         jet_flag = true;
         for (int i = 0; i < jet_num; i++)
@@ -272,57 +381,91 @@ Bool_t select_tree::select_jet()
 }
 Bool_t select_tree::select_lep()
 {
-    Int_t nlepton = nMuon + nElectron;
     Bool_t lepton_flag = false; // if true pass the selction
-    int num_select = 0;
     bool is_from_jet;
     TLorentzVector p4_lepton;
-    for (int i = 0; i < nlepton; i++)
+    Int_t elec_iso_id;
+    bool muon_iso_veto, muon_iso_sel;
+    int index_lep;
+    Float_t veto_muon_isodown, veto_muon_isoup, sel_muon_isodown, sel_muon_isoup;
+    if (cate == CATEGORY::A || cate == CATEGORY::B)
     {
-        if (i < nElectron)
+        veto_muon_isodown = 0;
+        veto_muon_isoup = 0.25;
+        sel_muon_isodown = 0;
+        sel_muon_isoup = 0.15;
+    }
+    else
+    {
+        veto_muon_isodown = 0;
+        veto_muon_isoup = 100000;
+        sel_muon_isodown = 0.15;
+        sel_muon_isoup = 100000;
+    }
+    int num_veto = 0;
+    vector<int> index_selected;
+    for (int i = 0; i < nElectron; i++)
+    {
+        p4_lepton.SetPtEtaPhiM(Electron_pt[i], Electron_eta[i], Electron_phi[i], Electron_mass[i]);
+        is_from_jet = is_lep_from_jet(p4_lepton, OBJECT_TYPE::lepton);
+        elec_iso_id = iso_select(i);
+        //Electron_cutBased[i] >= 2
+        //loose_noiso(i) && (elec_iso_id >= 1)
+        if (Electron_cutBased[i] >= 2 && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 15)
         {
-            p4_lepton.SetPtEtaPhiM(Electron_pt[i], Electron_eta[i], Electron_phi[i], Electron_mass[i]);
-            is_from_jet = is_lep_from_jet(p4_lepton, OBJECT_TYPE::lepton);
-            if (Electron_cutBased[i] >= 2 && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 15)
+            if ((fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) < 1.479 && fabs(Electron_dxy[i]) < 0.05 && fabs(Electron_dz[i]) < 0.1) || (fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) >= 1.479 && fabs(Electron_dxy[i]) < 0.1 && fabs(Electron_dz[i]) < 0.2))
             {
-                if ((fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) < 1.479 && fabs(Electron_dxy[i]) < 0.05 && fabs(Electron_dz[i]) < 0.1) || (fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) >= 1.479 && fabs(Electron_dxy[i]) < 0.1 && fabs(Electron_dz[i]) < 0.2))
-                {
-                    num_select++;
-                    if (Electron_cutBased[i] == 4 && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 30 && (!is_from_jet))
-                    {
-                        lep_c = Electron_charge[i];
-                        mom_lep = p4_lepton;
-                        lep_flavour = false;
-                        lepton_flag = true;
-                        electron_deltaEtaSC = Electron_deltaEtaSC[i];
-                    }
-                }
+                //Electron_cutBased[i] == 4
+                //tight_noiso(i) && (elec_iso_id == 2) 
+                if (Electron_cutBased[i] == 4 && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 30 && (!is_from_jet))
+                    index_selected.push_back(i);
+                num_veto++;
             }
-        }
-        else
-        {
-            p4_lepton.SetPtEtaPhiM(Muon_pt[i - nElectron], Muon_eta[i - nElectron], Muon_phi[i - nElectron], Muon_mass[i - nElectron]);
-            is_from_jet = is_lep_from_jet(p4_lepton, OBJECT_TYPE::lepton);
-            if (Muon_looseId[i - nElectron] == 1 && Muon_pfRelIso04_all[i - nElectron] <= 0.25 && Muon_pt[i - nElectron] > 15 && fabs(Muon_eta[i - nElectron]) < 2.4)
-            {
-                num_select++;
-                if (Muon_tightId[i - nElectron] == 1 && Muon_pfRelIso04_all[i - nElectron] <= 0.15 && Muon_pt[i - nElectron] > 30 && fabs(Muon_eta[i - nElectron]) < 2.4 && (!is_from_jet))
-                {
-                    lep_c = Muon_charge[i - nElectron];
-                    mom_lep = p4_lepton;
-                    lep_flavour = true;
-                    lepton_flag = true;
-                    electron_deltaEtaSC = 0;
-                }
-            }
-        }
-        if (num_select > 1)
-        {
-            lepton_flag = false;
-            break;
         }
     }
-    return lepton_flag;
+    for (int i = 0; i < nMuon; i++)
+    {
+        p4_lepton.SetPtEtaPhiM(Muon_pt[i], Muon_eta[i], Muon_phi[i], Muon_mass[i]);
+        is_from_jet = is_lep_from_jet(p4_lepton, OBJECT_TYPE::lepton);
+        muon_iso_veto =  (Muon_pfRelIso04_all[i] <= veto_muon_isoup) && (Muon_pfRelIso04_all[i] >= veto_muon_isodown);
+        muon_iso_sel = (Muon_pfRelIso04_all[i] <= sel_muon_isoup) && (Muon_pfRelIso04_all[i] >= sel_muon_isodown);
+        if (Muon_looseId[i] == 1 && muon_iso_veto && Muon_pt[i] > 15 && fabs(Muon_eta[i]) < 2.4)
+        {
+            if (Muon_tightId[i] == 1 && muon_iso_sel && Muon_pt[i] > 30 && fabs(Muon_eta[i]) < 2.4 && (!is_from_jet))
+                index_selected.push_back(i + nElectron);
+            num_veto++;
+        }
+    }
+    if (cate == CATEGORY::A || cate == CATEGORY::B || op_type == OP_TYPE::select_reco)
+    {
+        if (num_veto != 1 || index_selected.size() != 1)
+            return false;
+        else
+            index_lep = index_selected[0];
+    }
+    else
+    {
+        if (index_selected.size() == 0)
+            return false;
+        else
+            index_lep = index_selected[getRandomIndex(0, index_selected.size() - 1)];
+    }
+    if (index_lep < nElectron)
+    {
+        lep_c = Electron_charge[index_lep];
+        mom_lep.SetPtEtaPhiM(Electron_pt[index_lep], Electron_eta[index_lep], Electron_phi[index_lep], Electron_mass[index_lep]);
+        lep_flavour = false;
+        electron_deltaEtaSC = Electron_deltaEtaSC[index_lep];
+    }
+    else
+    {
+        index_lep -= nElectron;
+        lep_c = Muon_charge[index_lep];
+        mom_lep.SetPtEtaPhiM(Muon_pt[index_lep], Muon_eta[index_lep], Muon_phi[index_lep], Muon_mass[index_lep]);
+        lep_flavour = true;
+        electron_deltaEtaSC = 0;
+    }
+    return true;
 }
 
 void select_tree::read_LHE()
@@ -506,7 +649,7 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
     hist_ecorr_cut_like_Jet_gen = (TH2D *)hists[17];
     hist_ecorr_cut_like_jet_gen = (TH2D *)hists[18];
     raw_nJets_gen = (TH1D *)hists[19];
-    Bool_t ele_trigger, mu_trigger;
+    
     Bool_t jet_flag, lep_flag, trigger_flag;
     for (int entry = 0; entry < chain->GetEntries(); entry++)
     {
@@ -522,18 +665,48 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
         index = entry;
         if (year == 2018)
         {
-            ele_trigger = HLT_Ele32_WPTight_Gsf;
-            mu_trigger = HLT_IsoMu24;
+            if (cate == CATEGORY::A || cate == CATEGORY::B)
+            {
+                ele_trigger = HLT_Ele32_WPTight_Gsf;
+                mu_trigger = HLT_IsoMu24;
+            }
+            else
+            {
+                // ele_trigger=HLT_Ele115_CaloIdVT_GsfTrkIdT;
+                // mu_trigger=HLT_Mu50||HLT_OldMu100||HLT_TkMu100;
+                ele_trigger = HLT_Ele23_CaloIdM_TrackIdM_PFJet30;
+                mu_trigger = HLT_Mu27;
+            }
         }
         else if (year == 2016 || year == 2015)
         {
-            ele_trigger = HLT_Ele27_WPTight_Gsf;
-            mu_trigger = HLT_IsoMu24 || HLT_IsoTkMu24;
+            if (cate == CATEGORY::A || cate == CATEGORY::B)
+            {
+                ele_trigger = HLT_Ele27_WPTight_Gsf;
+                mu_trigger = HLT_IsoMu24 || HLT_IsoTkMu24;
+            }
+            else
+            {
+                // ele_trigger=HLT_Ele115_CaloIdVT_GsfTrkIdT||HLT_Photon175;
+                // mu_trigger=HLT_Mu50||HLT_TkMu50;
+                ele_trigger = HLT_Ele23_CaloIdM_TrackIdM_PFJet30;
+                mu_trigger = HLT_Mu27;
+            }
         }
         else
         {
-            ele_trigger = HLT_Ele35_WPTight_Gsf;
-            mu_trigger = HLT_IsoMu27;
+            if (cate == CATEGORY::A || cate == CATEGORY::B)
+            {
+                ele_trigger = HLT_Ele35_WPTight_Gsf;
+                mu_trigger = HLT_IsoMu27;
+            }
+            else
+            {
+                // ele_trigger=HLT_Ele115_CaloIdVT_GsfTrkIdT||HLT_Photon200;
+                // mu_trigger=HLT_Mu50||HLT_OldMu100||HLT_TkMu100;
+                ele_trigger = HLT_Ele23_CaloIdM_TrackIdM_PFJet30;
+                mu_trigger = HLT_Mu27;
+            }
         }
         met_match = true;
         for (int i = 0; i < nFlag_met; i++)
@@ -762,8 +935,8 @@ void select_tree::write_select()
     mytree->Branch("mass_tlep", &mass_tlep, "mass_tlep/F");
     mytree->Branch("mass_t", &mass_t, "mass_t/F");
     mytree->Branch("rectop_pt", &rectop_pt, "rectop_pt/F");
-
     mytree->Branch("PV_npvsGood", &PV_npvsGood, "PV_npvsGood/I");
+
     if (input.Contains("TTToSemi") && data_type == MC)
         mytree->Branch("category", &category, "category/I");
     if (op_type == select_reco_ttx)
@@ -912,6 +1085,8 @@ select_tree::~select_tree()
     delete[] Electron_deltaEtaSC;
     delete[] Electron_dxy;
     delete[] Electron_dz;
+    delete[] Electron_pfRelIso03_all;
+    delete[] Electron_vidNestedWPBitmap;
 
     delete[] Muon_mass;
     delete[] Muon_phi;

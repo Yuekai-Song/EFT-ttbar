@@ -8,13 +8,27 @@
 #include<TH1F.h>
 #include<TH2F.h>
 #include<iostream>
+#include <random>
 using namespace std;
+
+int getRandomIndex(int min, int max) {
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(min, max);
+    return distrib(gen);
+}
 
 enum DATA_TYPE {
     data,
     MC,
     tree_sys,
     MC_sys
+};
+enum CATEGORY {
+    A,
+    B,
+    C,
+    D
 };
 enum OP_TYPE {
     select_reco,
@@ -66,8 +80,9 @@ private:
     Int_t *Electron_cutBased, *Jet_jetId;
     Bool_t *Muon_tightId, *Muon_looseId;
     Float_t *Electron_deltaEtaSC, *Electron_dxy, *Electron_dz;
-    Bool_t HLT_Ele32_WPTight_Gsf, HLT_IsoMu27, HLT_IsoMu24;
-    Bool_t HLT_IsoTkMu24, HLT_Ele27_WPTight_Gsf, HLT_Ele35_WPTight_Gsf;
+    Bool_t HLT_Ele32_WPTight_Gsf, HLT_IsoMu27, HLT_IsoMu24, HLT_Mu50, HLT_OldMu100, HLT_TkMu100, HLT_Ele115_CaloIdVT_GsfTrkIdT;
+    Bool_t HLT_TkMu50, HLT_Photon175, HLT_IsoTkMu24, HLT_Ele27_WPTight_Gsf, HLT_Ele35_WPTight_Gsf, HLT_Photon200;
+    Bool_t HLT_Mu27, HLT_Ele23_CaloIdM_TrackIdM_PFJet30;
     ULong64_t event;
     Float_t Generator_weight;
     UInt_t luminosityBlock, run;
@@ -113,6 +128,8 @@ private:
     Float_t muR_down, muF_down, ISR_down, FSR_down;
     Float_t pdf_up, pdf_dn, alphas_dn, alphas_up;
     int category;
+    CATEGORY cate;
+    Bool_t ele_trigger, mu_trigger;
     Bool_t select_jet();
     Bool_t select_lep();
     void loop(TTree* trees[2], TH1* hists[20]);
@@ -120,9 +137,15 @@ private:
     void read_LHE();
     void read_sys();
     void pdf_w(Float_t LHEPdfWeight[103], Float_t &alphas_up, Float_t &alphas_dn, Float_t &pdf_up, Float_t &pdf_dn);
+    //elctron cut-based id break down
+    Int_t *Electron_vidNestedWPBitmap;
+    Float_t *Electron_pfRelIso03_all;
+    Bool_t tight_noiso(Int_t i);
+    Int_t iso_select(Int_t i);
+    Bool_t loose_noiso(Int_t i);
 public:
     static TF1* h_ecorr;
-    select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, DATA_TYPE data_types, OP_TYPE op_types, OBJECT_SELECT_ORDER order_type, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
+    select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, DATA_TYPE data_types, OP_TYPE op_types, OBJECT_SELECT_ORDER order_type, CATEGORY cates, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
     void write_select();
     void write_distribution();
     void write_ecorr();

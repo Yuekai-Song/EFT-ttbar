@@ -71,7 +71,7 @@ echo "directories are written into condor_list.txt"
 rm -f condor_${type_name}.sub
 cat >condor_${type_name}.sub <<EOF
 executable              = ../scripts/run_${type_name}.sh
-arguments               = \$(dir) $2
+arguments               = \$(dir) $2 $3
 Initialdir              = /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES/20${2}/condor_out_${type_name}/\$(dir)
 
 output                  = run.out

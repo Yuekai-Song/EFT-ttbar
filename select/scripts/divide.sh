@@ -3,7 +3,6 @@
 # to write dataset files into .txt and divide
 type_name=$1
 cd ../20$2 || exit 1
-ttx=$3
 input=${type_name}.txt
 i=0
 for dataset in $(cat $input); do
