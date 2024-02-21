@@ -51,9 +51,9 @@ then
     eval `scramv1 runtime -sh`
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES
     input=$(ls $output|grep root)
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",0,20${2},$3,1)"
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",0,20${2},$3,2)"
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",0,20${2},$3,3)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,$3,1)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,$3,2)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,$3,3)"
     num=$(ls $output|grep new|wc -l)
     if [ $num -gt 0 ]
     then
