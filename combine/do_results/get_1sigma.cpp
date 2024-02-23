@@ -3,11 +3,15 @@
 #include <iostream>
 using namespace std;
 
-vector<Float_t> get_1sigma(TString dir, TString poi_name)
+double midx(double x1, double x2, double y1, double y2, double y0)
+{
+    return (x1 * y0 - x2 * y0 + x2 * y1 - x1 * y2) / (y1 - y2);
+}
+void get_1sigma(TString dir, TString poi_name)
 {
     Float_t poi, deltaNLL;
     Float_t best_fit;
-    vector<Float_t> result;
+    vector<Float_t> result1, result2;
     TFile *file = TFile::Open(dir + "limit_scan_" + poi_name + ".root");
     TTree *limit = (TTree *)file->Get("limit");
     limit->SetBranchAddress(poi_name, &poi);
@@ -16,7 +20,9 @@ vector<Float_t> get_1sigma(TString dir, TString poi_name)
     best_fit = poi;
     float dis = 1000;
     int best_entry = -1, left_entry = -1, right_entry = -1;
-    float pois[2], deltaNLLs[2];    
+    float pois[2], deltaNLLs[2];
+    bool not_found_68 = true;
+    float poi2s[2], deltaNLL2s[2];  
     for (int entry = 1; entry < limit->GetEntries(); entry++)
     {
         limit->GetEntry(entry);
@@ -43,12 +49,29 @@ vector<Float_t> get_1sigma(TString dir, TString poi_name)
                 entry--;
             else
                 entry++;
-            if (2 * deltaNLL > 1)
+            if (2 * deltaNLL >= 1 && not_found_68)
+            {
+                result1.push_back(midx(pois[0], pois[1], deltaNLLs[0], deltaNLLs[1], 1));
+                not_found_68 = false;
+            }
+            if (2 * deltaNLL >= 3.84)
+            {
+                result2.push_back(midx(pois[0], pois[1], deltaNLLs[0], deltaNLLs[1], 3.84));
                 break;
+            }
         }
+        not_found_68 = true;
         //cout << pois[0] << " " << deltaNLLs[0] << ", " << pois[1] << " " << deltaNLLs[1] << endl;
         //cout << (pois[0] - pois[1] + pois[1] * deltaNLLs[0] - pois[0] * deltaNLLs[1]) / (deltaNLLs[0] - deltaNLLs[1]) << endl;
-        result.push_back((pois[0] - pois[1] + pois[1] * deltaNLLs[0] - pois[0] * deltaNLLs[1]) / (deltaNLLs[0] - deltaNLLs[1]));
     }
-    return result;
+    if (result1.size() > 0)
+        cout << "under 68%: (" << result1[0] << ", " << result1[1] << ")" <<endl;
+    else
+        cout << "68% not limited" << endl;
+
+    if (result2.size() > 0)
+        cout << "under 95%: (" << result2[0] << ", " << result2[1] << ")" <<endl;
+    else
+        cout << "95% not limited" << endl;
+    //return result;
 } 

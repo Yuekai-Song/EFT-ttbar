@@ -10,6 +10,7 @@
 #include <TFile.h>
 #include <TROOT.h>
 #include <TLegendEntry.h>
+#include <iostream>
 #include <TLine.h>
 using namespace std;
 void draw_pre(TString dir, vector<TString> fileName, vector<TString> text, TString varname, Float_t upedge, Float_t downedge, Float_t legend_left, Float_t legend_right, TString xtitle)
@@ -34,7 +35,7 @@ void draw_pre(TString dir, vector<TString> fileName, vector<TString> text, TStri
     c2->SetFrameBorderMode(0);
     c2->SetFrameFillStyle(0);
     c2->SetFrameBorderMode(0);
-    TLegend *leg = new TLegend(0.3, 0.67, 0.7, 0.90);
+    TLegend *leg = new TLegend(0.3, 0.70, 0.7, 0.90);
     leg->SetFillColor(0);
     leg->SetLineColor(0);
     leg->SetBorderSize(0);

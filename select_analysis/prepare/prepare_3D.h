@@ -50,7 +50,7 @@ private:
     TString file_up, file_dn;
     TString tree_up, tree_dn;
     TString other_con1, other_con2;
-
+    bool is_ttx, is_corr;
     void give_sys_name(TString file, TString weight, int s, int c);
     void renew_weight(TString *weight, TString file);
     void draw(TH3D *h1, TString file, TString tree, TString weight);
@@ -61,6 +61,6 @@ private:
     void draw_data();
 
 public:
-    prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xy_bins, double *xy_range, int option);
+    prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xy_bins, double *xy_range, int option, bool is_ttxs, bool is_corrs);
     ~prepare_3D();
 };

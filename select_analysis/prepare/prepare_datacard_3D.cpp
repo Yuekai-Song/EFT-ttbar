@@ -1,5 +1,5 @@
 #include "prepare_3D.cpp"
-void prepare_datacard_3D(int i, int year, int option)
+void prepare_datacard_3D(int i, int year, int option, bool is_ttx, bool is_corr = false)
 {
     TString cuts[] = {"(jet_num == 3 && (!lep_flavour))", "(jet_num >= 4  && (!lep_flavour))",
                       "(jet_num == 3 && lep_flavour)", "(jet_num >= 4 && lep_flavour)"};
@@ -8,6 +8,6 @@ void prepare_datacard_3D(int i, int year, int option)
     double xyz_range[] = {300, 3000, 0, 4.0, 8, 33};
 
     cout << "begin " << cutsName[i] << ":" << endl;
-    prepare_3D *p = new prepare_3D(cuts[i], cutsName[i], year, xyz_bins, xyz_range, option);
+    prepare_3D *p = new prepare_3D(cuts[i], cutsName[i], year, xyz_bins, xyz_range, option, is_ttx, is_corr);
     delete p;
 }

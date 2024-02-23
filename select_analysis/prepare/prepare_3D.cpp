@@ -11,8 +11,8 @@ void prepare_3D::give_sys_name(TString file, TString weight, int s, int c)
         weight_up = weight;
         weight_dn = weight;
     }
-    else if (s < 19 || s == 27)
-    { // SF_btag*4, SF_lepton, L1_PreFiring, Pileup, and NNLO_QCD
+    else if (s < 21 || s == 29)
+    { // SF_btag*6, SF_lepton, L1_PreFiring, Pileup, and NNLO_QCD
         tree_up = "mytree";
         tree_dn = "mytree";
         file_up = file;
@@ -22,7 +22,7 @@ void prepare_3D::give_sys_name(TString file, TString weight, int s, int c)
         weight_dn = weight;
         weight_dn.ReplaceAll(sys[s], sys_down[s]);
     }
-    else if (s < 23)
+    else if (s < 25)
     { // muR, muF, ISR, FSR
         tree_up = "mytree";
         tree_dn = "mytree";
@@ -31,7 +31,7 @@ void prepare_3D::give_sys_name(TString file, TString weight, int s, int c)
         weight_up = weight + "*" + sys_up[s];
         weight_dn = weight + "*" + sys_down[s];
     }
-    else if (s < 26)
+    else if (s < 28)
     { // mtop, mtop3, hdamp
         tree_up = "mytree";
         tree_dn = "mytree";
@@ -42,7 +42,7 @@ void prepare_3D::give_sys_name(TString file, TString weight, int s, int c)
         weight_up = weight;
         weight_dn = weight;
     }
-    else if (s < 28)
+    else if (s < 30)
     { // TuneCP5
         tree_up = "mytree";
         tree_dn = "mytree";
@@ -53,7 +53,7 @@ void prepare_3D::give_sys_name(TString file, TString weight, int s, int c)
         weight_up = weight;
         weight_dn = weight;
     }
-    else if (s < 29)
+    else if (s < 31)
     { // EW_un
         tree_up = "mytree";
         tree_dn = "mytree";
@@ -73,7 +73,10 @@ void prepare_3D::renew_weight(TString *weight, TString file)
     double lumi = lumi_s[year - 2015];
     auto c0 = new TCanvas("c0", "c0", 8, 30, 600, 600);
     TChain *tree0 = new TChain("rawtree");
-    tree0->Add(dir + "/MC/" + file);
+    if (is_ttx)
+        tree0->Add(dir + "/MC_ttx/" + file);
+    else
+        tree0->Add(dir + "/MC/" + file);
     TH1D *nmc = new TH1D("nmc", "", 50, 0, 100);
     // nmc->Sumw2();
     c0->cd();
@@ -92,11 +95,17 @@ void prepare_3D::draw(TH3D *h1, TString file, TString tree, TString weight)
 {
     auto c0 = new TCanvas("c0", "c0", 8, 30, 600, 600);
     TChain chain(tree);
-    chain.Add(dir + "/MC/" + file);
+    if(is_ttx)
+        chain.Add(dir + "/MC_ttx/" + file);
+    else
+        chain.Add(dir + "/MC/" + file);
     c0->cd();
     TString h1Name = h1->GetName();
     // h1->Sumw2();
-    chain.Draw("likelihood:fabs(rapidity_tt):mass_tt_uncorr>>" + h1Name, weight + "*" + cut);
+    if (is_corr)
+        chain.Draw("likelihood:fabs(rapidity_tt):mass_tt>>" + h1Name, weight + "*" + cut);
+    else
+        chain.Draw("likelihood:fabs(rapidity_tt):mass_tt_uncorr>>" + h1Name, weight + "*" + cut);
     c0->cd();
     delete c0;
 }
@@ -205,7 +214,12 @@ void prepare_3D::draw_sys(int c, int s)
 void prepare_3D::set_dir(int option)
 {
     dir = Form("../output/%d", year);
-    outputDir = Form("../output/%d/datacard", year);
+    if(is_ttx)
+        outputDir = Form("../output/%d/datacard_ttx", year);
+    else
+        outputDir = Form("../output/%d/datacard", year);
+    if(is_corr)
+        outputDir += "_corr";
     const int nsample = 44;
     TString fileName[nsample] = {
         "new_TTToSemiLeptonic_TuneCP5_13TeV-powheg.root",
@@ -275,10 +289,10 @@ void prepare_3D::set_dir(int option)
                                  1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
                                  1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
                                  1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    TString sys_s[] = {"jer", "unclus", "SF_btag", "SF_btag", "SF_btag", "SF_btag", "SF_lepton", "L1PreFiringWeight_Nom", "pu_wt", "muR", "muF", "ISR", "FSR", "mtop", "mtop", "hdamp", "TuneCP5", "nnlo_wt", "EW_un"};
-    TString sys_ns[] = {"jer", "unclus", "SF_btag", Form("SF_btag%d", year), "SF_ltag", Form("SF_ltag%d", year), Form("SF_lepton%d", year), "L1PF", "PU", "muR", "muF", "ISR", "FSR", "mtop", "mtop3", "hdamp", "TuneCP5", "nnlo_wt", "EW_un"};
-    TString sys_up_s[] = {"jerUp", "unclusUp", "SF_btag_up_co", "SF_btag_up", "SF_ltag_up_co", "SF_ltag_up", "SF_lepton_up", "L1PreFiringWeight_Up", "pu_wt_up", "muR_up", "muF_up", "ISR_up", "FSR_up", "mtop173p5", "mtop175p5", "hdampUP", "TuneCP5up", "nnlo_wt_up", "EW_un_up"};
-    TString sys_down_s[] = {"jerDown", "unclusDown", "SF_btag_down_co", "SF_btag_down", "SF_ltag_down_co", "SF_ltag_down", "SF_lepton_down", "L1PreFiringWeight_Dn", "pu_wt_dn", "muR_down", "muF_down", "ISR_down", "FSR_down", "mtop171p5", "mtop169p5", "hdampDOWN", "TuneCP5down", "nnlo_wt_down", "EW_un_down"};
+    TString sys_s[] = {"jer", "unclus", "L1PreFiringWeight_Nom", "SF_btag", "SF_btag", "SF_btag", "SF_btag", "SF_btag", "SF_btag", "SF_lepton", "pu_wt", "muR", "muF", "ISR", "FSR", "mtop", "mtop", "hdamp", "TuneCP5", "nnlo_wt", "EW_un"};
+    TString sys_ns[] = {"jer", "unclus", Form("L1PF_%d", year), "SF_btag_jes", "SF_btag_type3", "SF_btag_pileup", Form("SF_btag_stat%d", year), "SF_ltag", Form("SF_ltag%d", year), Form("SF_lepton%d", year), "PU", "muR", "muF", "ISR", "FSR", "mtop", "mtop3", "hdamp", "TuneCP5", "nnlo_wt", "EW_un"};
+    TString sys_up_s[] = {"jerUp", "unclusUp", "L1PreFiringWeight_Up", "SF_btag_jesup", "SF_btag_type3up", "SF_btag_pileupup", "SF_btag_statisticup", "SF_ltag_up_co", "SF_ltag_up", "SF_lepton_up", "pu_wt_up", "muR_up", "muF_up", "ISR_up", "FSR_up", "mtop173p5", "mtop175p5", "hdampUP", "TuneCP5up", "nnlo_wt_up", "EW_un_up"};
+    TString sys_down_s[] = {"jerDown", "unclusDown", "L1PreFiringWeight_Dn", "SF_btag_jesdn", "SF_btag_type3dn", "SF_btag_pileupdn", "SF_btag_statisticdn", "SF_ltag_down_co", "SF_ltag_down", "SF_lepton_down", "pu_wt_dn", "muR_down", "muF_down", "ISR_down", "FSR_down", "mtop171p5", "mtop169p5", "hdampDOWN", "TuneCP5down", "nnlo_wt_down", "EW_un_down"};
 
     TString jes_source[] = {"Absolute", Form("Absolute_%d", year), "FlavorQCD", "BBEC1", "EC2", "HF", Form("BBEC1_%d", year), Form("EC2_%d", year), "RelativeBal", Form("RelativeSample_%d", year)};
     TString sf_bl[] = {"SF_btag_co", "SF_ltag_co", "SF_btag_un", "SF_btag_un"};
@@ -309,7 +323,7 @@ void prepare_3D::set_dir(int option)
         sys_up[i] = "jes_" + jes_source[i] + "Up";
         sys_down[i] = "jes_" + jes_source[i] + "Down";
     }
-    for (int i = 0; i < 19; i++)
+    for (int i = 0; i < 21; i++)
     {
         sys[i + 10] = sys_s[i];
         sys_n[i + 10] = sys_ns[i];
@@ -360,13 +374,15 @@ void prepare_3D::draw_data()
     // delete c0;
 }
 
-prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xyz_bins, double *xyz_range, int option)
+prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xyz_bins, double *xyz_range, int option, bool is_ttxs, bool is_corrs)
 {
+    is_ttx = is_ttxs;
+    is_corr = is_corrs;
     year = year_s;
     cut = cut_s;
     cut_name = cut_name_s;
     set_dir(option);
-    file = new TFile(outputDir + "/" + category + ".root", "recreate");
+    file = new TFile(outputDir + "/" + category + ".root", "update");
     xbins = xyz_bins[0];
     ybins = xyz_bins[1];
     zbins = xyz_bins[2];
@@ -383,11 +399,11 @@ prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xyz_b
     }
 
     // add_qcd();
-    for (int s = 0; s < 29; s++)
+    for (int s = 0; s < 31; s++)
     {
         for (int c = begin; c < end; c++)
         {
-            if (c > 4 && s > 22) // sys only for signal
+            if (c > 4 && s > 24) // sys only for signal
                 break;
             if (c == 5)
                 continue; // no sys for EW_no
