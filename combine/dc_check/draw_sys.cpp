@@ -3,13 +3,13 @@ void draw_sys(TString datacard_name, TString cutname, int year, TString type_nam
 {
     vector<double> ycuts;
     vector<vector<double>> xbins;
-    if (datacard_name.Contains("4cuts"))
+    if (!datacard_name.Contains("2cuts"))
     {
         ycuts = {0.0, 0.4, 1.0, 2.0};
         xbins = {{0,340,380,420,460,500,600,3000}, {0,350,400,450,500,550,600,700,800,3000}, 
                                {0,450,500,550,600,650,700,800,1000,3000}, {0,650,700,750,800,900,1000,1200,3000}};
     }
-    else if (datacard_name.Contains("2cuts")) {
+    else {
         ycuts = {0.0, 1.4};
         xbins = {{300,340,360,380,400,420,440,460,480,500,520,540,570,600,640,700,3000},
                                    {300,450,500,570,630,700,820,3000}};
@@ -33,7 +33,7 @@ void draw_sys(TString datacard_name, TString cutname, int year, TString type_nam
     TList *list_ori = file_ori->GetListOfKeys();
     TKey *key, *key_ori;
     TIter iter(list), iter_ori(list_ori);
-    map<TString, double> sys_range = {{"sb_co", 0.25}, {"mtop3", 0.15}};
+    map<TString, double> sys_range = {{"SF_btag_type3", 0.3}, {"mtop3", 0.15}};
     double range;
     while ((key = (TKey *)iter()))
     {
@@ -69,12 +69,13 @@ void draw_sys(TString datacard_name, TString cutname, int year, TString type_nam
     }
     for (map<TString, std::vector<TString>>::iterator it_sys = sys_nom.begin(); it_sys != sys_nom.end(); it_sys++)
     {
+        if (sys_range.find(it_sys->first) == sys_range.end())
+            //range = 0;
+            continue;
+        else
+            range = sys_range[it_sys->first];
         for (vector<TString>::iterator it_nom = it_sys->second.begin(); it_nom != it_sys->second.end(); it_nom++)
         {
-            if (sys_range.find(it_sys->first) != sys_range.end())
-                range = 0;
-            else
-                range = sys_range[it_sys->first];
             hsm = &hist_map[*it_nom];
             hmc[0] = &hist_map[*it_nom + "_" + it_sys->first + "Up"];
             hmc[1] = &hist_map[*it_nom + "_" + it_sys->first + "Down"];
