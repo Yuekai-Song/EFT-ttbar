@@ -211,6 +211,8 @@ void write(TString datacard_name, TString dir, TString cut_name, int year, bool 
         {
             hist_name.ReplaceAll("Up", "");
             sys_and_nom(hist_name, sys_name, nom_name);
+            if (!nom_name.Contains("ttbar") && !nom_name.Contains("QCD") && lnN_bg)
+                continue;
             if (find(saved.begin(), saved.end(), sys_name) == saved.end())
                 continue;
             if (find(lnNed_sys.begin(), lnNed_sys.end(), sys_name) != lnNed_sys.end())//is_small_effect(hist_map[nom_name], hist_map[hist_name + "Up"], hist_map[hist_name + "Down"]))
@@ -219,8 +221,6 @@ void write(TString datacard_name, TString dir, TString cut_name, int year, bool 
                                                 hist_map[hist_name + "Down"].GetSumOfWeights() / hist_map[nom_name].GetSumOfWeights());
                 continue;
             }
-            if (!nom_name.Contains("ttbar") && !nom_name.Contains("QCD") && lnN_bg)
-                continue;
             sys_shape[sys_name].push_back(nom_name);
         }
         else if (!hist_name.Contains("Down") && !hist_name.Contains("EW_no") && !hist_name.Contains("data_obs"))
@@ -241,7 +241,7 @@ void write(TString datacard_name, TString dir, TString cut_name, int year, bool 
             pro_v.push_back(pro);
             // need to add some lnN sys manually
             if (find(saved.begin(), saved.end(), "cms_lumi") != saved.end())
-                sys_lnN["cms_lumi"][hist_name] = sys_lumi_year[year];
+                sys_lnN[Form("cms_lumi_%d", year)][hist_name] = sys_lumi_year[year];
 
             if (find(saved.begin(), saved.end(), "stat") != saved.end() && hist_name.Contains("ttbar"))
                 sys_lnN["stat"][hist_name] = "1.000001";

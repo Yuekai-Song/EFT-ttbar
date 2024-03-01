@@ -192,7 +192,7 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
             }
             delete hists_up, hists_dn;
         }
-        else
+        else if (!iter->first.Contains("QCD"))
         {
             outFile->cd();
             iter->second.Write();
@@ -237,42 +237,57 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
         hists_dn->Write();
         delete hists_up, hists_dn;
     }
-    if (fake_qcd)
+
+    if (hist_map.find("QCD_derived_C") != hist_map.end())
     {
-        TH1D *hist_qcd = (TH1D *)hist_map["STop"].Clone();
-        hist_qcd->SetName("QCD");
-        hist_qcd->Add(&hist_map["DYJets"]);
-        hist_qcd->Add(&hist_map["WJets"]);
-        TH1D *hist_qcdnup = (TH1D *)hist_qcd->Clone();
-        TH1D *hist_qcdndn = (TH1D *)hist_qcd->Clone();
-        if (output.Contains("_M_"))
-        {
-            if (output.Contains("4jets") && (output.Contains("2018") || output.Contains("2016")))
-            {
-                hist_qcdnup->Scale(2.5);
-                hist_qcdndn->Scale(1.0/2.5);
-            }
-            else
-            {
-                hist_qcdnup->Scale(1.2);
-                hist_qcdndn->Scale(1.0/1.2);
-            }
-            hist_qcdnup->SetName("QCD_qcdnMUp");
-            hist_qcdndn->SetName("QCD_qcdnMDown");
-        }
+        TString ch = "";
+        if (input.Contains("M"))
+            ch += "_M";
         else
+            ch += "_E";
+        if (input.Contains("4jets"))
+            ch += "4J";
+        else
+            ch += "3J";
+        for (int year = 2015; year < 2019; year++)
         {
-            hist_qcdnup->Scale(2.0);
-            hist_qcdndn->Scale(1.0/2.0);
-            hist_qcdnup->SetName("QCD_qcdnEUp");
-            hist_qcdndn->SetName("QCD_qcdnEDown");
+            if (input.Contains(Form("%d", year)))
+                ch += Form("_%d", year);
         }
+        
+        TH1D *hist_qcd = (TH1D *)hist_map["QCD_derived_C"].Clone();
+        TH1D *hist_qcd_up = (TH1D *)hist_map["QCD_derived_B"].Clone();
+        TH1D *hist_qcd_dn = (TH1D *)hist_map["QCD_derived_D"].Clone();
+        TH1D *hist_qcd_nup = (TH1D *)hist_map["QCD_derived_C"].Clone();
+        TH1D *hist_qcd_ndn = (TH1D *)hist_map["QCD_derived_C"].Clone();
+        
+        hist_qcd->SetName("QCD");
+        hist_qcd_up->SetName("QCD_qshape" + ch + "Up");
+        hist_qcd_dn->SetName("QCD_qshape" + ch + "Down");
+        hist_qcd_nup->SetName("QCD_qnorm" + ch + "Up");
+        hist_qcd_ndn->SetName("QCD_qnorm" + ch + "Down");
+
+        hist_qcd_up->Scale(1.0 / hist_qcd_up->GetSumOfWeights());
+        hist_qcd_dn->Scale(1.0 / hist_qcd_dn->GetSumOfWeights());
+        TH1D *temp = (TH1D *)hist_qcd_up->Clone();
+        hist_qcd_up->Divide(hist_qcd_dn);
+        hist_qcd_dn->Divide(temp);
+        hist_qcd_up->Multiply(hist_qcd);
+        hist_qcd_dn->Multiply(hist_qcd);
+
+        double ns = hist_map["QCD_other_removed_C"].GetSumOfWeights() * hist_map["QCD_MC_CG_B"].GetSumOfWeights() / hist_map["QCD_MC_CG_D"].GetSumOfWeights();
+        ns = ns / hist_qcd->GetSumOfWeights();
+        hist_qcd_nup->Scale(ns);
+        hist_qcd_ndn->Scale(1.0 / ns);
         outFile->cd();
         hist_qcd->Write();
-        hist_qcdnup->Write();
-        hist_qcdndn->Write();
+        hist_qcd_up->Write();
+        hist_qcd_dn->Write();
+        hist_qcd_nup->Write();
+        hist_qcd_ndn->Write();
         delete hist_qcd;
-        delete hist_qcdnup; delete hist_qcdndn;
+        delete hist_qcd_up; delete hist_qcd_dn;
+        delete hist_qcd_nup; delete hist_qcd_ndn;
     }
     outFile->Close();
 }

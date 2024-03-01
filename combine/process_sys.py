@@ -1,7 +1,7 @@
 import sys
 import process
 
-cut_names = ["_E_3jets", "_M_3jets", "_E_4jets", "_M_4jets"]
+cut_names = {"_E_3jets": "_elec_3J", "_M_3jets": "_mu_3J", "_E_4jets" : "_elec_4J", "_M_4jets": "_mu_4J"}
 years = [2015, 2016, 2017, 2018]
 name_datacard = sys.argv[1]
 cut_name = sys.argv[2]
@@ -43,7 +43,8 @@ sys_type_2cuts = {
     "jes_RelativeBal": [1, 0, [0.3]],
     "jes_RelativeSample_{0}".format(year): [1, 0, [0.3]],
     "jer": [1, 0, [0.5]],
-    "unclus": [2, 1]
+    "unclus": [2, 1],
+    "qshape" + cut_names[cut_name] + "_{0}".format(year): [1, 1, [0.7]]
 }
 
 xs_22014 = {
@@ -57,14 +58,14 @@ xs_22014 = {
     "3jets_2015": {"ttbar": 225685.1, "DYJets": 8980.4, "STop": 14718.5, "WJets": 8980.4, "QCD": 6696.0},
 }
 xs = {
-    "4jets_2018": {"ttbar": 1373672.180, "DYJets": 42889.097, "STop": 65668.303, "WJets": 42889.097, "QCD": 108557.40},
-    "3jets_2018": {"ttbar": 700886.249, "DYJets": 45213.924, "STop": 68980.932, "WJets": 45213.924, "QCD": 114194.86},
-    "4jets_2017": {"ttbar": 905491.916, "DYJets": 26666.765, "STop": 42933.543, "WJets": 26666.765, "QCD": 69600.308},
-    "3jets_2017": {"ttbar": 459668.940, "DYJets": 28001.779, "STop": 44918.471, "WJets": 28001.779, "QCD": 72920.250},
-    "4jets_2016": {"ttbar": 369249.661, "DYJets": 9457.0650, "STop": 17078.825, "WJets": 9457.0650, "QCD": 26535.890},
-    "3jets_2016": {"ttbar": 192682.512, "DYJets": 10092.127, "STop": 18414.012, "WJets": 10092.127, "QCD": 20184.254},
-    "4jets_2015": {"ttbar": 436525.235, "DYJets": 12746.261, "STop": 20094.089, "WJets": 12746.261, "QCD": 32840.350},
-    "3jets_2015": {"ttbar": 229796.945, "DYJets": 13594.463, "STop": 22042.574, "WJets": 13594.463, "QCD": 35637.037},
+    "4jets_2018": {"ttbar": 1373672.180, "DYJets": 42889.097, "STop": 65668.303, "WJets": 42889.097, "QCD": 13482.57},
+    "3jets_2018": {"ttbar": 700886.249, "DYJets": 45213.924, "STop": 68980.932, "WJets": 45213.924, "QCD": 10478.331},
+    "4jets_2017": {"ttbar": 905491.916, "DYJets": 26666.765, "STop": 42933.543, "WJets": 26666.765, "QCD": 3646.486},
+    "3jets_2017": {"ttbar": 459668.940, "DYJets": 28001.779, "STop": 44918.471, "WJets": 28001.779, "QCD": 6523.975},
+    "4jets_2016": {"ttbar": 369249.661, "DYJets": 9457.0650, "STop": 17078.825, "WJets": 9457.0650, "QCD": 22364.907},
+    "3jets_2016": {"ttbar": 192682.512, "DYJets": 10092.127, "STop": 18414.012, "WJets": 10092.127, "QCD": 3379.509},
+    "4jets_2015": {"ttbar": 436525.235, "DYJets": 12746.261, "STop": 20094.089, "WJets": 12746.261, "QCD": 5121.598},
+    "3jets_2015": {"ttbar": 229796.945, "DYJets": 13594.463, "STop": 22042.574, "WJets": 13594.463, "QCD": 3857.661},
 }
 xs_ttx = {
     "4jets_2018": {"ttbar": 1228687.364, "DYJets": 24617.331, "STop": 49288.147, "WJets": 24617.331, "QCD": 73905.478},
@@ -77,14 +78,20 @@ xs_ttx = {
     "3jets_2015": {"ttbar": 186716.825, "DYJets": 5531.7200, "STop": 12311.083, "WJets": 5531.7200, "QCD": 17842.803},
 }
 
+qnorm_22014 = {"E3J_2015": 2.0, "M3J_2015": 1.2, "E4J_2015": 2.0, "M4J_2015": 1.2,
+               "E3J_2016": 2.0, "M3J_2016": 1.2, "E4J_2016": 2.0, "M4J_2016": 2.0,
+               "E3J_2017": 2.0, "M3J_2017": 1.2, "E4J_2017": 2.0, "M4J_2017": 1.2,
+               "E3J_2018": 2.0, "M3J_2018": 1.2, "E4J_2018": 2.0, "M4J_2018": 2.0}
+
 sys_same_year = ["hdamp"]
 for syss in sys_same_year:
     if "{0}".format(year) in syss:
         exit()
     
 flat_name = {0: "", 1: "_bg_flat"}
+nom_name = {0: "", 1: "_renormed"}
 
-new_file = name_datacard + "/processed" + flat_name[bg_flat] + "/ttbar" + cut_name + "_{0}.root".format(year)
+new_file = name_datacard + "/processed" + flat_name[bg_flat] + nom_name[renorm] + "/ttbar" + cut_name + "_{0}.root".format(year)
 base_file = name_datacard + "/original/ttbar" + cut_name + ".root"
 original = name_datacard + "/original/ttbar" + cut_name + "_{0}.root".format(year)
 
@@ -103,4 +110,7 @@ if renorm == 0:
     xs_self = xs_22014
 
 xs_cut = cut_name[3:] + "_" + sys.argv[3]
-process.process(new_file, original, bg_flat, sys_type, xs_22014[xs_cut], xs_self[xs_cut], start, base_file, sys_same_year)
+ch = cut_name[0:1] + cut_name[2:4]+ "_" + sys.argv[3]
+qnorm_fix = qnorm_22014[ch]
+
+process.process(new_file, original, bg_flat, sys_type, xs_22014[xs_cut], xs_self[xs_cut], qnorm_fix, start, base_file, sys_same_year)

@@ -94,7 +94,7 @@ def get_sys_name(h1_sys_name: str) -> None:
 
 
 def process(file_name: str, original: str, flat_bg: bool, sys_type: dict,
-            xs_22014: dict, xs_self: dict, start: list, base_file: str, sys_same_year: list) -> None:
+            xs_22014: dict, xs_self: dict, qnorm_fix: float, start: list, base_file: str, sys_same_year: list) -> None:
     file = ROOT.TFile(file_name, "recreate")
     old_file = ROOT.TFile(original, "read")
     base = ROOT.TFile(base_file, "read")
@@ -113,6 +113,7 @@ def process(file_name: str, original: str, flat_bg: bool, sys_type: dict,
         hist_map[hist_name] = hist
         hist_map[hist_name].SetDirectory(0)
         hist_map[hist_name].Scale(xs_22014[nom_name] / xs_self[nom_name])
+
         if ("Up" in hist_name or "Down" in hist_name):
             hist_name = hist_name.replace("Up", "")
             hist_name = hist_name.replace("Down", "")
@@ -131,14 +132,23 @@ def process(file_name: str, original: str, flat_bg: bool, sys_type: dict,
         if sys_name in sys_same_year:
             hist_base = [base.Get(nom_name), base.Get(sys + "Up"), base.Get(sys + "Down")]
             same_year(hist_map[sys + "Up"], hist_map[sys + "Down"], hist_map[nom_name], hist_base)
-    
-        if flat_bg and "ttbar" not in nom_name:
+        
+        if "qnorm" in sys_name:
+            hist_map[sys + "Up"] = hist_map[nom_name].Clone()
+            hist_map[sys + "Up"].SetName(sys + "Up")
+            hist_map[sys + "Down"] = hist_map[nom_name].Clone()
+            hist_map[sys + "Down"].SetName(sys + "Down")
+            hist_map[sys + "Up"].Scale(qnorm_fix)
+            hist_map[sys + "Down"].Scale(1.0 / qnorm_fix)
+        
+        if flat_bg and "ttbar" not in nom_name and "QCD" not in nom_name:
             option = [2, 1]
         elif sys_name not in sys_type.keys():
             option = [0, 0]
         else:
             option = sys_type[sys_name]
         smooth_sys(hist_map[sys + "Up"], hist_map[sys + "Down"], hist_map[nom_name], start, option)
+
         file.cd()
         hist_map[sys + "Up"].Write()
         hist_map[sys + "Down"].Write()
