@@ -65,6 +65,7 @@ void prepare_3D::give_sys_name(TString file, TString weight, int s, int c)
         weight_dn = weight_dn + EW[c] + "_EWDown";
     }
     // cout<<weight_up<<" "<<weight_dn<<" "<<weight<<" "<<endl;
+    // cout << tree_up << " " <<tree_dn << endl;
 }
 
 void prepare_3D::renew_weight(TString *weight, TString file)
@@ -299,7 +300,7 @@ void prepare_3D::set_dir(int option)
 
     for (int i = 0; i < nsample; i++)
     {
-        fileName[i].ReplaceAll(".root", "_*.root");
+        fileName[i].ReplaceAll(".root", "_1*.root");
         if (i < 20)
             fileNames[i] = fileName[i];
         xsection[fileName[i]] = pair<double, double>(cross_section[i], K_Factor[i]);
@@ -380,9 +381,11 @@ prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xyz_b
     is_corr = is_corrs;
     year = year_s;
     cut = cut_s;
+    if (is_ttx)
+        cut = cut + "*(D_nu < 150)";
     cut_name = cut_name_s;
     set_dir(option);
-    file = new TFile(outputDir + "/" + category + ".root", "update");
+    file = new TFile(outputDir + "/" + category + ".root", "recreate");
     xbins = xyz_bins[0];
     ybins = xyz_bins[1];
     zbins = xyz_bins[2];

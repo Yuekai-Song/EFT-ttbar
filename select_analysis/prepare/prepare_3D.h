@@ -43,7 +43,7 @@ private:
     TString cut, cut_name;
     int edge_i[9], edge_f[9];
     int npdf_w[9];
-    TString sys_n[30], sys[30], sys_up[30], sys_down[30];
+    TString sys_n[31], sys[31], sys_up[31], sys_down[31];
     TString process[9];
     TString EW[5];
     TString weight_up, weight_dn;

@@ -12,7 +12,7 @@ do
         do
             for ttx in ${ttxs[*]}
             do
-                nohup root -l -q -b prepare_datacard_3D.cpp"($a, $c, $b, $ttx)" > run_log/prepare_$a${c}_$b_$ttx.txt 2>&1 &
+                nohup root -l -q -b prepare_datacard_3D.cpp"($a, $c, $b, $ttx, 1)" > run_log/prepare_$a${c}_${b}_$ttx.txt 2>&1 &
             done
         done
     done
