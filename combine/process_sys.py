@@ -78,10 +78,10 @@ xs_ttx = {
     "3jets_2015": {"ttbar": 186716.825, "DYJets": 5531.7200, "STop": 12311.083, "WJets": 5531.7200, "QCD": 17842.803},
 }
 
-qnorm_22014 = {"E3J_2015": 2.0, "M3J_2015": 1.2, "E4J_2015": 2.0, "M4J_2015": 1.2,
-               "E3J_2016": 2.0, "M3J_2016": 1.2, "E4J_2016": 2.0, "M4J_2016": 2.0,
-               "E3J_2017": 2.0, "M3J_2017": 1.2, "E4J_2017": 2.0, "M4J_2017": 1.2,
-               "E3J_2018": 2.0, "M3J_2018": 1.2, "E4J_2018": 2.0, "M4J_2018": 2.0}
+qnorm_22014 = {"E3j_2015": 2.0, "M3j_2015": 1.2, "E4j_2015": 2.0, "M4j_2015": 1.2,
+               "E3j_2016": 2.0, "M3j_2016": 1.2, "E4j_2016": 2.0, "M4j_2016": 2.0,
+               "E3j_2017": 2.0, "M3j_2017": 1.2, "E4j_2017": 2.0, "M4j_2017": 1.2,
+               "E3j_2018": 2.0, "M3j_2018": 1.2, "E4j_2018": 2.0, "M4j_2018": 2.0}
 
 sys_same_year = ["hdamp"]
 for syss in sys_same_year:
@@ -110,7 +110,7 @@ if renorm == 0:
     xs_self = xs_22014
 
 xs_cut = cut_name[3:] + "_" + sys.argv[3]
-ch = cut_name[0:1] + cut_name[2:4]+ "_" + sys.argv[3]
+ch = cut_name[1:2] + cut_name[3:5]+ "_" + sys.argv[3]
 qnorm_fix = qnorm_22014[ch]
 
 process.process(new_file, original, bg_flat, sys_type, xs_22014[xs_cut], xs_self[xs_cut], qnorm_fix, start, base_file, sys_same_year)

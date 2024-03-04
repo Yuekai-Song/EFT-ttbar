@@ -246,9 +246,9 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
         else
             ch += "_E";
         if (input.Contains("4jets"))
-            ch += "4J";
+            ch += "4j";
         else
-            ch += "3J";
+            ch += "3j";
         for (int year = 2015; year < 2019; year++)
         {
             if (input.Contains(Form("%d", year)))
