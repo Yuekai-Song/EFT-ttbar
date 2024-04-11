@@ -1,5 +1,5 @@
 #include "write.cpp"
-void write_datacard(TString datacard_name, TString cut_name, int year, TString type, TString dir){
+void write_datacard(TString datacard_name, TString cut_name, int year, TString type, TString dir, bool autostat){
     vector<TString> sys_saved;
     bool lnN_bg = false;
     vector<TString> lnNed_sys;//intersection with sys_saved
@@ -36,5 +36,5 @@ void write_datacard(TString datacard_name, TString cut_name, int year, TString t
         sys_saved = {"stat"};
     vector<TString> sys_of_shapeU = {"mtop", "mtop3", Form("qnorm_elec_3J_%d", year), Form("qnorm_elec_4J_%d", year)};
     map<int, TString> sys_lumi_year = {{2015, "1.012"}, {2016, "1.012"}, {2017, "1.023"}, {2018, "1.025"}};
-    write(datacard_name, dir, cut_name, year, lnN_bg, lnNed_sys, sys_saved, sys_of_shapeU);
+    write(datacard_name, dir, cut_name, year, lnN_bg, lnNed_sys, sys_saved, sys_of_shapeU, autostat);
 }

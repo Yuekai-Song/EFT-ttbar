@@ -70,7 +70,7 @@ void renew_weight(TString dir, TString *weight, TString file, int f, int year)
     delete nmc;
     delete c0;
 }
-void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, double *xyz_range, bool isEnriched)
+void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, double *xyz_range, bool isEnriched, TString in = "", TString out = "")
 {
     const int nsample = 45;
     int xbins = xyz_bins[0];
@@ -180,7 +180,7 @@ void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, doubl
         other_con2 = "*1";
 
     TString input_path = Form("./output/%d/", year);
-    TString output_path = Form("./output/%d/QCD_root/", year);
+    TString output_path = Form("./output/%d/QCD_root" + out + "/", year);
     TFile *file = new TFile(output_path + "QCD_" + cut_name + "_" + cg + "_3D" + en + ".root", "recreate");
     TH3D *hdata, *hmc_b[2], *hmc_qa;
 
@@ -192,12 +192,15 @@ void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, doubl
     hmc_qa->Sumw2();
 
     TChain *data_tree = new TChain("mytree");
-    data_tree->Add(input_path + "data/" + "new_data" + "*_" + cg + ".root");
+    data_tree->Add(input_path + "data" + in + "/new_data" + "*_" + cg + ".root");
     auto c1 = new TCanvas("c1", "c1", 8, 30, 600, 600);
     c1->cd();
     cout << data_tree->GetEntries() << endl;
     hdata = new TH3D("QCD_other_removed_" + cg + en, "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup); // final QCD;
-    data_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt >> QCD_other_removed_" + cg + en, cut + other_con1 + other_con2);
+    if (out.Contains("corr"))
+        data_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt >> QCD_other_removed_" + cg + en, cut + other_con1 + other_con2);
+    else
+        data_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt_uncorr >> QCD_other_removed_" + cg + en, cut + other_con1 + other_con2);
     hdata->Scale(pre_scale);
     delete data_tree;
 
@@ -207,15 +210,18 @@ void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, doubl
         for (int j = edge_dn[k]; j < edge_up[k]; j++)
         {
             MC_tree = new TChain("mytree");
-            MC_tree->Add(input_path + "MC/" + fileNames[j]);
+            MC_tree->Add(input_path + "MC" + in + "/" + fileNames[j]);
             TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom*" + cut + other_con1 + other_con2;
             if (j < 3)
                 weight = weight + "*nnlo_wt";
-            renew_weight(input_path + "MC/", &weight, fileNames[j], j, year);
+            renew_weight(input_path + "MC" + in + "/", &weight, fileNames[j], j, year);
             c1->cd();
             TH3D *hist = new TH3D("hist", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
             hist->Sumw2();
-            MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt>>hist", weight);
+            if (out.Contains("corr"))
+                MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt>>hist", weight);
+            else
+                MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt_uncorr>>hist", weight);
             hmc_b[k]->Add(hist);
             delete hist;
             delete MC_tree;
@@ -230,13 +236,16 @@ void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, doubl
     for (int j = edge_dn[1]; j < edge_up[1]; j++)
     {
         MC_tree = new TChain("mytree");
-        MC_tree->Add(input_path + "MC/" + fileNamesA[j]);
+        MC_tree->Add(input_path + "MC" + in + "/" + fileNamesA[j]);
         TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom*" + cut + other_con1 + other_con2;
-        renew_weight(input_path + "MC/", &weight, fileNamesA[j], j, year);
+        renew_weight(input_path + "MC" + in + "/", &weight, fileNamesA[j], j, year);
         c1->cd();
         TH3D *hist = new TH3D("hist", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
         hist->Sumw2();
-        MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt>>hist", weight);
+        if (out.Contains("corr"))
+            MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt>>hist", weight);
+        else
+            MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt_uncorr>>hist", weight);
         hmc_qa->Add(hist);
         delete hist;
         delete MC_tree;
@@ -266,7 +275,7 @@ void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, doubl
     delete c1;
     file->Close();
 }
-void derive_qcd_3D(int i, int g, int year, bool isEnriched)
+void derive_qcd_3D(int i, int g, int year, bool isEnriched, bool is_ttx, bool is_corr)
 {
     // TString cg[] = {"A", "B", "C", "D"};
     TString cuts[] = {"(jet_num == 3 && (!lep_flavour))", "(jet_num >= 4  && (!lep_flavour))",
@@ -274,5 +283,14 @@ void derive_qcd_3D(int i, int g, int year, bool isEnriched)
     TString cutsName[] = {"E_3jets", "E_4jets", "M_3jets", "M_4jets"};
     int xyz_bins[] = {270, 40, 25};
     double xyz_range[] = {300, 3000, 0, 4.0, 8, 33};
-    derive(cuts[i], cutsName[i], g, year, xyz_bins, xyz_range, isEnriched);
+    TString in = "", out = "";
+    if (is_ttx)
+    {
+        in += "_ttx";
+        out += "_ttx";
+        cuts[i] += "*(D_nu < 150)";
+    }
+    if (is_corr)
+        out += "_corr";
+    derive(cuts[i], cutsName[i], g, year, xyz_bins, xyz_range, isEnriched, in, out);
 }

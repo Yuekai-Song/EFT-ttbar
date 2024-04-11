@@ -132,7 +132,7 @@ bool is_small_effect(TH1D hist_nom, TH1D hist_up, TH1D hist_dn)
     }
     return !is_big;
 }
-void write_card(ofstream &card, TString dir, TString category, std::vector<process> pro_v, map<TString, std::vector<TString>> sys_shape, vector<TString> sys_of_shapeU, map<TString, map<TString, TString>> sys_lnN)
+void write_card(ofstream &card, TString dir, TString category, std::vector<process> pro_v, map<TString, std::vector<TString>> sys_shape, vector<TString> sys_of_shapeU, map<TString, map<TString, TString>> sys_lnN, bool autostat)
 {
     card << "Datacard for event category: " << category << endl;
     card << "imax 1 number of channels" << endl;
@@ -156,6 +156,8 @@ void write_card(ofstream &card, TString dir, TString category, std::vector<proce
     // write_sys("cms_lumi", cms_lumi, card);
     write_sys(pro_v, sys_lnN, card);
     write_sys(pro_v, sys_shape, sys_of_shapeU, card);
+    if(autostat)
+        card << "* autoMCStats 0" << endl;
     /*card<<"sig_norm"<<"\t lnN \t";
     writeline(sig_norm);
     card<<"DYJets_norm"<<"\t lnN \t";
@@ -168,7 +170,7 @@ void write_card(ofstream &card, TString dir, TString category, std::vector<proce
     // writeline(qcd_n, card);
 }
 
-void write(TString datacard_name, TString dir, TString cut_name, int year, bool lnN_bg, vector<TString> lnNed_sys, vector<TString> saved, vector<TString> sys_of_shapeU)
+void write(TString datacard_name, TString dir, TString cut_name, int year, bool lnN_bg, vector<TString> lnNed_sys, vector<TString> saved, vector<TString> sys_of_shapeU, bool autostat)
 {
     TString path = "./" + datacard_name + "/" + dir;
     TString category = "ttbar" + cut_name + Form("_%d", year);
@@ -251,7 +253,7 @@ void write(TString datacard_name, TString dir, TString cut_name, int year, bool 
         }
     }
     sort(pro_v.begin(), pro_v.end(), compare);
-    write_card(card, dir, category, pro_v, sys_shape, sys_of_shapeU, sys_lnN);
+    write_card(card, dir, category, pro_v, sys_shape, sys_of_shapeU, sys_lnN, autostat);
     card.close();
     file->Close();
 }

@@ -820,12 +820,12 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
                 chi = reco->chi;
                 double nu_px = (reco->mom_nu).Px();
                 double nu_py = (reco->mom_nu).Py();
-                MtW = sqrt(2 * (mom_lep.Pt() * MET_pt - mom_lep.Px() * nu_px - mom_lep.Py() * nu_py));
+                MtW = sqrt(2 * (mom_lep.Pt() * MET_pt - mom_lep.Px() * MET_pt * cos(MET_phi) - mom_lep.Py() * MET_pt * sin(MET_phi)));
                 lepton_pt = mom_lep.Pt();
                 lepton_eta = mom_lep.Eta();
                 lepton_mass = mom_lep.M();
                 lepton_phi = mom_lep.Phi();
-                if (MtW < 140 && like < 10000 && ((jet_num >= 4) || (jet_num == 3 && jet_pt[0] > 50)))
+                if (like < 10000 && ((jet_num >= 4) || (jet_num == 3 && jet_pt[0] > 50)))
                 {
                     if (data_type == 1)
                     {
