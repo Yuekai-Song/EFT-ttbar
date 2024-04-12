@@ -132,7 +132,9 @@ bool is_small_effect(TH1D hist_nom, TH1D hist_up, TH1D hist_dn)
     }
     return !is_big;
 }
-void write_card(ofstream &card, TString dir, TString category, std::vector<process> pro_v, map<TString, std::vector<TString>> sys_shape, vector<TString> sys_of_shapeU, map<TString, map<TString, TString>> sys_lnN, bool autostat)
+void write_card(ofstream &card, TString dir, TString category, std::vector<process> pro_v,
+                map<TString, std::vector<TString>> sys_shape, vector<TString> sys_of_shapeU,
+                map<TString, map<TString, TString>> sys_lnN, bool autostat)
 {
     card << "Datacard for event category: " << category << endl;
     card << "imax 1 number of channels" << endl;
@@ -170,7 +172,9 @@ void write_card(ofstream &card, TString dir, TString category, std::vector<proce
     // writeline(qcd_n, card);
 }
 
-void write(TString datacard_name, TString dir, TString cut_name, int year, bool lnN_bg, vector<TString> lnNed_sys, vector<TString> saved, vector<TString> sys_of_shapeU, bool autostat)
+void write(TString datacard_name, TString dir, TString cut_name, int year, bool lnN_bg,
+           vector<TString> lnNed_sys, vector<TString> saved,
+           vector<TString> sys_of_shapeU, bool autostat)
 {
     TString path = "./" + datacard_name + "/" + dir;
     TString category = "ttbar" + cut_name + Form("_%d", year);

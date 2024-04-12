@@ -95,12 +95,12 @@ bool pdf_convert(TH1D hist, TH1D hist_nom, TH1D *hist_up, TH1D *hist_dn)
     }
     return !same;
 }
-void convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user, bool fake_qcd)
+void convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user)
 {
     // convert
     int like_cut;
-    if (likelihood_cut <= 29.0 && likelihood_cut > 4.0)
-        like_cut = static_cast<int>(std::round((likelihood_cut - 4.0) / 0.25));
+    if (likelihood_cut <= 33.0 && likelihood_cut > 8.0)
+        like_cut = static_cast<int>(std::round((likelihood_cut - 8.0) / 0.25));
     else
         like_cut = -1;
     const int nycut = ycut_user.size();
