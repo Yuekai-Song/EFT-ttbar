@@ -1,5 +1,6 @@
 #include "select_tree.cpp"
-void process(TString outdir, TString outputFile, TString input, int year, int data_type, bool ttx, int cates = 0){
+void process(TString outdir, TString outputFile, TString input, int year, int data_type, bool ttx)
+{
     OP_TYPE op_type;
     OBJECT_SELECT_ORDER order_type;
     if (ttx)
@@ -13,21 +14,6 @@ void process(TString outdir, TString outputFile, TString input, int year, int da
         order_type = OBJECT_SELECT_ORDER::jet_lepton;
     }
     CATEGORY cate = CATEGORY::A;
-    switch (cates)
-    {
-    case 0:
-        cate = CATEGORY::A;
-        break;
-    case 1:
-        cate = CATEGORY::B;
-        break;
-    case 2:
-        cate = CATEGORY::C;
-        break;
-    case 3:
-        cate = CATEGORY::D;
-        break;
-    }
     TString tree_name[] = {"mytree", "mytree", "jerUp", "jerDown", "unclusUp", "unclusDown"};
     TString jet_name[] = {"Jet_pt", "Jet_pt_nom", "Jet_pt_jerUp", "Jet_pt_jerDown", "Jet_pt_nom", "Jet_pt_nom"};
     TString MET_name[] = {"MET_pt", "MET_T1Smear_pt", "MET_T1Smear_pt_jerUp", "MET_T1Smear_pt_jerDown", 

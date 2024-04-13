@@ -134,7 +134,9 @@ Bool_t select_tree::is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type)
     }
     return flag;
 }
-select_tree::select_tree(TString inputFile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int sample_year, DATA_TYPE data_types, OP_TYPE op_types, OBJECT_SELECT_ORDER order_type, CATEGORY cates, int num_j, int num_e, int num_m, int num_g)
+select_tree::select_tree(TString inputFile, TString outputFile, TString name_tree, TString name_jet,
+                         TString name_MET, int sample_year, DATA_TYPE data_types, OP_TYPE op_types,
+                         OBJECT_SELECT_ORDER order_type, CATEGORY cates, int num_j, int num_e, int num_m, int num_g)
 { // type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
     cate = cates;
     input = outputFile;
@@ -417,7 +419,7 @@ Bool_t select_tree::select_lep()
             if ((fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) < 1.479 && fabs(Electron_dxy[i]) < 0.05 && fabs(Electron_dz[i]) < 0.1) || (fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) >= 1.479 && fabs(Electron_dxy[i]) < 0.1 && fabs(Electron_dz[i]) < 0.2))
             {
                 //Electron_cutBased[i] == 4
-                if (tight_noiso(i) && (elec_iso_id == 2) && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 30 && (!is_from_jet))
+                if (tight_noiso(i) && (elec_iso_id == 2) && Electron_pt[i] > 30 && (!is_from_jet))
                     index_selected.push_back(i);
                 num_veto++;
             }
@@ -431,7 +433,7 @@ Bool_t select_tree::select_lep()
         muon_iso_sel = (Muon_pfRelIso04_all[i] <= sel_muon_isoup) && (Muon_pfRelIso04_all[i] >= sel_muon_isodown);
         if (Muon_looseId[i] == 1 && muon_iso_veto && Muon_pt[i] > 15 && fabs(Muon_eta[i]) < 2.4)
         {
-            if (Muon_tightId[i] == 1 && muon_iso_sel && Muon_pt[i] > 30 && fabs(Muon_eta[i]) < 2.4 && (!is_from_jet))
+            if (Muon_tightId[i] == 1 && muon_iso_sel && Muon_pt[i] > 30 && (!is_from_jet))
                 index_selected.push_back(i + nElectron);
             num_veto++;
         }
@@ -825,7 +827,7 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
                 lepton_eta = mom_lep.Eta();
                 lepton_mass = mom_lep.M();
                 lepton_phi = mom_lep.Phi();
-                if (like < 10000 && ((jet_num >= 4) || (jet_num == 3 && jet_pt[0] > 50)))
+                if ((jet_num >= 4) || (jet_num == 3 && jet_pt[0] > 50))
                 {
                     if (data_type == 1)
                     {
