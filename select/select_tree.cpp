@@ -921,6 +921,7 @@ void select_tree::write_select()
     mytree->Branch("jet_num", &jet_num, "jet_num/i"); // number of jets satisfy the  seletion criteria
 
     mytree->Branch("jet_btagDeepFlavB", jet_btagDeepFlavB, "jet_btagDeepFlavB[jet_num]/F");
+    mytree->Branch("nBtag", &nBtag, "nBtag/i");
     mytree->Branch("jet_eta", jet_eta, "jet_eta[jet_num]/F");
     mytree->Branch("jet_pt", jet_pt, "jet_pt[jet_num]/F");
 
