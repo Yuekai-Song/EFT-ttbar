@@ -30,7 +30,7 @@ read_object::read_object(TString input, int type)
     }
     delete chain;
 }
-Bool_t select_tree::loose_noiso(Int_t i)
+Bool_t select_tree::id_noiso(Int_t i, Int_t wp)
 {
     Bool_t flag = true;
     int bitmap = Electron_vidNestedWPBitmap[i];
@@ -38,24 +38,7 @@ Bool_t select_tree::loose_noiso(Int_t i)
     {
         if (i != 7)
         {
-            if ((bitmap >> (3 * i)) % 8 < 2)
-            {
-                flag = false;
-                break;
-            }
-        }
-    }
-    return flag;
-}
-Bool_t select_tree::tight_noiso(Int_t i)
-{
-    Bool_t flag = true;
-    int bitmap = Electron_vidNestedWPBitmap[i];
-    for (int i = 0; i < 10; i++)
-    {
-        if (i != 7)
-        {
-            if ((bitmap >> (3 * i)) % 8 < 4)
+            if ((bitmap >> (3 * i)) % 8 < wp)
             {
                 flag = false;
                 break;
@@ -66,48 +49,23 @@ Bool_t select_tree::tight_noiso(Int_t i)
 }
 Int_t select_tree::iso_select(Int_t i)
 {
-    Float_t eta_sc = Electron_deltaEtaSC[i] + Electron_eta[i];
-    Float_t iso_value = Electron_pfRelIso03_all[i];
-    Float_t pt = Electron_pt[i];
+    int bitmap = Electron_vidNestedWPBitmap[i];
+    int iso_id = (bitmap >> 21) % 8;
     if (cate == CATEGORY::A || cate == CATEGORY::B)
     {
-        if (fabs(eta_sc) <= 1.479)
-        {
-            if (iso_value < 0.0287 + 0.506 / pt)
-                return 2;
-            // selection
-            else if (iso_value < 0.112 + 0.506 / pt)
-                return 1;
-            // veto
-            else
-                return 0;
-        }
+        if (iso_id == 4)
+            return 2;
+        else if (iso_id > 1)
+            return 1;
         else
-        {
-            if (iso_value < 0.0445 + 0.963 / pt)
-                return 2;
-            else if (iso_value < 0.108 + 0.963 / pt)
-                return 1;
-            else
-                return 0;
-        }
+            return 0;
     }
     else
     {
-        if (fabs(eta_sc) <= 1.479)
-        {
-            if (iso_value > 0.0287 + 0.506 / pt)
-                return 2;
-            else
-                return 1;
-        }
+        if (iso_id < 4)
+            return 2;
         else
-        {
-            if (iso_value > 0.0445 + 0.963 / pt)
-                return 2;
-            else
-                return 1;
-        }
+            return 1;
     }
 }
 Bool_t select_tree::is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type)
@@ -205,7 +163,6 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     Electron_deltaEtaSC = new Float_t[ne];
     Electron_dxy = new Float_t[ne];
     Electron_dz = new Float_t[ne];
-    Electron_pfRelIso03_all = new Float_t[ne];
     Electron_vidNestedWPBitmap = new Int_t[ne];
 
     Muon_mass = new Float_t[nm];
@@ -273,7 +230,6 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     chain->SetBranchAddress("Electron_dz", Electron_dz);
     chain->SetBranchAddress("Electron_dxy", Electron_dxy);
     chain->SetBranchAddress("Electron_vidNestedWPBitmap",Electron_vidNestedWPBitmap);
-    chain->SetBranchAddress("Electron_pfRelIso03_all",Electron_pfRelIso03_all);
     chain->SetBranchAddress("PV_npvsGood", &PV_npvsGood);
     chain->SetBranchAddress("PV_npvs", &PV_npvs);
 
@@ -414,12 +370,12 @@ Bool_t select_tree::select_lep()
         is_from_jet = is_lep_from_jet(p4_lepton, OBJECT_TYPE::lepton);
         elec_iso_id = iso_select(i);
         //Electron_cutBased[i] >= 2
-        if (loose_noiso(i) && (elec_iso_id >= 1) && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 15)
+        if (id_noiso(i, 2) && (elec_iso_id >= 1) && fabs(Electron_eta[i]) < 2.4 && (fabs(Electron_eta[i]) < 1.4442 || fabs(Electron_eta[i]) > 1.5660) && Electron_pt[i] > 15)
         {
             if ((fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) < 1.479 && fabs(Electron_dxy[i]) < 0.05 && fabs(Electron_dz[i]) < 0.1) || (fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) >= 1.479 && fabs(Electron_dxy[i]) < 0.1 && fabs(Electron_dz[i]) < 0.2))
             {
                 //Electron_cutBased[i] == 4
-                if (tight_noiso(i) && (elec_iso_id == 2) && Electron_pt[i] > 30 && (!is_from_jet))
+                if (id_noiso(i, 4) && (elec_iso_id == 2) && Electron_pt[i] > 30 && (!is_from_jet))
                     index_selected.push_back(i);
                 num_veto++;
             }
@@ -1089,7 +1045,6 @@ select_tree::~select_tree()
     delete[] Electron_deltaEtaSC;
     delete[] Electron_dxy;
     delete[] Electron_dz;
-    delete[] Electron_pfRelIso03_all;
     delete[] Electron_vidNestedWPBitmap;
 
     delete[] Muon_mass;

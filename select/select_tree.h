@@ -139,10 +139,8 @@ private:
     void pdf_w(Float_t LHEPdfWeight[103], Float_t &alphas_up, Float_t &alphas_dn, Float_t &pdf_up, Float_t &pdf_dn);
     //elctron cut-based id break down
     Int_t *Electron_vidNestedWPBitmap;
-    Float_t *Electron_pfRelIso03_all;
-    Bool_t tight_noiso(Int_t i);
+    Bool_t id_noiso(Int_t i, Int_t wp);
     Int_t iso_select(Int_t i);
-    Bool_t loose_noiso(Int_t i);
 public:
     static TF1* h_ecorr;
     select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, DATA_TYPE data_types, OP_TYPE op_types, OBJECT_SELECT_ORDER order_type, CATEGORY cates, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
