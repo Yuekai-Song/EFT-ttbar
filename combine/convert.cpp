@@ -151,12 +151,17 @@ void convert::get_TH1D()
     double value;
     double err2;
     h1 = new TH1D *[nycut];
+    TH1D *h3_1;
     for (int f = 0; f < nycut; f++)
     {
         h1[f] = new TH1D;
         h1[f]->SetBins(nbins[f], 0, nbins[f]);
         h1[f]->SetName(Form("h1_%d", f));
-        TH1D *h3_1 = h3->ProjectionX("3_px", ycut[f] + 1, ycut[f + 1], 0, like_cut);
+        TString hname = TString(h3->GetName());
+        if (hname.Contains("QCD") && (!hname.Contains("_SG")))
+            h3_1 = h3->ProjectionX("3_px", ycut[f] + 1, ycut[f + 1], 0, -1);
+        else
+            h3_1 = h3->ProjectionX("3_px", ycut[f] + 1, ycut[f + 1], 0, like_cut);
         for (int i = 0; i < nbins[f]; i++)
         {
             value = 0;
@@ -169,6 +174,7 @@ void convert::get_TH1D()
             h1[f]->SetBinContent(i + 1, value);
             h1[f]->SetBinError(i + 1, sqrt(err2));
         }
+        delete h3_1;
     }
 }
 void convert::get_map()
@@ -277,13 +283,16 @@ void convert::process_pdf()
 }
 void convert::process_qcd()
 {
-    if (hist_map.find("QCD_derived_C") != hist_map.end())
+    if (hist_map.find("QCD_prompt_CG_C") != hist_map.end())
     {
-        TH1D *hist_qcd = (TH1D *)hist_map["QCD_derived_C"].Clone();
-        TH1D *hist_qcd_up = (TH1D *)hist_map["QCD_derived_B"].Clone();
-        TH1D *hist_qcd_dn = (TH1D *)hist_map["QCD_derived_D"].Clone();
-        TH1D *hist_qcd_nup = (TH1D *)hist_map["QCD_derived_C"].Clone();
-        TH1D *hist_qcd_ndn = (TH1D *)hist_map["QCD_derived_C"].Clone();
+        double norm = hist_map["QCD_MC_SG"].GetSumOfWeights() / hist_map["QCD_MC_CG_C"].GetSumOfWeights();
+        TH1D *hist_qcd = (TH1D *)hist_map["QCD_prompt_CG_C"].Clone();
+        hist_qcd->Scale(norm);
+    
+        TH1D *hist_qcd_up = (TH1D *)hist_map["QCD_prompt_CG_B"].Clone();
+        TH1D *hist_qcd_dn = (TH1D *)hist_map["QCD_prompt_CG_D"].Clone();
+        TH1D *hist_qcd_nup = (TH1D *)hist_qcd->Clone();
+        TH1D *hist_qcd_ndn = (TH1D *)hist_qcd->Clone();
 
         hist_qcd->SetName("QCD");
         hist_qcd_up->SetName("QCD_qshape" + ch + "Up");
@@ -294,13 +303,14 @@ void convert::process_qcd()
         hist_qcd_up->Scale(1.0 / hist_qcd_up->GetSumOfWeights());
         hist_qcd_dn->Scale(1.0 / hist_qcd_dn->GetSumOfWeights());
         TH1D *temp = (TH1D *)hist_qcd_up->Clone();
+        temp->SetName("temp");
         hist_qcd_up->Divide(hist_qcd_dn);
         hist_qcd_dn->Divide(temp);
         hist_qcd_up->Multiply(hist_qcd);
         hist_qcd_dn->Multiply(hist_qcd);
 
-        double ns = hist_map["QCD_other_removed_C"].GetSumOfWeights() * hist_map["QCD_MC_CG_B"].GetSumOfWeights() / hist_map["QCD_MC_CG_D"].GetSumOfWeights();
-        ns = ns / hist_qcd->GetSumOfWeights();
+        double ns = hist_map["QCD_MC_CG_B"].GetSumOfWeights() / hist_map["QCD_MC_CG_D"].GetSumOfWeights();
+        ns /= norm;
         hist_qcd_nup->Scale(ns);
         hist_qcd_ndn->Scale(1.0 / ns);
         outfile->cd();

@@ -112,7 +112,7 @@ void prepare_3D::draw(TH3D *h1, TString file, TString tree, TString weight)
 }
 void prepare_3D::draw(int c)
 {
-    TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom" + other_con1 + other_con2;
+    TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom";
     TString weight_nom;
     TH3D *hist = new TH3D(process[c] + "_sub", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
     hist->Sumw2();
@@ -136,7 +136,7 @@ void prepare_3D::draw(int c)
 }
 void prepare_3D::draw_pdf(int c, int p)
 {
-    TString weight = Form("Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom*LHEPdfWeight[%d]", p) + other_con1 + other_con2;
+    TString weight = Form("Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom*LHEPdfWeight[%d]", p);
     TString weight_nom;
     TH3D *hist_pdf = new TH3D(process[c] + Form("_pdf_w%d_sub", p), "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
     if (c > 5)
@@ -162,7 +162,7 @@ void prepare_3D::draw_pdf(int c, int p)
 }
 void prepare_3D::draw_sys(int c, int s)
 {
-    TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom" + other_con1 + other_con2;
+    TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom";
     TH3D *hist_up = new TH3D("hist_up", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
     TH3D *hist_dn = new TH3D("hist_dn", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
     if (c > 5 && (sys_n[s].Contains("muR") || sys_n[s].Contains("muF")))
@@ -300,7 +300,7 @@ void prepare_3D::set_dir(int option)
 
     for (int i = 0; i < nsample; i++)
     {
-        fileName[i].ReplaceAll(".root", "_1*.root");
+        fileName[i].ReplaceAll(".root", "_*.root");
         if (i < 20)
             fileNames[i] = fileName[i];
         xsection[fileName[i]] = pair<double, double>(cross_section[i], K_Factor[i]);
@@ -339,11 +339,7 @@ void prepare_3D::set_dir(int option)
     {
         EW[i] = EWs[i];
     }
-    other_con1 = "*((jet_num>=4)||(jet_num==3 && jet_pt[0]>50))";
-    if (year == 2018)
-        other_con2 = "*(lep_flavour||((!lep_flavour) && lepton_pt>34))";
-    else
-        other_con2 = "*1";
+
     int begins[] = {0, 1, 2, 3, 4, 5, 0};
     int ends[] = {1, 2, 3, 4, 5, 9, 9};
     TString categorys[] = {"ttbar000", "ttbar100", "ttbar010", "ttbar001", "ttbar200", "bg", "ttbar"};
@@ -380,9 +376,7 @@ prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xyz_b
     is_ttx = is_ttxs;
     is_corr = is_corrs;
     year = year_s;
-    cut = cut_s + "*(MtW <= 140)";
-    if (is_ttx)
-        cut = cut + "*(D_nu < 150)";
+    cut = cut_s;
     cut_name = cut_name_s;
     set_dir(option);
     file = new TFile(outputDir + "/" + category + ".root", "recreate");

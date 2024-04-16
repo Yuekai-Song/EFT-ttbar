@@ -34,7 +34,7 @@ void set0(TH3D *h1)
         }
     }
 }
-void renew_weight(TString dir, TString *weight, TString file, int f, int year)
+void renew_weight(TString file, TString *weight, int f, int year)
 { // global weight
     const int nsample = 45;
     Float_t cross_sections[nsample] = {366.91, 89.05, 377.96,
@@ -57,7 +57,7 @@ void renew_weight(TString dir, TString *weight, TString file, int f, int year)
     double lumi = lumi_s[year - 2015];
     auto c0 = new TCanvas("c0", "c0", 8, 30, 600, 600);
     TChain *tree1 = new TChain("rawtree");
-    tree1->Add(dir + file);
+    tree1->Add(file);
     TH1D *nmc = new TH1D("nmc", "", 50, 0, 100);
     // nmc->Sumw2();
     c0->cd();
@@ -70,7 +70,7 @@ void renew_weight(TString dir, TString *weight, TString file, int f, int year)
     delete nmc;
     delete c0;
 }
-void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, double *xyz_range, bool isEnriched, TString in = "", TString out = "")
+void derive(TString cut, TString cut_name, TString cg, int year, int *xyz_bins, double *xyz_range, bool isEnriched, TString in = "", TString out = "")
 {
     const int nsample = 45;
     int xbins = xyz_bins[0];
@@ -82,7 +82,7 @@ void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, doubl
     double yup = xyz_range[3];
     double zlow = xyz_range[4];
     double zup = xyz_range[5];
-    TString fileNamesA[nsample];
+    TString *fileName[2];
     TString fileNames[nsample] = {"new_TTToSemiLeptonic_TuneCP5_13TeV-powheg.root",
                                   "new_TTTo2L2Nu_TuneCP5_13TeV-powheg.root",
                                   "new_TTToHadronic_TuneCP5_13TeV-powheg.root",
@@ -135,8 +135,6 @@ void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, doubl
                                   "new_QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV.root",
                                   "new_QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV.root"};
 
-    TString cg_n[] = {"A", "B", "C", "D"};
-    TString cg = cg_n[g];
     TString en = "";
     int edge_dn[] = {0, 20};
     int edge_up[] = {20, 29};
@@ -155,38 +153,33 @@ void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, doubl
         }
     }
     TString edge_name[] = {"other", "QCD"};
+    fileName[0] = fileNames;
+    fileName[1] = new TString[nsample];
     for (int i = 0; i < nsample; i++)
     {
-        fileNames[i] = fileNames[i].ReplaceAll(".root", "_*_" + cg + ".root");
-        fileNamesA[i] = fileNames[i];
-        fileNamesA[i] = fileNamesA[i].ReplaceAll(cg + ".root", "A.root");
+        fileName[0][i].ReplaceAll(".root", "_*_" + cg + ".root");
+        fileName[1][i] = fileName[0][i];
+        fileName[1][i].ReplaceAll(cg + ".root", "A.root");
     }
-
+    TString region[2] = {"Control", "Signal"}; 
     // Lepton_triggers in C and D regions have prescales
     Double_t pre_scale_year[][2] = {{369.84, 130.38}, {1570.17, 162.22}, {1085.83, 224.41}, {1536.28, 474.95}};
     Double_t pre_scale;
-    if (g < 2)
+    if (cg == "B")
         pre_scale = 1.0;
     else if (cut_name.Contains("M"))
         pre_scale = pre_scale_year[year - 2015][1];
     else
         pre_scale = pre_scale_year[year - 2015][0];
 
-    TString other_con1 = "*((jet_num>=4)||(jet_num==3 && jet_pt[0]>50))";
-    TString other_con2;
-    if (year == 2018)
-        other_con2 = "*(lep_flavour||((!lep_flavour) && lepton_pt>34))";
-    else
-        other_con2 = "*1";
-
     TString input_path = Form("./output/%d/", year);
     TString output_path = Form("./output/%d/QCD_root" + out + "/", year);
     TFile *file = new TFile(output_path + "QCD_" + cut_name + "_" + cg + "_3D" + en + ".root", "recreate");
-    TH3D *hdata, *hmc_b[2], *hmc_qa;
+    TH3D *hdata, *hmc_b[2], *hmc_qa, *hmc;
 
     hmc_b[0] = new TH3D("other_MC_CG", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
     hmc_b[1] = new TH3D("QCD_MC_CG_" + cg + en, "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
-    hmc_qa = new TH3D("QCD_MC_SG", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
+    hmc_qa = new TH3D("QCD_MC_SG" + en, "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
     hmc_b[0]->Sumw2();
     hmc_b[1]->Sumw2();
     hmc_qa->Sumw2();
@@ -196,94 +189,82 @@ void derive(TString cut, TString cut_name, int g, int year, int *xyz_bins, doubl
     auto c1 = new TCanvas("c1", "c1", 8, 30, 600, 600);
     c1->cd();
     cout << data_tree->GetEntries() << endl;
-    hdata = new TH3D("QCD_other_removed_" + cg + en, "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup); // final QCD;
+    hdata = new TH3D("QCD_prompt_CG_" + cg, "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup); // final QCD;
     if (out.Contains("corr"))
-        data_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt >> QCD_other_removed_" + cg + en, cut + other_con1 + other_con2);
+        data_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt >> QCD_prompt_CG_" + cg, cut);
     else
-        data_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt_uncorr >> QCD_other_removed_" + cg + en, cut + other_con1 + other_con2);
+        data_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt_uncorr >> QCD_prompt_CG_" + cg, cut);
     hdata->Scale(pre_scale);
     delete data_tree;
 
     TChain *MC_tree;
-    for (int k = 0; k < 2; k++)
+    for (int type = 0; type < 2; type++)
     {
-        for (int j = edge_dn[k]; j < edge_up[k]; j++)
+        for (int k = 0; k < 2; k++)
         {
-            MC_tree = new TChain("mytree");
-            MC_tree->Add(input_path + "MC" + in + "/" + fileNames[j]);
-            TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom*" + cut + other_con1 + other_con2;
-            if (j < 3)
-                weight = weight + "*nnlo_wt";
-            renew_weight(input_path + "MC" + in + "/", &weight, fileNames[j], j, year);
-            c1->cd();
-            TH3D *hist = new TH3D("hist", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
-            hist->Sumw2();
-            if (out.Contains("corr"))
-                MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt>>hist", weight);
+            if (type == 0)
+                hmc = hmc_b[k];
+            else if (k == 1)
+                hmc = hmc_qa;
             else
-                MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt_uncorr>>hist", weight);
-            hmc_b[k]->Add(hist);
-            delete hist;
-            delete MC_tree;
+                continue;
+            for (int j = edge_dn[k]; j < edge_up[k]; j++)
+            {
+                MC_tree = new TChain("mytree");
+                MC_tree->Add(input_path + "MC" + in + "/" + fileName[type][j]);
+                TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom*" + cut;
+                if (j < 3)
+                    weight = weight + "*nnlo_wt";
+                renew_weight(input_path + "MC" + in + "/" + fileName[type][j], &weight, j, year);
+                c1->cd();
+                TH3D *hist = new TH3D("hist", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
+                hist->Sumw2();
+                if (out.Contains("corr"))
+                    MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt>>hist", weight);
+                else
+                    MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt_uncorr>>hist", weight);
+                hmc->Add(hist);
+                delete hist;
+                delete MC_tree;
+            }
         }
+        cout << "finished " + region[type] +  " region" << endl;
     }
-    cout << "finished Control region" << endl;
     // cout<<hdata->GetSumOfWeights()<<endl;
     cout << hdata->GetSumOfWeights() << " " << hmc_b[0]->GetSumOfWeights()<< endl;
     hdata->Add(hmc_b[0], -1.0); // shape
-    
     set0(hdata);
-    for (int j = edge_dn[1]; j < edge_up[1]; j++)
-    {
-        MC_tree = new TChain("mytree");
-        MC_tree->Add(input_path + "MC" + in + "/" + fileNamesA[j]);
-        TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom*" + cut + other_con1 + other_con2;
-        renew_weight(input_path + "MC" + in + "/", &weight, fileNamesA[j], j, year);
-        c1->cd();
-        TH3D *hist = new TH3D("hist", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
-        hist->Sumw2();
-        if (out.Contains("corr"))
-            MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt>>hist", weight);
-        else
-            MC_tree->Draw("likelihood:fabs(rapidity_tt):mass_tt_uncorr>>hist", weight);
-        hmc_qa->Add(hist);
-        delete hist;
-        delete MC_tree;
-    }
-    // cout<<hmc_qa->GetSumOfWeights()<<endl;
-    cout << "finished A region" << endl;
-    TH3D *hqcd = (TH3D *)hdata->Clone();
-    hqcd->SetName("QCD_derived_" + cg + en);
-    TH3D *hqcd_MCde = (TH3D *)hmc_b[1]->Clone();
-    hqcd_MCde->SetName("QCD_derived_MC_" + cg + en);
-
-    hqcd->Scale(hmc_qa->GetSumOfWeights() / hmc_b[1]->GetSumOfWeights());
-    hqcd_MCde->Scale(hmc_qa->GetSumOfWeights() / hmc_b[1]->GetSumOfWeights());
 
     file->cd();
     hmc_b[1]->Write();  // QCD_MC_CG (QCD MC samples in CG)
-    hdata->Write();     // data_other_removed (data-prompt MCs in CG)
-    hqcd->Write();      // QCD_derived (SG)
-    hqcd_MCde->Write(); // QCD_derived_MC (SG, using MC of CG)
+    if (isEnriched)
+        hdata->Write(); // data_prompt_CG (data-prompt MCs in CG)
+    if (cg == "C")
+        hmc_qa->Write();// QCD_MC_SG
 
     delete hmc_b[0];
     delete hmc_b[1];
     delete hmc_qa;
     delete hdata;
-    delete hqcd;
-    delete hqcd_MCde;
     delete c1;
     file->Close();
 }
-void derive_qcd_3D(int i, int g, int year, bool isEnriched, bool is_ttx, bool is_corr)
+void derive_qcd(int i, int g, int year, bool isEnriched, bool is_ttx, bool is_corr)
 {
     // TString cg[] = {"A", "B", "C", "D"};
     TString cuts[] = {"(jet_num == 3 && (!lep_flavour))", "(jet_num >= 4  && (!lep_flavour))",
                       "(jet_num == 3  && lep_flavour)", "(jet_num >= 4 && lep_flavour)"};
     TString cutsName[] = {"E_3jets", "E_4jets", "M_3jets", "M_4jets"};
+    TString cg_n[] = {"A", "B", "C", "D"};
+    TString cg = cg_n[g];
     int xyz_bins[] = {270, 40, 25};
     double xyz_range[] = {300, 3000, 0, 4.0, 8, 33};
     TString in = "", out = "";
+
+    if (year == 2018)
+        cuts[i] += "*(lep_flavour || ((!lep_flavour) && lepton_pt>34)) * (MtW<=140)";
+    else
+        cuts[i] += "*(MtW<=140)";
     if (is_ttx)
     {
         in += "_ttx";
@@ -292,5 +273,5 @@ void derive_qcd_3D(int i, int g, int year, bool isEnriched, bool is_ttx, bool is
     }
     if (is_corr)
         out += "_corr";
-    derive(cuts[i], cutsName[i], g, year, xyz_bins, xyz_range, isEnriched, in, out);
+    derive(cuts[i], cutsName[i], cg, year, xyz_bins, xyz_range, isEnriched, in, out);
 }

@@ -49,7 +49,6 @@ private:
     TString weight_up, weight_dn;
     TString file_up, file_dn;
     TString tree_up, tree_dn;
-    TString other_con1, other_con2;
     bool is_ttx, is_corr;
     void give_sys_name(TString file, TString weight, int s, int c);
     void renew_weight(TString *weight, TString file);
