@@ -380,7 +380,7 @@ prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xyz_b
     is_ttx = is_ttxs;
     is_corr = is_corrs;
     year = year_s;
-    cut = cut_s;
+    cut = cut_s + "*(MtW <= 140)";
     if (is_ttx)
         cut = cut + "*(D_nu < 150)";
     cut_name = cut_name_s;
