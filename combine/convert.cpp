@@ -47,7 +47,7 @@ bool pdf_convert(TH1D hist, TH1D hist_nom, TH1D *hist_up, TH1D *hist_dn)
         double nom = hist_nom.GetBinContent(bin + 1);
         double dn;
         if (up != nom)
-            same = false; //pdf_wight != 1;
+            same = false; // pdf_wight != 1;
         if (up == 0)
             dn = 0;
         else
@@ -77,6 +77,7 @@ private:
     void process_pdf();
     void process_qcd();
     void set(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user);
+
 public:
     convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user);
 };
@@ -149,8 +150,8 @@ void convert::get_TH1D()
 {
     double value;
     double err2;
-    h1 = new TH1D*[nycut];
-    for(int f = 0; f < nycut; f++)
+    h1 = new TH1D *[nycut];
+    for (int f = 0; f < nycut; f++)
     {
         h1[f] = new TH1D;
         h1[f]->SetBins(nbins[f], 0, nbins[f]);
@@ -277,13 +278,13 @@ void convert::process_pdf()
 void convert::process_qcd()
 {
     if (hist_map.find("QCD_derived_C") != hist_map.end())
-    {   
+    {
         TH1D *hist_qcd = (TH1D *)hist_map["QCD_derived_C"].Clone();
         TH1D *hist_qcd_up = (TH1D *)hist_map["QCD_derived_B"].Clone();
         TH1D *hist_qcd_dn = (TH1D *)hist_map["QCD_derived_D"].Clone();
         TH1D *hist_qcd_nup = (TH1D *)hist_map["QCD_derived_C"].Clone();
         TH1D *hist_qcd_ndn = (TH1D *)hist_map["QCD_derived_C"].Clone();
-        
+
         hist_qcd->SetName("QCD");
         hist_qcd_up->SetName("QCD_qshape" + ch + "Up");
         hist_qcd_dn->SetName("QCD_qshape" + ch + "Down");
@@ -309,8 +310,10 @@ void convert::process_qcd()
         hist_qcd_nup->Write();
         hist_qcd_ndn->Write();
         delete hist_qcd;
-        delete hist_qcd_up; delete hist_qcd_dn;
-        delete hist_qcd_nup; delete hist_qcd_ndn;
+        delete hist_qcd_up;
+        delete hist_qcd_dn;
+        delete hist_qcd_nup;
+        delete hist_qcd_ndn;
     }
 }
 convert::convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user)

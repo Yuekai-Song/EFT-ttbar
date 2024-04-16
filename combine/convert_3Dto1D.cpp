@@ -1,4 +1,4 @@
-#include"convert.h"
+#include"convert.cpp"
 
 void convert_3Dto1D(TString input, TString datacard_name, TString cut_name, int year, double lhcut) {
     double likelihood_cut = 1000;
