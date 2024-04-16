@@ -23,7 +23,6 @@
 #include <vector>
 #include <map>
 using namespace std;
-
 TString sys_to_nom(TString h1_sys_name)
 {
     int pos = 0;
@@ -38,41 +37,6 @@ TString sys_to_nom(TString h1_sys_name)
     }
     s[pos] = 0;
     return TString(s);
-}
-void sum_TH1D(TH1D *hs, TH1D **h1, int *start, int num)
-{
-    for (int f = 0; f < num; f++)
-    {
-        for (int i = 0; i < h1[f]->GetNbinsX(); i++)
-        {
-            hs->SetBinContent(i + 1 + start[f], h1[f]->GetBinContent(i + 1));
-            hs->SetBinError(i + 1 + start[f], h1[f]->GetBinError(i + 1));
-        }
-    }
-    hs->ResetStats();
-}
-void get_TH1D(TH1D *h1, TString h1_name, TH3D *h3, int like_cut, int ycut_low, int ycut_up, int *xbins, int nbins)
-{
-    h1->SetBins(nbins, 0, nbins);
-    h1->SetName(h1_name);
-    TH1D *h3_1 = h3->ProjectionX("3_px", ycut_low, ycut_up, 0, like_cut);
-
-    double value;
-    double err2;
-    for (int i = 0; i < nbins; i++)
-    {
-        value = 0;
-        err2 = 0;
-        for (int bin = xbins[i]; bin < xbins[i + 1]; bin++)
-        {
-            value += h3_1->GetBinContent(bin + 1);
-            err2 += h3_1->GetBinError(bin + 1) * h3_1->GetBinError(bin + 1);
-        }
-        h1->SetBinContent(i + 1, value);
-        h1->SetBinError(i + 1, sqrt(err2));
-    }
-    // cout<<h1->GetSumOfWeights()<<endl;
-    delete h3_1;
 }
 bool pdf_convert(TH1D hist, TH1D hist_nom, TH1D *hist_up, TH1D *hist_dn)
 {
@@ -95,23 +59,41 @@ bool pdf_convert(TH1D hist, TH1D hist_nom, TH1D *hist_up, TH1D *hist_dn)
     }
     return !same;
 }
-void convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user)
+class convert
 {
-    // convert
-    int like_cut;
+private:
+    int like_cut, *ycut, *nbins, nycut, bin_num, *start;
+    TString ch;
+    int (*xbins)[20];
+    TH1D *hists, **h1;
+    TH3D *h3;
+    TFile *infile, *outfile;
+    map<TString, TH1D> hist_map;
+    map<TString, vector<TH1D>> hist_pdf;
+    void sum_TH1D();
+    void get_TH1D();
+    void get_map();
+    void process_map();
+    void process_pdf();
+    void process_qcd();
+    void set(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user);
+public:
+    convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user);
+};
+void convert::set(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user)
+{
     if (likelihood_cut <= 33.0 && likelihood_cut > 8.0)
         like_cut = static_cast<int>(std::round((likelihood_cut - 8.0) / 0.25));
     else
         like_cut = -1;
-    const int nycut = ycut_user.size();
-    int ycut[nycut + 1];
+    nycut = ycut_user.size();
+    ycut = new int[nycut + 1];
     for (int i = 1; i < nycut; i++)
         ycut[i] = static_cast<int>(std::round(ycut_user[i] / 0.1));
     ycut[nycut] = 41;
     ycut[0] = -1;
-
-    int xbins[nycut][20];
-    int nbins[nycut];
+    xbins = new int[nycut][20];
+    nbins = new int[nycut];
     for (int i = 0; i < nycut; i++)
     {
         nbins[i] = xbins_user[i].size() - 1;
@@ -126,31 +108,84 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
                 xbins[i][j] = int(std::round((xbins_user[i][j] - 300) / 10));
         }
     }
-    TFile *f = new TFile(input);
-    TList *list = f->GetListOfKeys();
-    TFile *outFile = new TFile(output, "recreate");
-    TKey *key;
-    TIter iter(list); // or TIter iter(list->MakeIterator());
-    static TString classname("TH3D");
-    map<TString, vector<TH1D>> hist_pdf;
-    int start[nycut + 1];
-    int bin_num = 0;
+    start = new int[nycut + 1];
+    bin_num = 0;
     for (int i = 0; i < nycut; i++)
     {
         start[i] = bin_num;
         bin_num += nbins[i];
     }
     start[nycut] = bin_num;
+    infile = new TFile(input);
+    outfile = new TFile(output, "recreate");
+    ch = "";
+    if (input.Contains("M"))
+        ch += "_M";
+    else
+        ch += "_E";
+    if (input.Contains("4jets"))
+        ch += "4j";
+    else
+        ch += "3j";
+    for (int year = 2015; year < 2019; year++)
+    {
+        if (input.Contains(Form("%d", year)))
+            ch += Form("_%d", year);
+    }
+}
+void convert::sum_TH1D()
+{
+    for (int f = 0; f < nycut; f++)
+    {
+        for (int i = 0; i < h1[f]->GetNbinsX(); i++)
+        {
+            hists->SetBinContent(i + 1 + start[f], h1[f]->GetBinContent(i + 1));
+            hists->SetBinError(i + 1 + start[f], h1[f]->GetBinError(i + 1));
+        }
+    }
+    hists->ResetStats();
+}
+void convert::get_TH1D()
+{
+    double value;
+    double err2;
+    h1 = new TH1D*[nycut];
+    for(int f = 0; f < nycut; f++)
+    {
+        h1[f] = new TH1D;
+        h1[f]->SetBins(nbins[f], 0, nbins[f]);
+        h1[f]->SetName(Form("h1_%d", f));
+        TH1D *h3_1 = h3->ProjectionX("3_px", ycut[f] + 1, ycut[f + 1], 0, like_cut);
+        for (int i = 0; i < nbins[f]; i++)
+        {
+            value = 0;
+            err2 = 0;
+            for (int bin = xbins[f][i]; bin < xbins[f][i + 1]; bin++)
+            {
+                value += h3_1->GetBinContent(bin + 1);
+                err2 += h3_1->GetBinError(bin + 1) * h3_1->GetBinError(bin + 1);
+            }
+            h1[f]->SetBinContent(i + 1, value);
+            h1[f]->SetBinError(i + 1, sqrt(err2));
+        }
+    }
+}
+void convert::get_map()
+{
+    cout << infile->GetName() << endl;
+    TList *list = infile->GetListOfKeys();
+    TKey *key;
+    TIter iter(list); // or TIter iter(list->MakeIterator());
+    static TString classname("TH3D");
     TString hist_name;
-    map<TString, TH1D> hist_map;
     while ((key = (TKey *)iter()))
     {
         if (key->GetClassName() == classname)
         {
-            TH3D *hist3 = (TH3D *)key->ReadObj();
-            if (hist3)
+            h3 = (TH3D *)key->ReadObj();
+            if (h3)
             {
-                hist_name = TString(hist3->GetName());
+                hist_name = TString(h3->GetName());
                 hist_name.ReplaceAll("_sub", "");
                 if (hist_name.Contains("pdf") && (hist_name.Contains("_w101") || hist_name.Contains("_w102")))
                 {
@@ -159,25 +194,23 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
                     hist_name.ReplaceAll("_w102", "Down");
                 }
                 cout << hist_name << endl;
-                TH1D *hists = new TH1D(hist_name, "", bin_num, 0, bin_num);
-                TH1D *hist1[nycut];
-                for (int f = 0; f < nycut; f++)
-                {
-                    hist1[f] = new TH1D;
-                    get_TH1D(hist1[f], hist_name + Form("_%d", f), hist3, like_cut, ycut[f] + 1, ycut[f + 1], xbins[f], nbins[f]);
-                }
-                sum_TH1D(hists, hist1, start, nycut);
+                hists = new TH1D(hist_name, "", bin_num, 0, bin_num);
+                get_TH1D();
+                sum_TH1D();
                 if (!hist_name.Contains("pdf") || hist_name.Contains("ttbar"))
                     hist_map[hist_name] = *hists;
                 else
                     hist_pdf[sys_to_nom(hist_name)].push_back(*hists);
-                delete hist3;
+                delete h3;
                 delete hists;
                 for (int i = 0; i < nycut; i++)
-                    delete hist1[i];
+                    delete h1[i];
             }
         }
     }
+}
+void convert::process_map()
+{
     for (map<TString, TH1D>::iterator iter = hist_map.begin(); iter != hist_map.end(); iter++)
     {
         if (iter->first.Contains("pdf"))
@@ -186,7 +219,7 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
             TH1D *hists_dn = new TH1D(iter->first + "Down", "", bin_num, 0, bin_num);
             if (pdf_convert(iter->second, hist_map[sys_to_nom(iter->first)], hists_up, hists_dn))
             {
-                outFile->cd();
+                outfile->cd();
                 hists_up->Write();
                 hists_dn->Write();
             }
@@ -194,10 +227,13 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
         }
         else if (!iter->first.Contains("QCD"))
         {
-            outFile->cd();
+            outfile->cd();
             iter->second.Write();
         }
     }
+}
+void convert::process_pdf()
+{
     for (map<TString, vector<TH1D>>::iterator iter = hist_pdf.begin(); iter != hist_pdf.end(); iter++)
     {
         TH1D *hists_up = new TH1D(iter->first + "_pdf" + TString(iter->first[0]) + "Up", "", bin_num, 0, bin_num);
@@ -232,29 +268,16 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
             hists_dn->SetBinContent(bin + 1, dn);
             hists_dn->SetBinError(bin + 1, err);
         }
-        outFile->cd();
+        outfile->cd();
         hists_up->Write();
         hists_dn->Write();
         delete hists_up, hists_dn;
     }
-
+}
+void convert::process_qcd()
+{
     if (hist_map.find("QCD_derived_C") != hist_map.end())
-    {
-        TString ch = "";
-        if (input.Contains("M"))
-            ch += "_M";
-        else
-            ch += "_E";
-        if (input.Contains("4jets"))
-            ch += "4j";
-        else
-            ch += "3j";
-        for (int year = 2015; year < 2019; year++)
-        {
-            if (input.Contains(Form("%d", year)))
-                ch += Form("_%d", year);
-        }
-        
+    {   
         TH1D *hist_qcd = (TH1D *)hist_map["QCD_derived_C"].Clone();
         TH1D *hist_qcd_up = (TH1D *)hist_map["QCD_derived_B"].Clone();
         TH1D *hist_qcd_dn = (TH1D *)hist_map["QCD_derived_D"].Clone();
@@ -279,7 +302,7 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
         ns = ns / hist_qcd->GetSumOfWeights();
         hist_qcd_nup->Scale(ns);
         hist_qcd_ndn->Scale(1.0 / ns);
-        outFile->cd();
+        outfile->cd();
         hist_qcd->Write();
         hist_qcd_up->Write();
         hist_qcd_dn->Write();
@@ -289,5 +312,14 @@ void convert(TString input, TString output, double likelihood_cut, vector<double
         delete hist_qcd_up; delete hist_qcd_dn;
         delete hist_qcd_nup; delete hist_qcd_ndn;
     }
-    outFile->Close();
+}
+convert::convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user)
+{
+    set(input, output, likelihood_cut, ycut_user, xbins_user);
+    get_map();
+    process_map();
+    process_pdf();
+    process_qcd();
+    infile->Close();
+    outfile->Close();
 }

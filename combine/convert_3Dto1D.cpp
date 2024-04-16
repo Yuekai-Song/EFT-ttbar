@@ -1,4 +1,4 @@
-#include"convert.cpp"
+#include"convert.h"
 
 void convert_3Dto1D(TString input, TString datacard_name, TString cut_name, int year, double lhcut) {
     double likelihood_cut = 1000;
@@ -22,5 +22,5 @@ void convert_3Dto1D(TString input, TString datacard_name, TString cut_name, int 
     //input = Form("../select_analysis/output/%d/datacard_old/ttbar", year)+cut_name+".root";
     //input = Form("../select_analysis/output/%d/", year) + datacard_name + "ttbar" + cut_name + ".root";
     output = "./" + datacard_name + "/original/ttbar" + cut_name + Form("_%d.root", year);
-    convert(input, output, likelihood_cut, ycut_user, xbins_user);
+    convert c(input, output, likelihood_cut, ycut_user, xbins_user);
 }
