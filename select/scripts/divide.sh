@@ -15,7 +15,10 @@ for dataset in $(cat $input); do
         temp=${dataset%%-pythia8*}
     else
         temp=${dataset/\/Run/_Run}
+        temp=${temp/-ver1_/_ver1-}
+        temp=${temp/-ver2_/_ver2-}
         temp=${temp%%-UL*}
+        temp=${temp%%-HIPM*}
     fi
     process=${temp:1}
     #dasgoclient --query "file dataset=$dataset" > ${process}.txt
