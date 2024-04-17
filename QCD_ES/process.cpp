@@ -4,16 +4,6 @@ void process(TString outdir, TString outputFile, TString input, int year, int da
     read_object r(input, data_type);
     OP_TYPE op_type;
     OBJECT_SELECT_ORDER order_type;
-    if (ttx)
-    {
-        op_type = select_reco_ttx;
-        order_type = OBJECT_SELECT_ORDER::lepton_jet;
-    }
-    else
-    {
-        op_type = select_reco;
-        order_type = OBJECT_SELECT_ORDER::jet_lepton;
-    }
     select_tree *s;
     num_j = r.nj;
     num_e = r.ne;
@@ -37,6 +27,17 @@ void process(TString outdir, TString outputFile, TString input, int year, int da
     }
     TString names[] = {"_A.root", "_B.root", "_C.root", "_D.root"};
     outputFile.ReplaceAll(".root", names[cates]);
+    if (ttx)
+    {
+        op_type = select_reco_ttx;
+        order_type = OBJECT_SELECT_ORDER::lepton_jet;
+        outputFile.ReplaceAll(".root", "_ttx.root");
+    }
+    else
+    {
+        op_type = select_reco;
+        order_type = OBJECT_SELECT_ORDER::jet_lepton;
+    }
     // num_j = 50;
     // num_e = 20;
     // num_m = 20;

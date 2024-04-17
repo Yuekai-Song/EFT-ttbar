@@ -54,11 +54,15 @@ then
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES
     input=$(ls $output|grep Skim)
     if [[ $inputFile =~ "QCD" ]];then
-        root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,$3,0)"
+        root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,0,0)"
+        root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,1,0)"
     fi
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,$3,1)"
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,$3,2)"
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,$3,3)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,0,1)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,0,2)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,0,3)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,1,1)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,1,2)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,1,3)"
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/code
     for outputFile in $(ls $output/new*.root)
     do
