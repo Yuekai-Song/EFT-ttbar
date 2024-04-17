@@ -47,10 +47,12 @@ mv $output/out*.txt /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES/20${2}/condor_ou
 if [[ $wrong == "f" ]]
 then
     echo "input file: $dir"
-    cd /afs/cern.ch/user/y/yuekai/cmssw/CMSSW_13_3_0/src
+    ofile=$(ls $output/*.root)
+    cd /afs/cern.ch/user/y/yuekai/cmssw/CMSSW_13_3_0/src/PhysicsTools/mytools/scripts/jme
     eval `scramv1 runtime -sh`
+    source jme_${2}.sh $output $ofile
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES
-    input=$(ls $output|grep root)
+    input=$(ls $output|grep Skim)
     if [[ $inputFile =~ "QCD" ]];then
         root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},1,$3,0)"
     fi

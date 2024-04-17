@@ -60,7 +60,7 @@ void process(TString outdir, TString outputFile, TString input, int year, int da
     if(data_type == 0)
         s = new select_tree(input, outdir+"/"+"new_"+outputFile, "mytree", "Jet_pt", "MET_pt", year, DATA_TYPE::data, op_type, order_type, cate, num_j, num_e, num_m);
     else
-        s = new select_tree(input, outdir+"/"+"new_"+outputFile, "mytree", "Jet_pt", "MET_pt", year, DATA_TYPE::MC_sys, op_type, order_type, cate, num_j, num_e, num_m);
+        s = new select_tree(input, outdir+"/"+"new_"+outputFile, "mytree", "Jet_pt_nom", "MET_T1Smear_pt", year, DATA_TYPE::MC_sys, op_type, order_type, cate, num_j, num_e, num_m);
     s->write();
     delete s;
 }

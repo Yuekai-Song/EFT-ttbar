@@ -1,12 +1,12 @@
 #include "write.cpp"
-void write_datacard(TString datacard_name, TString cut_name, int year, TString type, TString dir, bool autostat){
+void write_datacard(TString datacard_name, TString cut_name, int year, TString dir){
     vector<TString> sys_saved;
     bool lnN_bg = false;
     vector<TString> lnNed_sys;//intersection with sys_saved
-    if (type.Contains("lnN_bg"))
+    if (dir.Contains("lnN_bg"))
         lnN_bg = true;
     
-    if (type.Contains("all") && !type.Contains("but_pdf"))
+    if (dir.Contains("all") && !dir.Contains("but_pdf"))
     {
         sys_saved = {"jes_Absolute", Form("jes_Absolute_%d", year), "jes_FlavorQCD", "jes_BBEC1", 
                     "jes_EC2", "jes_HF", Form("jes_BBEC1_%d", year), Form("jes_EC2_%d", year), 
@@ -25,16 +25,19 @@ void write_datacard(TString datacard_name, TString cut_name, int year, TString t
                      "pdf_w18", "pdf_w8", "pdf_w9", "pdf_w30", "pdf_w24", "pdf_w5", "pdf_w26", "pdf_w28", 
                      "pdf_w14", "pdf_w19", "pdf_w37", "pdf_w45", "pdf_w10", "pdf_w77", "pdf_w4", "pdf_w38", "pdf_w39", "pdf_w36"};
     }
-    else if (type.Contains("pdf_only"))
+    else if (dir.Contains("pdf_only"))
     {
         for (int i = 0; i < 100; i++)
             sys_saved.push_back(Form("pdf_w%d", i));
     }
-    else if (type.Contains("mtop3_only"))
+    else if (dir.Contains("mtop3_only"))
         sys_saved = {"mtop3"};
-    else if (type == "stat_only")
+    else if (dir == "stat_only")
         sys_saved = {"stat"};
     vector<TString> sys_of_shapeU = {"mtop", "mtop3", Form("qnorm_elec_3J_%d", year), Form("qnorm_elec_4J_%d", year)};
     map<int, TString> sys_lumi_year = {{2015, "1.012"}, {2016, "1.012"}, {2017, "1.023"}, {2018, "1.025"}};
+    bool autostat = false;
+    if (dir.Contains("autostat"))
+        autostat = true;
     write(datacard_name, dir, cut_name, year, lnN_bg, lnNed_sys, sys_saved, sys_of_shapeU, autostat);
 }

@@ -110,25 +110,6 @@ void set_th_lable(TH1D *h1, vector<vector<double>> xbins)
     h1->LabelsDeflate("Y");
     h1->LabelsOption("v");
 }
-void model(TH1D *h1, TH1D *h2[5], double y, double z, double k)
-{
-    double cor[5];
-    double c1, c2, c3, c4, c5;
-    for (int bin = 0; bin < h1->GetNbinsX(); bin++)
-    {
-        for (int i = 0; i < 5; i++)
-        {
-            cor[i] = h2[i]->GetBinContent(bin + 1);
-        }
-        c1 = 0.5 * (cor[3] - 2 * cor[0] + cor[4]);
-        c2 = cor[3] - cor[1];
-        c3 = -cor[3] + cor[2];
-        c4 = 0.5 * (-3 * cor[3] + 4 * cor[0] - cor[4]);
-        c5 = cor[1];
-        h1->SetBinContent(bin + 1, c1 * y * y + c2 * (z - 1) * (z - 1) + c3 * k * k + c4 * y + c5);
-        h1->SetBinError(bin + 1, 0);
-    }
-}
 void draw_pre(TString datacard_name, TString cutname, int year, vector<vector<double>> xbins, vector<double> ycuts)
 {
     double high = 0;

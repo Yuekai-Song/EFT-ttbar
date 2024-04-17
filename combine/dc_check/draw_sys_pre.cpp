@@ -44,14 +44,6 @@ void seterror0(TH1D *h1)
         h1->SetBinError(i, 0);
     }
 }
-void set_ratio(TH1D *h1, double a)
-{
-    for (int i = 1; i <= h1->GetNbinsX(); i++)
-    {
-        h1->SetBinContent(i, a);
-        h1->SetBinError(i, 0);
-    }
-}
 void format_text(TPaveText *lumi)
 {
     lumi->SetFillColor(0);
