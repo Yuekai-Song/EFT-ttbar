@@ -70,8 +70,7 @@ void draw_sys(TString datacard_name, TString cutname, int year, TString type_nam
     for (map<TString, std::vector<TString>>::iterator it_sys = sys_nom.begin(); it_sys != sys_nom.end(); it_sys++)
     {
         if (sys_range.find(it_sys->first) == sys_range.end())
-            //range = 0;
-            continue;
+            range = 0;
         else
             range = sys_range[it_sys->first];
         for (vector<TString>::iterator it_nom = it_sys->second.begin(); it_nom != it_sys->second.end(); it_nom++)

@@ -214,13 +214,6 @@ void prepare_3D::draw_sys(int c, int s)
 
 void prepare_3D::set_dir(int option)
 {
-    dir = Form("../output/%d", year);
-    if(is_ttx)
-        outputDir = Form("../output/%d/datacard_ttx", year);
-    else
-        outputDir = Form("../output/%d/datacard", year);
-    if(is_corr)
-        outputDir += "_corr";
     const int nsample = 44;
     TString fileName[nsample] = {
         "new_TTToSemiLeptonic_TuneCP5_13TeV-powheg.root",
@@ -307,7 +300,7 @@ void prepare_3D::set_dir(int option)
     }
 
     TString process_s[] = {"ttbar_ci0000", "ttbar_ci0100", "ttbar_ci0010", "ttbar_ci0001", "ttbar_ci0200", "EW_no", "DYJets", "STop", "WJets"};
-    TString EWs[5] = {"*weight_ci0000", "*weight_ci0100", "*weight_ci0010", "*weight_ci0001", "*weight_ci0200"};
+    TString EWs[5] = {"*weight_ci0200", "*weight_ci0100", "*weight_ci0010", "*weight_ci0001", "*weight_ci0000"};
     Int_t npdf_ws[] = {103, 103, 103, 103, 103, 0, 103, 101, 103};
     int edge_is[] = {0, 0, 0, 0, 0, 0, 3, 11, 16}; // 23,31};
     int edge_fs[] = {3, 3, 3, 3, 3, 3, 11, 16, 20};
@@ -340,9 +333,9 @@ void prepare_3D::set_dir(int option)
         EW[i] = EWs[i];
     }
 
-    int begins[] = {0, 1, 2, 3, 4, 5, 0};
+    int begins[] = {0, 1, 2, 3, 4, 5, 4};
     int ends[] = {1, 2, 3, 4, 5, 9, 9};
-    TString categorys[] = {"ttbar000", "ttbar100", "ttbar010", "ttbar001", "ttbar200", "bg", "ttbar"};
+    TString categorys[] = {"ttbar200", "ttbar100", "ttbar010", "ttbar001", "ttbar000", "bg", "ttbar"};
     begin = begins[option];
     end = ends[option];
     category = categorys[option] + "_" + cut_name;
@@ -371,7 +364,7 @@ void prepare_3D::draw_data()
     // delete c0;
 }
 
-prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xyz_bins, double *xyz_range, int option, bool is_ttxs, bool is_corrs)
+prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, vector<int> xyz_bins, vector<double> xyz_range, int option, bool is_ttxs, bool is_corrs)
 {
     is_ttx = is_ttxs;
     is_corr = is_corrs;
@@ -379,7 +372,6 @@ prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xyz_b
     cut = cut_s;
     cut_name = cut_name_s;
     set_dir(option);
-    file = new TFile(outputDir + "/" + category + ".root", "recreate");
     xbins = xyz_bins[0];
     ybins = xyz_bins[1];
     zbins = xyz_bins[2];
@@ -389,6 +381,10 @@ prepare_3D::prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xyz_b
     yup = xyz_range[3];
     zlow = xyz_range[4];
     zup = xyz_range[5];
+}
+void prepare_3D::prepare()
+{
+    file = new TFile(outputDir + "/" + category + ".root", "recreate");
     for (int c = begin; c < end; c++)
     {
         draw(c);

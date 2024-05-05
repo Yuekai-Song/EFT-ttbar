@@ -179,9 +179,9 @@ void draw_pre(TString datacard_name, TString cutname, int year, vector<vector<do
 {
     double high = 0;
     TString pros[] = {"EW_no", "STop", "WJets", "DYJets", "QCD"};
-    int begin[3] = {0, 1, 0};
-    int end[3] = {1, 4, 4};
-    TString name[3] = {"Sig", "Back", "SandB"}; 
+    int begin[5] = {0, 1, 4, 0, 0};
+    int end[5] = {1, 4, 5, 4, 5};
+    TString name[5] = {"Sig", "Back", "QCD", "SandB", "SBandQ"}; 
     TString outpath = "./stat_pdf/" + datacard_name + "/" + cutname + Form("_%d/", year);
     TString filename = "ttbar_" + cutname + Form("_%d.root", year);
     TFile *file = TFile::Open("../" + datacard_name  + "/original/" + filename);
@@ -333,6 +333,6 @@ void draw_stat(TString datacard_name, TString cut_name, int year)
         xbins = {{0,340,380,420,460,500,600,3000}, {0,350,400,450,500,550,600,700,800,3000}, 
                                {0,450,500,550,600,650,700,800,1000,3000}, {0,650,700,750,800,900,1000,1200,3000}};
     }
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 5; i++)
         draw_pre(datacard_name, cut_name, year, xbins, ycuts, i);
 }

@@ -191,7 +191,7 @@ select_test
 combine_test
 Smooth_fit.h
 condor_out_*
-condor_list_*
+condor_list*
 test_code
 err.txt
 *.vscode

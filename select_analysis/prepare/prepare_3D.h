@@ -33,8 +33,6 @@ private:
     TString category;
     TFile *file;
     int year;
-    TString dir, outputDir, qcd_dir, pdf_dir;
-
     int xbins, ybins, zbins;
     double xlow, xup, ylow, yup, zlow, zup;
     // int bin_num;
@@ -60,6 +58,8 @@ private:
     void draw_data();
 
 public:
-    prepare_3D(TString cut_s, TString cut_name_s, int year_s, int *xy_bins, double *xy_range, int option, bool is_ttxs, bool is_corrs);
+    TString dir, outputDir;
+    prepare_3D(TString cut_s, TString cut_name_s, int year_s, vector<int> xyz_bins, vector<double> xyz_range, int option, bool is_ttxs, bool is_corrs);
+    void prepare();
     ~prepare_3D();
 };

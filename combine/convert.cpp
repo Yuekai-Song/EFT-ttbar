@@ -22,6 +22,7 @@
 #include <TKey.h>
 #include <vector>
 #include <map>
+#include "../select_analysis/prepare/settings.h"
 using namespace std;
 TString sys_to_nom(TString h1_sys_name)
 {
@@ -59,10 +60,22 @@ bool pdf_convert(TH1D hist, TH1D hist_nom, TH1D *hist_up, TH1D *hist_dn)
     }
     return !same;
 }
+void set0(TH1D *h1)
+{
+    for (int i = 0; i <= h1->GetNbinsX() + 1; i++)
+    {
+        if (h1->GetBinContent(i) < 0)
+        {
+            h1->SetBinContent(i, 0);
+            h1->SetBinError(i, 0);
+        }
+    }
+}
 class convert
 {
 private:
     int like_cut, *ycut, *nbins, nycut, bin_num, *start;
+    bool ttx_qcd = false;
     TString ch;
     int (*xbins)[20];
     TH1D *hists, **h1;
@@ -79,18 +92,19 @@ private:
     void set(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user);
 
 public:
-    convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user);
+    convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user, bool qcd_ttx = false);
 };
 void convert::set(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user)
 {
-    if (likelihood_cut <= 33.0 && likelihood_cut > 8.0)
-        like_cut = static_cast<int>(std::round((likelihood_cut - 8.0) / 0.25));
+    settings s(0, 0, false);
+    if (likelihood_cut <= s.xyz_range[5] && likelihood_cut > s.xyz_range[4])
+        like_cut = static_cast<int>(std::round((likelihood_cut - s.xyz_range[4]) / (s.xyz_range[5] - s.xyz_range[4]) * s.xyz_bins[2]));
     else
         like_cut = -1;
     nycut = ycut_user.size();
     ycut = new int[nycut + 1];
     for (int i = 1; i < nycut; i++)
-        ycut[i] = static_cast<int>(std::round(ycut_user[i] / 0.1));
+        ycut[i] = static_cast<int>(std::round(ycut_user[i] / s.xyz_range[3] * s.xyz_bins[1]));
     ycut[nycut] = 41;
     ycut[0] = -1;
     xbins = new int[nycut][20];
@@ -101,12 +115,12 @@ void convert::set(TString input, TString output, double likelihood_cut, vector<d
         // xbins[i] = new int[nbins[i]+1];
         for (int j = 0; j < nbins[i] + 1; j++)
         {
-            if (xbins_user[i][j] < 300)
+            if (xbins_user[i][j] < s.xyz_range[0])
                 xbins[i][j] = -1;
-            else if (xbins_user[i][j] > 3000)
-                xbins[i][j] = 271;
+            else if (xbins_user[i][j] > s.xyz_range[1])
+                xbins[i][j] = s.xyz_bins[0] + 1;
             else
-                xbins[i][j] = int(std::round((xbins_user[i][j] - 300) / 10));
+                xbins[i][j] = int(std::round((xbins_user[i][j] - s.xyz_range[0]) / (s.xyz_range[1] - s.xyz_range[0]) * s.xyz_bins[0]));
         }
     }
     start = new int[nycut + 1];
@@ -283,14 +297,26 @@ void convert::process_pdf()
 }
 void convert::process_qcd()
 {
-    if (hist_map.find("QCD_prompt_CG_C") != hist_map.end())
+    if (hist_map.find("QCD_MC_SG") != hist_map.end())
     {
-        double norm = hist_map["QCD_MC_SG"].GetSumOfWeights() / hist_map["QCD_MC_CG_C"].GetSumOfWeights();
-        TH1D *hist_qcd = (TH1D *)hist_map["QCD_prompt_CG_C"].Clone();
+        TString En = "", CG = "C", CCG = "D", SCG = "B";
+        if (ttx_qcd)
+        {
+            En = "_En";
+            if (ch.Contains("E"))
+            {
+                CG = "D";
+                CCG = "C";
+            }
+        }
+        double norm = hist_map["QCD_MC_SG" + En].GetSumOfWeights() / hist_map["QCD_MC_CG_" + CG + En].GetSumOfWeights();
+        TH1D *hist_qcd = (TH1D *)hist_map["QCD_prompt_CG_" + CG].Clone();
+        set0(hist_qcd);
         hist_qcd->Scale(norm);
-    
-        TH1D *hist_qcd_up = (TH1D *)hist_map["QCD_prompt_CG_B"].Clone();
-        TH1D *hist_qcd_dn = (TH1D *)hist_map["QCD_prompt_CG_D"].Clone();
+        TH1D *hist_qcd_up = (TH1D *)hist_map["QCD_prompt_CG_" + SCG].Clone();
+        TH1D *hist_qcd_dn = (TH1D *)hist_map["QCD_prompt_CG_" + CCG].Clone();
+        set0(hist_qcd_up);
+        set0(hist_qcd_dn);
         TH1D *hist_qcd_nup = (TH1D *)hist_qcd->Clone();
         TH1D *hist_qcd_ndn = (TH1D *)hist_qcd->Clone();
 
@@ -309,7 +335,7 @@ void convert::process_qcd()
         hist_qcd_up->Multiply(hist_qcd);
         hist_qcd_dn->Multiply(hist_qcd);
 
-        double ns = hist_map["QCD_MC_CG_B"].GetSumOfWeights() / hist_map["QCD_MC_CG_D"].GetSumOfWeights();
+        double ns = hist_map["QCD_MC_CG_" + SCG + En].GetSumOfWeights() / hist_map["QCD_MC_CG_" +  CCG + En].GetSumOfWeights();
         ns /= norm;
         hist_qcd_nup->Scale(ns);
         hist_qcd_ndn->Scale(1.0 / ns);
@@ -326,8 +352,9 @@ void convert::process_qcd()
         delete hist_qcd_ndn;
     }
 }
-convert::convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user)
+convert::convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user, bool qcd_ttx = false)
 {
+    ttx_qcd = qcd_ttx;
     set(input, output, likelihood_cut, ycut_user, xbins_user);
     get_map();
     process_map();

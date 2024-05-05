@@ -163,8 +163,8 @@ void draw_pre(TString datacard_name, TString cutname, int year, vector<vector<do
             high = hmc[c]->GetMaximum();
         leg->AddEntry(hmc[c], legend[c], "l");
     }
-    hmc[0]->GetYaxis()->SetRangeUser(0, high * 1.3);
-    high *= 1.3;
+    hmc[0]->GetYaxis()->SetRangeUser(0,160000);
+    high = 160000;
     set_th_lable(hmc[0], xbins);
     leg->Draw("Same");
 

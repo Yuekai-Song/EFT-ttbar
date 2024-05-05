@@ -15,25 +15,9 @@
 #include <string.h>
 #include <fstream>
 #include <iostream>
+#include "../select_analysis/prepare/settings.h"
 using namespace std;
 
-void set0(TH3D *h1)
-{
-    for (int i = 0; i <= h1->GetNbinsX() + 1; i++)
-    {
-        for (int j = 0; j <= h1->GetNbinsY() + 1; j++)
-        {
-            for (int k = 0; k <= h1->GetNbinsZ() + 1; k++)
-            {
-                if (h1->GetBinContent(i, j, k) < 0)
-                {
-                    h1->SetBinContent(i, j, k, 0);
-                    h1->SetBinError(i, j, k, 0);
-                }
-            }
-        }
-    }
-}
 void renew_weight(TString file, TString *weight, int f, int year)
 { // global weight
     const int nsample = 45;
@@ -70,7 +54,7 @@ void renew_weight(TString file, TString *weight, int f, int year)
     delete nmc;
     delete c0;
 }
-void derive(TString cut, TString cut_name, TString cg, int year, int *xyz_bins, double *xyz_range, bool isEnriched, TString in = "", TString out = "")
+void derive(TString cut, TString cut_name, TString cg, int year, vector<int> xyz_bins, vector<double> xyz_range, bool isEnriched, TString in = "", TString out = "")
 {
     const int nsample = 45;
     int xbins = xyz_bins[0];
@@ -157,9 +141,9 @@ void derive(TString cut, TString cut_name, TString cg, int year, int *xyz_bins, 
     fileName[1] = new TString[nsample];
     for (int i = 0; i < nsample; i++)
     {
-        fileName[0][i].ReplaceAll(".root", "_*_" + cg + ".root");
+        fileName[0][i].ReplaceAll(".root", "_*_" + cg + in + ".root");
         fileName[1][i] = fileName[0][i];
-        fileName[1][i].ReplaceAll(cg + ".root", "A.root");
+        fileName[1][i].ReplaceAll(cg + in + ".root", "A" + in + ".root");
     }
     TString region[2] = {"Control", "Signal"}; 
     // Lepton_triggers in C and D regions have prescales
@@ -185,7 +169,7 @@ void derive(TString cut, TString cut_name, TString cg, int year, int *xyz_bins, 
     hmc_qa->Sumw2();
 
     TChain *data_tree = new TChain("mytree");
-    data_tree->Add(input_path + "data" + in + "/new_data" + "*_" + cg + ".root");
+    data_tree->Add(input_path + "data/new_data*_" + cg + in + ".root");
     auto c1 = new TCanvas("c1", "c1", 8, 30, 600, 600);
     c1->cd();
     cout << data_tree->GetEntries() << endl;
@@ -211,11 +195,11 @@ void derive(TString cut, TString cut_name, TString cg, int year, int *xyz_bins, 
             for (int j = edge_dn[k]; j < edge_up[k]; j++)
             {
                 MC_tree = new TChain("mytree");
-                MC_tree->Add(input_path + "MC" + in + "/" + fileName[type][j]);
+                MC_tree->Add(input_path + "MC/" + fileName[type][j]);
                 TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom*" + cut;
                 if (j < 3)
                     weight = weight + "*nnlo_wt";
-                renew_weight(input_path + "MC" + in + "/" + fileName[type][j], &weight, j, year);
+                renew_weight(input_path + "MC/" + fileName[type][j], &weight, j, year);
                 c1->cd();
                 TH3D *hist = new TH3D("hist", "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
                 hist->Sumw2();
@@ -233,7 +217,6 @@ void derive(TString cut, TString cut_name, TString cg, int year, int *xyz_bins, 
     // cout<<hdata->GetSumOfWeights()<<endl;
     cout << hdata->GetSumOfWeights() << " " << hmc_b[0]->GetSumOfWeights()<< endl;
     hdata->Add(hmc_b[0], -1.0); // shape
-    set0(hdata);
 
     file->cd();
     hmc_b[1]->Write();  // QCD_MC_CG (QCD MC samples in CG)
@@ -252,26 +235,16 @@ void derive(TString cut, TString cut_name, TString cg, int year, int *xyz_bins, 
 void derive_qcd(int i, int g, int year, bool isEnriched, bool is_ttx, bool is_corr)
 {
     // TString cg[] = {"A", "B", "C", "D"};
-    TString cuts[] = {"(jet_num == 3 && (!lep_flavour))", "(jet_num >= 4  && (!lep_flavour))",
-                      "(jet_num == 3  && lep_flavour)", "(jet_num >= 4 && lep_flavour)"};
-    TString cutsName[] = {"E_3jets", "E_4jets", "M_3jets", "M_4jets"};
     TString cg_n[] = {"A", "B", "C", "D"};
     TString cg = cg_n[g];
-    int xyz_bins[] = {270, 40, 25};
-    double xyz_range[] = {300, 3000, 0, 4.0, 8, 33};
     TString in = "", out = "";
-
-    if (year == 2018)
-        cuts[i] += "*(lep_flavour || ((!lep_flavour) && lepton_pt>34)) * (MtW<=140)";
-    else
-        cuts[i] += "*(MtW<=140)";
+    settings s(year, is_ttx, cg);
     if (is_ttx)
     {
         in += "_ttx";
         out += "_ttx";
-        cuts[i] += "*(D_nu < 150)";
     }
     if (is_corr)
         out += "_corr";
-    derive(cuts[i], cutsName[i], cg, year, xyz_bins, xyz_range, isEnriched, in, out);
+    derive(s.cuts[i], s.cutsName[i], cg, year, s.xyz_bins, s.xyz_range, isEnriched, in, out);
 }

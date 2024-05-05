@@ -212,7 +212,10 @@ void write(TString datacard_name, TString dir, TString cut_name, int year, bool 
     }
     for (map<TString, TH1D>::iterator iter = hist_map.begin(); iter != hist_map.end(); iter++)
     {
+        
         hist_name = iter->first;
+        if (hist_name.Contains("QCD") && dir.Contains("noQCD"))
+            continue;
         if (hist_name.Contains("Up"))
         {
             hist_name.ReplaceAll("Up", "");
