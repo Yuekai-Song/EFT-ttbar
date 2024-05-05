@@ -1,6 +1,6 @@
 #include"convert.cpp"
 
-void convert_3Dto1D(TString input, TString datacard_name, TString cut_name, int year, double lhcut, bool qcd_ttx ) {
+void convert_3Dto1D(TString input, TString datacard_name, TString cut_name, int year, double lhcut, bool qcd_ttx) {
     double likelihood_cut = 1000;
     vector<double> ycut_user;
     vector<vector<double>> xbins_user;

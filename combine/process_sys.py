@@ -1,5 +1,7 @@
+import os
 import sys
 import process
+import ROOT
 
 cut_names = {"_E_3jets": "_elec_3J", "_M_3jets": "_mu_3J", "_E_4jets" : "_elec_4J", "_M_4jets": "_mu_4J"}
 years = [2015, 2016, 2017, 2018]
@@ -57,26 +59,6 @@ xs_22014 = {
     "4jets_2015": {"ttbar": 372038.0, "DYJets": 4993.9, "STop": 10336.1, "WJets": 4993.9, "QCD": 2538.7},
     "3jets_2015": {"ttbar": 225685.1, "DYJets": 8980.4, "STop": 14718.5, "WJets": 8980.4, "QCD": 6696.0},
 }
-xs = {
-    "4jets_2018": {"ttbar": 1373672.180, "DYJets": 42889.097, "STop": 65668.303, "WJets": 42889.097, "QCD": 13482.57},
-    "3jets_2018": {"ttbar": 700886.249, "DYJets": 45213.924, "STop": 68980.932, "WJets": 45213.924, "QCD": 10478.331},
-    "4jets_2017": {"ttbar": 905491.916, "DYJets": 26666.765, "STop": 42933.543, "WJets": 26666.765, "QCD": 3646.486},
-    "3jets_2017": {"ttbar": 459668.940, "DYJets": 28001.779, "STop": 44918.471, "WJets": 28001.779, "QCD": 6523.975},
-    "4jets_2016": {"ttbar": 369249.661, "DYJets": 9457.0650, "STop": 17078.825, "WJets": 9457.0650, "QCD": 22364.907},
-    "3jets_2016": {"ttbar": 192682.512, "DYJets": 10092.127, "STop": 18414.012, "WJets": 10092.127, "QCD": 3379.509},
-    "4jets_2015": {"ttbar": 436525.235, "DYJets": 12746.261, "STop": 20094.089, "WJets": 12746.261, "QCD": 5121.598},
-    "3jets_2015": {"ttbar": 229796.945, "DYJets": 13594.463, "STop": 22042.574, "WJets": 13594.463, "QCD": 3857.661},
-}
-xs_ttx = {
-    "4jets_2018": {"ttbar": 1228687.364, "DYJets": 24617.331, "STop": 49288.147, "WJets": 24617.331, "QCD": 73905.478},
-    "3jets_2018": {"ttbar": 590777.400, "DYJets": 19707.288, "STop": 39934.100, "WJets": 19707.288, "QCD": 59641.388},
-    "4jets_2017": {"ttbar": 816566.630, "DYJets": 15288.764, "STop": 32314.026, "WJets": 15288.764, "QCD": 47602.789},
-    "3jets_2017": {"ttbar": 391812.431, "DYJets": 12619.894, "STop": 26290.719, "WJets": 12619.894, "QCD": 38910.613},
-    "4jets_2016": {"ttbar": 320992.449, "DYJets": 4969.3460, "STop": 12198.072, "WJets": 4969.3460, "QCD": 17167.418},
-    "3jets_2016": {"ttbar": 159621.164, "DYJets": 4154.0890, "STop": 10444.627, "WJets": 4154.0890, "QCD": 14598.717},
-    "4jets_2015": {"ttbar": 372193.383, "DYJets": 6658.1440, "STop": 14128.975, "WJets": 6658.1440, "QCD": 20787.120},
-    "3jets_2015": {"ttbar": 186716.825, "DYJets": 5531.7200, "STop": 12311.083, "WJets": 5531.7200, "QCD": 17842.803},
-}
 
 qnorm_22014 = {"E3j_2015": 1.5, "M3j_2015": 1.2, "E4j_2015": 1.5, "M4j_2015": 1.2,
                "E3j_2016": 1.5, "M3j_2016": 1.2, "E4j_2016": 1.5, "M4j_2016": 3.5,
@@ -91,9 +73,29 @@ for syss in sys_same_year:
 flat_name = {0: "", 1: "_bg_flat"}
 nom_name = {0: "", 1: "_renormed"}
 
-new_file = name_datacard + "/processed" + flat_name[bg_flat] + nom_name[renorm] + "/ttbar" + cut_name + "_{0}.root".format(year)
+out_dir = name_datacard + "/processed" + flat_name[bg_flat] + nom_name[renorm]
+if not os.path.exists(out_dir):
+    os.mkdir(out_dir)
+new_file = out_dir + "/ttbar" + cut_name + "_{0}.root".format(year)
 base_file = name_datacard + "/original/ttbar" + cut_name + ".root"
 original = name_datacard + "/original/ttbar" + cut_name + "_{0}.root".format(year)
+
+xs_cut = cut_name[3:] + "_" + sys.argv[3]
+if renorm == 0:
+    xs_self = xs_22014[xs_cut]
+else:
+    renorm_file1 = ROOT.TFile(name_datacard + "/original/ttbar_E_" + xs_cut + ".root", "read")
+    renorm_file2 = ROOT.TFile(name_datacard + "/original/ttbar_M_" + xs_cut + ".root", "read")
+    xs_self = {"ttbar": renorm_file1.Get("ttbar_ci0000").GetSumOfWeights() + renorm_file2.Get("ttbar_ci0000").GetSumOfWeights(),
+               "DYJets": renorm_file1.Get("DYJets").GetSumOfWeights() + renorm_file2.Get("DYJets").GetSumOfWeights(),
+               "STop": renorm_file1.Get("STop").GetSumOfWeights() + renorm_file2.Get("STop").GetSumOfWeights(),
+               "WJets": renorm_file1.Get("WJets").GetSumOfWeights() + renorm_file2.Get("WJets").GetSumOfWeights()}
+    ori_file = ROOT.TFile(original, "read")
+    if ori_file.Get("QCD"):
+        ori_file.Close()
+        xs_self["QCD"] = renorm_file1.Get("QCD").GetSumOfWeights() + renorm_file2.Get("QCD").GetSumOfWeights()
+    xs_self["DYJets"] = xs_self["DYJets"] + xs_self["WJets"]
+    xs_self["WJets"] = xs_self["DYJets"]
 
 if "2cuts" in name_datacard:
     sys_type = sys_type_2cuts
@@ -102,15 +104,7 @@ else:
     sys_type = sys_type_4cuts
     start = [0, 7, 16, 25, 33]
 
-if "ttx" in name_datacard:
-    xs_self = xs_ttx
-else:
-    xs_self = xs
-if renorm == 0:
-    xs_self = xs_22014
-
-xs_cut = cut_name[3:] + "_" + sys.argv[3]
 ch = cut_name[1:2] + cut_name[3:5]+ "_" + sys.argv[3]
 qnorm_fix = qnorm_22014[ch]
 
-process.process(new_file, original, bg_flat, sys_type, xs_22014[xs_cut], xs_self[xs_cut], qnorm_fix, start, base_file, sys_same_year)
+process.process(new_file, original, bg_flat, sys_type, xs_22014[xs_cut], xs_self, qnorm_fix, start, base_file, sys_same_year)
