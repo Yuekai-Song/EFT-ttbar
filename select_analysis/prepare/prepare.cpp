@@ -1,21 +1,5 @@
 #include "prepare.h"
 
-void prepare::Floor(TH1D *hist)
-{
-    for (int i = 0; i < hist->GetNbinsX(); i++)
-    {
-        if (!(hist->GetBinContent(i + 1) > 1.E-6))
-            hist->SetBinContent(i + 1, 1.E-6);
-    }
-}
-/*void sum_h1(TH1D* hs, TH1D* h1, TH1D *h2){
-    for(int i=0; i<h1->GetNbinsX(); i++){
-        hs->SetBinContent(i+1, h1->GetBinContent(i+1));
-    }
-    for(int i=0; i<h2->GetNbinsX(); i++){
-        hs->SetBinContent(h1->GetNbinsX()+i+1, h2->GetBinContent(i+1));
-    }
-}*/
 void prepare::give_sys_name(TString file, TString weight, int s, int c)
 {
     if (s < 12)
@@ -27,8 +11,8 @@ void prepare::give_sys_name(TString file, TString weight, int s, int c)
         weight_up = weight;
         weight_dn = weight;
     }
-    else if (s < 19 || s == 28)
-    { // SF_btag*4, SF_lepton, L1_PreFiring, Pileup, and NNLO_QCD
+    else if (s < 21 || s == 29)
+    { // SF_btag*6, SF_lepton, L1_PreFiring, Pileup, and NNLO_QCD
         tree_up = "mytree";
         tree_dn = "mytree";
         file_up = file;
@@ -39,7 +23,7 @@ void prepare::give_sys_name(TString file, TString weight, int s, int c)
         weight_dn.ReplaceAll(sys[s], sys_down[s]);
     }
     else if (s < 25)
-    { // muR, muF, ISR, FSR, pdf, alphas
+    { // muR, muF, ISR, FSR
         tree_up = "mytree";
         tree_dn = "mytree";
         file_up = file;
@@ -47,8 +31,8 @@ void prepare::give_sys_name(TString file, TString weight, int s, int c)
         weight_up = weight + "*" + sys_up[s];
         weight_dn = weight + "*" + sys_down[s];
     }
-    else if (s < 27)
-    { // mtop, hdamp
+    else if (s < 28)
+    { // mtop, mtop3, hdamp
         tree_up = "mytree";
         tree_dn = "mytree";
         file_up = file;
@@ -58,7 +42,7 @@ void prepare::give_sys_name(TString file, TString weight, int s, int c)
         weight_up = weight;
         weight_dn = weight;
     }
-    else if (s < 29)
+    else if (s < 30)
     { // TuneCP5
         tree_up = "mytree";
         tree_dn = "mytree";
@@ -69,7 +53,7 @@ void prepare::give_sys_name(TString file, TString weight, int s, int c)
         weight_up = weight;
         weight_dn = weight;
     }
-    else if (s < 30)
+    else if (s < 31)
     { // EW_un
         tree_up = "mytree";
         tree_dn = "mytree";
@@ -81,81 +65,66 @@ void prepare::give_sys_name(TString file, TString weight, int s, int c)
         weight_dn = weight_dn + EW[c] + "_EWDown";
     }
     // cout<<weight_up<<" "<<weight_dn<<" "<<weight<<" "<<endl;
+    // cout << tree_up << " " <<tree_dn << endl;
 }
 
-void prepare::renew_weight(TString *weight, TString file)
+void prepare::renew_weight(TString *weight, TString dir, TString file)
 { // global weight
-    double lumi_s[4] = {19.5, 16.8, 41.48, 59.83};
-    double lumi = lumi_s[year - 2015];
+
     auto c0 = new TCanvas("c0", "c0", 8, 30, 600, 600);
-    TChain *tree1 = new TChain("rawtree");
-    tree1->Add(dir + "/MC/" + file);
+    TChain *tree0 = new TChain("rawtree");
+    // cout << dir << " " << file << endl;
+    tree0->Add(dir + file);
     TH1D *nmc = new TH1D("nmc", "", 50, 0, 100);
     // nmc->Sumw2();
     c0->cd();
-    tree1->Draw("nJet>>nmc", "Generator_weight");
+    tree0->Draw("nJet>>nmc", "Generator_weight");
     // cout<<nmc->GetSumOfWeights()<<endl;
-    double cross_section = xsection[file].first;
-    double K_Factor = xsection[file].second;
-    double weight1 = cross_section * lumi / (nmc->GetSumOfWeights()) * K_Factor * 1000;
-    // cout<<weight1<<endl;
-    *weight = Form("%f*", weight1) + (*weight);
-    delete tree1;
+    double cross_section = sets.xs(file).first;
+    double K_Factor = sets.xs(file).second;
+    double weight1 = cross_section * sets.lumi / (nmc->GetSumOfWeights()) * K_Factor * 1000;
+    // cout << weight1 << endl;
+    *weight = Form("%lf*", weight1) + (*weight);
+    delete tree0;
     delete nmc;
     delete c0;
 }
-void prepare::draw(TH1D *h1, TString file, TString tree, TString weight)
+void prepare::draw(TH1 *h1, TString file, TString tree, TString weight)
 {
     auto c0 = new TCanvas("c0", "c0", 8, 30, 600, 600);
     TChain chain(tree);
-    chain.Add(dir + "/MC/" + file);
-    TH1D *hm1;
-    if (equal_bin)
-        hm1 = new TH1D("hm1", "", nbins, xlow, xup);
-    else
-        hm1 = new TH1D("hm1", "", nbins, xbins);
-
-    hm1->Sumw2();
+    chain.Add(file);
     c0->cd();
-    chain.Draw(xvar + ">>hm1", weight + "*" + cut);
-    for (int i = 0; i < nbins + 1; i++)
+    TString h1Name = h1->GetName();
+    // h1->Sumw2();
+    if (type == 0)
     {
-        h1->SetBinContent(i, hm1->GetBinContent(i));
-        h1->SetBinError(i, hm1->GetBinError(i));
+        if (is_corr)
+            chain.Draw("likelihood:fabs(rapidity_tt):mass_tt >>" + h1Name, weight + "*" + sets.cut);
+        else
+            chain.Draw("likelihood:fabs(rapidity_tt):mass_tt_uncorr >>" + h1Name, weight + "*" + sets.cut);
     }
-    c0->cd();
-    Floor(h1);
-    delete hm1;
+    else
+        chain.Draw(xvar + ">>" + h1Name, weight + "*" + sets.cut);
     delete c0;
 }
-void prepare::draw(int c)
+void prepare::draw_nom(int c)
 {
-    TString other_con1 = "*((jet_num>=4)||(jet_num==3 && jet_pt[0]>50))";
-    TString other_con2;
-    if (year == 2018)
-        other_con2 = "*(lep_flavour||((!lep_flavour) && lepton_pt>34))";
-    else
-        other_con2 = "*1";
-    TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom" + other_con1 + other_con2;
-    TH1D *h1, *hist;
-    if (equal_bin)
-        hist = new TH1D(process[c], "", nbins, xlow, xup);
-    else
-        hist = new TH1D(process[c], "", nbins, 0, nbins);
+    TString weight = weight_base;
+    TString weight_nom;
+    TH1 *hist;
+    create_hist(hist, process[c] + "_sub");
     if (c < 5)
         weight = weight + EW[c] + "*nnlo_wt";
     if (c == 5)
         weight = weight + "*nnlo_wt";
-    for (int i = edge_i[c]; i < edge_f[c]; i++)
+    for (int i = sets.index_pro[fileTitle[c]].first; i <  sets.index_pro[fileTitle[c]].second; i++)
     {
         weight_nom = weight;
-        renew_weight(&weight_nom, fileNames[i]);
-        if (equal_bin)
-            h1 = new TH1D("h1", "", nbins, xlow, xup);
-        else
-            h1 = new TH1D("h1", "", nbins, 0, nbins);
-        h1->Sumw2();
-        draw(h1, fileNames[i], "mytree", weight_nom);
+        renew_weight(&weight_nom, MC_dir, sets.fileName(i));
+        TH1 *h1;
+        create_hist(h1, "h1");
+        draw(h1, MC_dir + sets.fileName(i), "mytree", weight_nom);
         hist->Add(h1);
         delete h1;
     }
@@ -163,74 +132,74 @@ void prepare::draw(int c)
     hist->Write();
     delete hist;
 }
-
-void prepare::draw(int c, int s)
+void prepare::draw_pdf(int c, int p)
 {
-    TString other_con1 = "*((jet_num>=4)||(jet_num==3 && jet_pt[0]>50))";
-    TString other_con2;
-    if (year == 2018)
-        other_con2 = "*(lep_flavour||((!lep_flavour) && lepton_pt>34))";
+    TString weight = weight_base + Form("*LHEPdfWeight[%d]", p);
+    TString weight_nom;
+    TH1 *hist_pdf;
+    create_hist(hist_pdf, process[c] + Form("_pdf_w%d_sub", p));
+    if (c > 5)
+        hist_pdf->SetName(process[c] + Form("_pdf%d_w%d_sub", c - 5, p));
+    else if (c < 5)
+        weight = weight + EW[c] + "*nnlo_wt";
     else
-        other_con2 = "*1";
-    TString weight = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom" + other_con1 + other_con2;
-    TH1D *hist_up, *hist_dn, *h1_up, *h1_dn;
-    if (equal_bin)
+        weight = weight + "*nnlo_wt";
+    for (int i = sets.index_pro[fileTitle[c]].first; i <  sets.index_pro[fileTitle[c]].second; i++)
     {
-        hist_up = new TH1D("hist_up", "", nbins, xlow, xup);
-        hist_dn = new TH1D("hist_dn", "", nbins, xlow, xup);
+        weight_nom = weight;
+        renew_weight(&weight_nom, MC_dir, sets.fileName(i));
+        TH1 *h1; 
+        create_hist(h1, "h1");
+        draw(h1, MC_dir + sets.fileName(i), "mytree", weight_nom);
+        hist_pdf->Add(h1);
+        delete h1;
     }
-    else
-    {
-        hist_up = new TH1D("hist_up", "", nbins, 0, nbins);
-        hist_dn = new TH1D("hist_dn", "", nbins, 0, nbins);
-    }
+    file->cd();
+    hist_pdf->Write();
+    delete hist_pdf;
+}
+void prepare::draw_sys(int c, int s)
+{
+    TString weight = weight_base;
+    TH1 *hist_up, *hist_dn;
+    create_hist(hist_up, "hist_up");
+    create_hist(hist_dn, "hist_dn");
     if (c > 5 && (sys_n[s].Contains("muR") || sys_n[s].Contains("muF")))
     {
-        hist_up->SetName(process[c] + "_" + sys_n[s] + Form("%dUp", c - 4));
-        hist_dn->SetName(process[c] + "_" + sys_n[s] + Form("%dDown", c - 4));
+        hist_up->SetName(process[c] + "_" + sys_n[s] + Form("%dUp_sub", c - 5));
+        hist_dn->SetName(process[c] + "_" + sys_n[s] + Form("%dDown_sub", c - 5));
     }
-    else if (sys_n[s].Contains("SF_lepton") && cut_name.Contains("E_"))
+    else if (sys_n[s].Contains("SF_lepton") && sets.cut_name.Contains("E_"))
     {
-        hist_up->SetName(process[c] + "_SF_ElecUp");
-        hist_dn->SetName(process[c] + "_SF_ElecDown");
+        hist_up->SetName(process[c] + "_SF_ElecUp_sub");
+        hist_dn->SetName(process[c] + "_SF_ElecDown_sub");
     }
-    else if (sys_n[s].Contains("SF_lepton") && cut_name.Contains("M_"))
+    else if (sys_n[s].Contains("SF_lepton") && sets.cut_name.Contains("M_"))
     {
-        hist_up->SetName(process[c] + "_SF_MuonUp");
-        hist_dn->SetName(process[c] + "_SF_MuonDown");
+        hist_up->SetName(process[c] + "_SF_MuonUp_sub");
+        hist_dn->SetName(process[c] + "_SF_MuonDown_sub");
     }
     else
     {
-        hist_up->SetName(process[c] + "_" + sys_n[s] + "Up");
-        hist_dn->SetName(process[c] + "_" + sys_n[s] + "Down");
+        hist_up->SetName(process[c] + "_" + sys_n[s] + "Up_sub");
+        hist_dn->SetName(process[c] + "_" + sys_n[s] + "Down_sub");
     }
     if (c < 5)
         weight = weight + EW[c] + "*nnlo_wt";
     if (c == 5)
         weight = weight + "*nnlo_wt";
-    for (int i = edge_i[c]; i < edge_f[c]; i++)
+    for (int i = sets.index_pro[fileTitle[c]].first; i < sets.index_pro[fileTitle[c]].second; i++)
     {
-        give_sys_name(fileNames[i], weight, s, c);
-        renew_weight(&weight_up, file_up);
-        renew_weight(&weight_dn, file_dn);
-        if (equal_bin)
-        {
-            h1_up = new TH1D("h1_up", "", nbins, xlow, xup);
-            h1_dn = new TH1D("h1_dn", "", nbins, xlow, xup);
-        }
-        else
-        {
-            h1_up = new TH1D("h1_up", "", nbins, 0, nbins);
-            h1_dn = new TH1D("h1_dn", "", nbins, 0, nbins);
-        }
-        h1_up->Sumw2();
-        h1_dn->Sumw2();
-        draw(h1_up, file_up, tree_up, weight_up);
-        draw(h1_dn, file_dn, tree_dn, weight_dn);
-
+        give_sys_name(sets.fileName(i), weight, s, c);
+        renew_weight(&weight_up, MC_dir, file_up);
+        renew_weight(&weight_dn, MC_dir, file_dn);
+        TH1 *h1_up, *h1_dn;
+        create_hist(h1_up, "h1_up");
+        create_hist(h1_dn, "h1_dn");
+        draw(h1_up, MC_dir + file_up, tree_up, weight_up);
+        draw(h1_dn, MC_dir + file_dn, tree_dn, weight_dn);
         hist_up->Add(h1_up);
         hist_dn->Add(h1_dn);
-
         delete h1_up;
         delete h1_dn;
     }
@@ -240,100 +209,135 @@ void prepare::draw(int c, int s)
     delete hist_up;
     delete hist_dn;
 }
-
-void prepare::set_dir(){
-    const int nsample = 44;
-    TString fileName[nsample] = {  
-                            "new_TTToSemiLeptonic_TuneCP5_13TeV-powheg.root",
-                            "new_TTTo2L2Nu_TuneCP5_13TeV-powheg.root",
-                            "new_TTToHadronic_TuneCP5_13TeV-powheg.root",
-
-                            "new_DYJetsToLL_M-50_HT-70to100_TuneCP5_PSweights_13TeV-madgraphMLM.root",
-                            "new_DYJetsToLL_M-50_HT-100to200_TuneCP5_PSweights_13TeV-madgraphMLM.root",
-                            "new_DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM.root",
-                            "new_DYJetsToLL_M-50_HT-400to600_TuneCP5_PSweights_13TeV-madgraphMLM.root",
-                            "new_DYJetsToLL_M-50_HT-600to800_TuneCP5_PSweights_13TeV-madgraphMLM.root",
-                            "new_DYJetsToLL_M-50_HT-800to1200_TuneCP5_PSweights_13TeV-madgraphMLM.root",
-                            "new_DYJetsToLL_M-50_HT-1200to2500_TuneCP5_PSweights_13TeV-madgraphMLM.root",                           
-                            "new_DYJetsToLL_M-50_HT-2500toInf_TuneCP5_PSweights_13TeV-madgraphMLM.root",
-                        
-                            "new_ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo.root",
-                            "new_ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin.root",
-                            "new_ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin.root",
-                            "new_ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg.root",
-                            "new_ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg.root",                                                                               
-                            
-                            "new_W1JetsToLNu_TuneCP5_13TeV-madgraphMLM.root",
-                            "new_W2JetsToLNu_TuneCP5_13TeV-madgraphMLM.root",
-                            "new_W3JetsToLNu_TuneCP5_13TeV-madgraphMLM.root",
-                            "new_W4JetsToLNu_TuneCP5_13TeV-madgraphMLM.root",
-
-                            "new_TTToSemiLeptonic_mtop173p5_TuneCP5_13TeV-powheg.root",
-                            "new_TTTo2L2Nu_mtop173p5_TuneCP5_13TeV-powheg.root",
-                            "new_TTToHadronic_mtop173p5_TuneCP5_13TeV-powheg.root",
-                            "new_TTToSemiLeptonic_mtop171p5_TuneCP5_13TeV-powheg.root",
-                            "new_TTTo2L2Nu_mtop171p5_TuneCP5_13TeV-powheg.root",
-                            "new_TTToHadronic_mtop171p5_TuneCP5_13TeV-powheg.root",
-
-                            "new_TTToSemiLeptonic_mtop175p5_TuneCP5_13TeV-powheg.root",
-                            "new_TTTo2L2Nu_mtop175p5_TuneCP5_13TeV-powheg.root",
-                            "new_TTToHadronic_mtop175p5_TuneCP5_13TeV-powheg.root",
-                            "new_TTToSemiLeptonic_mtop169p5_TuneCP5_13TeV-powheg.root",
-                            "new_TTTo2L2Nu_mtop169p5_TuneCP5_13TeV-powheg.root",
-                            "new_TTToHadronic_mtop169p5_TuneCP5_13TeV-powheg.root",
-
-                            "new_TTToSemiLeptonic_hdampUP_TuneCP5_13TeV-powheg.root",
-                            "new_TTTo2L2Nu_hdampUP_TuneCP5_13TeV-powheg.root",
-                            "new_TTToHadronic_hdampUP_TuneCP5_13TeV-powheg.root",
-                            "new_TTToSemiLeptonic_hdampDOWN_TuneCP5_13TeV-powheg.root",
-                            "new_TTTo2L2Nu_hdampDOWN_TuneCP5_13TeV-powheg.root",
-                            "new_TTToHadronic_hdampDOWN_TuneCP5_13TeV-powheg.root",
-
-                            "new_TTToSemiLeptonic_TuneCP5up_13TeV-powheg.root",
-                            "new_TTTo2L2Nu_TuneCP5up_13TeV-powheg.root",
-                            "new_TTToHadronic_TuneCP5up_13TeV-powheg.root",
-                            "new_TTToSemiLeptonic_TuneCP5down_13TeV-powheg.root",
-                            "new_TTTo2L2Nu_TuneCP5down_13TeV-powheg.root",
-                            "new_TTToHadronic_TuneCP5down_13TeV-powheg.root"};
-    Float_t cross_section[nsample] = {365.34, 88.29, 377.96,
-                                      169.9, 147.4, 41.0, 5.7, 1.4, 0.63, 0.15, 0.0036,
-                                      3.36, 136.02, 80.95, 35.6, 35.6,
-                                      8927.0, 2809.0, 826.3, 544.3,
-                                      355.50, 85.91, 367.78, 375.45, 90.73, 388.41,
-                                      336.79, 81.39, 348.42, 396.76, 95.88, 410.47,
-                                      366.34, 88.29, 377.96, 365.29, 88.28, 377.90,
-                                      365.34, 88.29, 377.96, 365.34, 88.29, 377.96,};
-    Float_t K_Factor[nsample] = {1.0, 1.0, 1.0,
-                                 1.23, 1.23, 1.23, 1.23, 1.23, 1.23, 1.23, 1.23,
-                                 1.0, 1.0, 1.0, 1.0, 1.0,
-                                 1.21, 1.21, 1.21, 1.21,
-                                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                                 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
-    TString sys_s[] = {"jer", "unclus", "SF_btag", "SF_btag", "SF_btag", "SF_btag", "SF_lepton", "L1PreFiringWeight_Nom", "pu_wt", "muR", "muF", "ISR", "FSR", "pdf", "alphas", "mtop", "hdamp", "TuneCP5", "nnlo_wt", "EW_un"};
-    TString sys_ns[] = {"jer", "unclus", "SF_btag", Form("SF_btag%d", year), "SF_ltag", Form("SF_ltag%d", year), "SF_lepton", "L1PF", "PU", "muR", "muF", "ISR", "FSR", "pdf", "alphas", "mtop", "hdamp", "TuneCP5", "nnlo_wt", "EW_un"};
-    TString sys_up_s[] = {"jerUp", "unclusUp", "SF_btag_up_co", "SF_btag_up", "SF_ltag_up_co", "SF_ltag_up", "SF_lepton_up", "L1PreFiringWeight_Up", "pu_wt_up", "muR_up", "muF_up", "ISR_up", "FSR_up", "pdf_up", "alphas_up", "mtop173p5", "hdampUP", "TuneCP5up", "nnlo_wt_up", "EW_un_up"};
-    TString sys_down_s[] = {"jerDown", "unclusDown", "SF_btag_down_co", "SF_btag_down", "SF_ltag_down_co", "SF_ltag_down", "SF_lepton_down", "L1PreFiringWeight_Dn", "pu_wt_dn", "muR_down", "muF_down", "ISR_down", "FSR_down", "pdf_dn", "alphas_dn", "mtop171p5", "hdampDOWN", "TuneCP5down", "nnlo_wt_down", "EW_un_down"};
-    
-    TString jes_source[] = {"Absolute", Form("Absolute_%d", year), "FlavorQCD", "BBEC1", "EC2", "HF", Form("BBEC1_%d", year), Form("EC2_%d", year), "RelativeBal", Form("RelativeSample_%d", year)};
-    TString sf_bl[] = {"SF_btag_co", "SF_ltag_co", "SF_btag_un", "SF_btag_un"};
-    for (int i = 0; i < nsample; i++)
+void prepare::draw_qcd(TString cg, bool isEnriched)
+{
+    sets.set_suf(cg);
+    TString en = "", qcd_title = "QCD_HT";
+    if (isEnriched)
     {
-        if (i < 20)
-            fileNames[i] = fileName[i].ReplaceAll(".root", "_*.root");
-        xsection[fileName[i]] = pair(cross_section[i], K_Factor[i]);
+        en = "_En";
+        if (sets.cut_name.Contains("M"))
+            qcd_title = "QCD_MuEn";
+        else
+            qcd_title = "QCD_EMEn";
     }
 
-    TString process_s[] = {"ttbar_ci0000","ttbar_ci0100", "ttbar_ci0010", "ttbar_ci0001", "ttbar_ci0200", "EW_no", "DYJets","STop", "WJets"};
-    TString EWs[5] = {"*weight_ci0000", "*weight_ci0100", "*weight_ci0010", "*weight_ci0001", "*weight_ci0200"};
+    TH1 *hdata, *hmc[2];
+    create_hist(hmc[1], "QCD_MC_" + cg + en);
+    if (cg != "A" && !isEnriched)
+    {
+        create_hist(hmc[0], "other_MC_" + cg);
+        create_hist(hdata, "QCD_prompt_" + cg); // final QCD;
+        draw(hdata, QCD_dir + "data/" + sets.dataName(), "mytree", Form("%.2f", sets.pre_scale));
+    }
+    TString titles[] = {"other", qcd_title};
+    for (int i = 0; i < 2; i++)
+    {
+        if (i == 0 && (cg == "A" || isEnriched))
+            continue;
+        for (int j = sets.index_pro[titles[i]].first; j < sets.index_pro[titles[i]].second; j++)
+        {
+            TString weight = weight_base;
+            if (j < 3)
+                weight = weight + "*nnlo_wt";
+            renew_weight(&weight, QCD_dir + "MC/", sets.fileName(j));
+            TH1 *h1;
+            create_hist(h1, "h1");
+            draw(h1, QCD_dir + "MC/" + sets.fileName(j), "mytree", weight);
+            hmc[i]->Add(h1);
+            delete h1;
+        }
+    }
+    if (cg != "A" && !isEnriched)
+    {
+        hdata->Add(hmc[0], -1.0);
+        qcd_hists[hdata->GetName()] = hdata;
+        delete hmc[0];
+    }
+    
+    qcd_hists[hmc[1]->GetName()] = hmc[1];
+}
+void prepare::add_qcd()
+{
+    TString cgs[] = {"A", "B", "C", "D"};
+    bool en[] = {false, true};
+    qcd_hists.clear();
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 2; j++)
+        {
+            draw_qcd(cgs[i], en[j]);
+        }
+    }
+    file->cd();
+    if (type == 0)
+    {
+        for (map<TString, TH1 *>::iterator it = qcd_hists.begin(); it != qcd_hists.end(); ++it)
+        {
+            it->second->Write();
+        }
+    }
+    else
+    {
+        set0(qcd_hists["QCD_prompt_C"]);
+        set0(qcd_hists["QCD_prompt_B"]);
+        set0(qcd_hists["QCD_prompt_D"]);
+        double norm = qcd_hists["QCD_MC_A"]->GetSumOfWeights() / qcd_hists["QCD_MC_C"]->GetSumOfWeights();
+        double ns = qcd_hists["QCD_MC_B"]->GetSumOfWeights() / qcd_hists["QCD_MC_D"]->GetSumOfWeights();
+        ns /= norm;
+        qcd_hists["QCD_prompt_C"]->Scale(norm);
+        qcd_hists["QCD_prompt_C"]->SetName("QCD");
+        TH1 *hist_normup = (TH1 *)qcd_hists["QCD_prompt_C"]->Clone();
+        TH1 *hist_normdn = (TH1 *)qcd_hists["QCD_prompt_C"]->Clone();
+        hist_normup->SetName("QCD_normUp");
+        hist_normdn->SetName("QCD_normDown");
+        hist_normup->Scale(ns);
+        hist_normdn->Scale(1.0 / ns);
 
-    int edge_is[] = {0, 0, 0, 0, 0, 0, 3, 11, 16};//23,31}; 
-    int edge_fs[] = {3, 3, 3, 3, 3, 0, 11, 16, 20,};
+        qcd_hists["QCD_prompt_B"]->Scale(1.0 / qcd_hists["QCD_prompt_B"]->GetSumOfWeights());
+        qcd_hists["QCD_prompt_D"]->Scale(1.0 / qcd_hists["QCD_prompt_D"]->GetSumOfWeights());
+        TH1 *temp = (TH1 *)qcd_hists["QCD_prompt_B"]->Clone();
+        temp->SetName("temp");
+        qcd_hists["QCD_prompt_B"]->Divide(qcd_hists["QCD_prompt_D"]);
+        qcd_hists["QCD_prompt_D"]->Divide(temp);
+        qcd_hists["QCD_prompt_B"]->Multiply(qcd_hists["QCD_prompt_C"]);
+        qcd_hists["QCD_prompt_D"]->Multiply(qcd_hists["QCD_prompt_C"]);
+        qcd_hists["QCD_prompt_B"]->SetName("QCD_shapeUp");
+        qcd_hists["QCD_prompt_D"]->SetName("QCD_shapeDown");
+
+        qcd_hists["QCD_prompt_C"]->Write();
+        qcd_hists["QCD_prompt_B"]->Write();
+        qcd_hists["QCD_prompt_D"]->Write();
+        hist_normup->Write();
+        hist_normdn->Write();
+
+    }
+    for (map<TString, TH1 *>::iterator it = qcd_hists.begin(); it != qcd_hists.end(); ++it)
+    {
+        delete it->second;
+    }
+}
+void prepare::set_dir(int option)
+{
+    TString sys_s[] = {"jer", "unclus", "L1PreFiringWeight_Nom", "SF_btag", "SF_btag", "SF_btag", "SF_btag", "SF_btag", "SF_btag", "SF_lepton", "pu_wt", "muR", "muF", "ISR", "FSR", "mtop", "mtop", "hdamp", "TuneCP5", "nnlo_wt", "EW_un"};
+    TString sys_ns[] = {"jer", "unclus", Form("L1PF_%d", year), "SF_btag_jes", "SF_btag_type3", "SF_btag_pileup", Form("SF_btag_stat%d", year), "SF_ltag", Form("SF_ltag%d", year), Form("SF_lepton%d", year), "PU", "muR", "muF", "ISR", "FSR", "mtop", "mtop3", "hdamp", "TuneCP5", "nnlo_wt", "EW_un"};
+    TString sys_up_s[] = {"jerUp", "unclusUp", "L1PreFiringWeight_Up", "SF_btag_jesup", "SF_btag_type3up", "SF_btag_pileupup", "SF_btag_statisticup", "SF_ltag_up_co", "SF_ltag_up", "SF_lepton_up", "pu_wt_up", "muR_up", "muF_up", "ISR_up", "FSR_up", "mtop173p5", "mtop175p5", "hdampUP", "TuneCP5up", "nnlo_wt_up", "EW_un_up"};
+    TString sys_down_s[] = {"jerDown", "unclusDown", "L1PreFiringWeight_Dn", "SF_btag_jesdn", "SF_btag_type3dn", "SF_btag_pileupdn", "SF_btag_statisticdn", "SF_ltag_down_co", "SF_ltag_down", "SF_lepton_down", "pu_wt_dn", "muR_down", "muF_down", "ISR_down", "FSR_down", "mtop171p5", "mtop169p5", "hdampDOWN", "TuneCP5down", "nnlo_wt_down", "EW_un_down"};
+
+    TString jes_source[] = {"Absolute", Form("Absolute_%d", year), "FlavorQCD", "BBEC1", "EC2", "HF", Form("BBEC1_%d", year), Form("EC2_%d", year), "RelativeBal", Form("RelativeSample_%d", year)};
+    TString sf_bl[] = {"SF_btag_co", "SF_ltag_co", "SF_btag_un", "SF_btag_un"};
+
+
+    TString process_s[] = {"ttbar_ci0200", "ttbar_ci0100", "ttbar_ci0010", "ttbar_ci0001", "ttbar_ci0000", "EW_no", "DYJets", "STop", "WJets"};
+    TString fileTitle_s[] = {"ttbar", "ttbar", "ttbar", "ttbar", "ttbar", "ttbar", "DYJets", "STop", "WJets"};
+    TString EWs[5] = {"*weight_ci0200", "*weight_ci0100", "*weight_ci0010", "*weight_ci0001", "*weight_ci0000"};
+    Int_t npdf_ws[] = {103, 103, 103, 103, 103, 0, 103, 101, 103};
+    
     for (int i = 0; i < 9; i++)
     {
-        edge_i[i] = edge_is[i];
-        edge_f[i] = edge_fs[i];
+        fileTitle[i] = fileTitle_s[i];
+        npdf_w[i] = npdf_ws[i];
+        process[i] = process_s[i];
     }
     for (int i = 0; i < 10; i++)
     {
@@ -342,93 +346,124 @@ void prepare::set_dir(){
         sys_up[i] = "jes_" + jes_source[i] + "Up";
         sys_down[i] = "jes_" + jes_source[i] + "Down";
     }
-    for (int i = 0; i < 20; i++)
+    for (int i = 0; i < 21; i++)
     {
         sys[i + 10] = sys_s[i];
         sys_n[i + 10] = sys_ns[i];
         sys_up[i + 10] = sys_up_s[i];
         sys_down[i + 10] = sys_down_s[i];
     }
-    for (int i = 0; i < 9; i++)
-        process[i] = process_s[i];
     for (int i = 0; i < 5; i++)
         EW[i] = EWs[i];
+
+    int begins[] = {0, 1, 2, 3, 4, 5, 4, 9};
+    int ends[] = {1, 2, 3, 4, 5, 9, 10, 10};
+    TString categorys[] = {"ttbar200", "ttbar100", "ttbar010", "ttbar001", "ttbar000", "bg", "ttbar", "QCD"};
+    begin = begins[option];
+    end = ends[option];
+    category = categorys[option] + "_" + sets.cut_name;
 }
-void prepare::set_bins(TString xvar_s, TString title_s, int nbin, double *xbin)
-{
-    xvar = xvar_s;
-    title = title_s;
-    nbins = nbin;
-    equal_bin = false;
-    for (int i = 0; i < nbin + 1; i++)
-        xbins[i] = xbin[i];
-}
-void prepare::set_bins(TString xvar_s, TString title_s, int nbin, double xlow_s, double xup_s)
-{
-    xvar = xvar_s;
-    title = title_s;
-    nbins = nbin;
-    equal_bin = true;
-    xlow = xlow_s;
-    xup = xup_s;
-}
+
 void prepare::draw_data()
 {
-    TChain chain_data("mytree");
-    chain_data.Add(dir + "/data/new_data*.root"); // fake data now
-    TString data_name = "data_obs";
-    auto c0 = new TCanvas("c0", "c0", 8, 30, 600, 600); // temporary canvas
-    TH1D *h1;
-    if (equal_bin)
-        h1 = new TH1D(data_name, "", nbins, xlow, xup);
-    else
-        h1 = new TH1D(data_name, "", nbins, 0, nbins);
-    c0->cd();
-    chain_data.Draw(xvar + ">>" + data_name, cut);
+    TString data_name = "data_obs_sub";
+    TH1 *h1;
+    create_hist(h1, data_name);
+    draw(h1, data_dir + sets.dataName(), "mytree", "1");
     file->cd();
     h1->Write();
     delete h1;
-    delete c0;
 }
-prepare::prepare(TString dir_s, TString outputDir_s)
+
+prepare::prepare(int cut_num, int year_s, bool is_ttx, int option) : sets(cut_num, year_s, is_ttx)
 {
-    dir = dir_s;
-    outputDir = outputDir_s;
-}
-void prepare::run(TString cut_s, TString cut_name_s, int year_s, int s_num)
-{
-    signal_num = s_num;
+    sets.set_suf("");
     year = year_s;
-    set_dir();
-    cut = cut_s;
-    cut_name = cut_name_s;
-    TString category = title + "_" + cut_name;
-    file = new TFile(outputDir + "/" + category + ".root", "recreate");
-    for (int c = 0; c < 8; c++)
+    set_dir(option);
+}
+void prepare::set_bins(bool is_corrs)
+{
+    type = 0;
+    is_corr = is_corrs;
+    xbins = sets.xyz_bins[0];
+    ybins = sets.xyz_bins[1];
+    zbins = sets.xyz_bins[2];
+    xlow = sets.xyz_range[0];
+    xup = sets.xyz_range[1];
+    ylow = sets.xyz_range[2];
+    yup = sets.xyz_range[3];
+    zlow = sets.xyz_range[4];
+    zup = sets.xyz_range[5];
+}
+void prepare::set_bins(TString xvar_s, TString title, int nbin, double *xbin_s)
+{
+    xvar = xvar_s;
+    category = title + "_" + category;
+    xbins = nbin;
+    type = 2;
+    xbin = new double[nbin + 1];
+    for (int i = 0; i < nbin + 1; i++)
+        xbin[i] = xbin_s[i];
+}
+void prepare::set_bins(TString xvar_s, TString title, int nbin, double xlow_s, double xup_s)
+{
+    xvar = xvar_s;
+    category = title + "_" + category;
+    xbins = nbin;
+    type = 1;
+    xlow = xlow_s;
+    xup = xup_s;
+}
+void prepare::create_hist(TH1 *&hist, TString name)
+{
+    switch (type)
     {
-        if (c < 5 && c >= signal_num)
-            continue;
-        draw(c);
-        cout << "finished nom of " << process[c] << endl;
+    case 0:
+        hist = new TH3D(name, "", xbins, xlow, xup, ybins, ylow, yup, zbins, zlow, zup);
+        break;
+    case 1:
+        hist = new TH1D(name, "", xbins, xlow, xup);
+        break;
+    case 2:
+        hist = new TH1D(name, "", xbins, xbin);
+        break;
     }
-    // add_qcd();
-    for (int s = 0; s < 30; s++)
+    hist->Sumw2();
+}
+void prepare::run()
+{
+    file = new TFile(outputDir + category + ".root", "recreate");
+    // for (int c = begin; c < min(9, end); c++)
+    // {
+    //     draw_nom(c);
+    //     cout << "finished nom of " << process[c] << endl;
+    // }
+    // for (int s = 0; s < 31; s++)
+    // {
+    //     for (int c = begin; c < min(9, end); c++)
+    //     {
+    //         if (c > 4 && s > 24) // sys only for signal
+    //             break;
+    //         if (c == 5)
+    //             continue; // no sys for EW_no
+    //         draw_sys(c, s);
+    //         cout << "finished sys of " << sys_n[s] << " of " << process[c] << endl;
+    //     }
+    // }
+    // for (int c = begin; c < min(9, end); c++)
+    // {
+    //     for (int p = 0; p < npdf_w[c]; p++)
+    //     {
+    //         draw_pdf(c, p);
+    //         cout << "finished pdf_w" << p << " of " << process[c] << endl;
+    //     }
+    // }
+    if (end == 10)
     {
-        for (int c = 0; c < 8; c++)
-        {
-            if (c < 5 && c >= signal_num)
-                continue;
-            if (c > 4 && s > 24) // sys only for signal
-                break;
-            if (c == 5)
-                break;                          // no sys for EW_no
-            if (c == 7 && (s == 23 || s == 24)) // no pdf or alphas for STop
-                break;
-            draw(c, s);
-            cout << "finished sys of " << sys_n[s] << " of " << process[c] << endl;
-        }
+        add_qcd();
+        //draw_data();
     }
-    draw_data();
+    cout << "finished all the things" << endl;
 }
 prepare::~prepare()
 {
