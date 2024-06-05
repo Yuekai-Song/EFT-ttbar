@@ -113,7 +113,7 @@ void prepare::draw_nom(int c)
     TString weight = weight_base;
     TString weight_nom;
     TH1 *hist;
-    create_hist(hist, process[c] + "_sub");
+    create_hist(hist, process[c]);
     if (c < 5)
         weight = weight + EW[c] + "*nnlo_wt";
     if (c == 5)
@@ -137,9 +137,9 @@ void prepare::draw_pdf(int c, int p)
     TString weight = weight_base + Form("*LHEPdfWeight[%d]", p);
     TString weight_nom;
     TH1 *hist_pdf;
-    create_hist(hist_pdf, process[c] + Form("_pdf_w%d_sub", p));
+    create_hist(hist_pdf, process[c] + Form("_pdf_w%d", p));
     if (c > 5)
-        hist_pdf->SetName(process[c] + Form("_pdf%d_w%d_sub", c - 5, p));
+        hist_pdf->SetName(process[c] + Form("_pdf%d_w%d", c - 5, p));
     else if (c < 5)
         weight = weight + EW[c] + "*nnlo_wt";
     else
@@ -166,23 +166,23 @@ void prepare::draw_sys(int c, int s)
     create_hist(hist_dn, "hist_dn");
     if (c > 5 && (sys_n[s].Contains("muR") || sys_n[s].Contains("muF")))
     {
-        hist_up->SetName(process[c] + "_" + sys_n[s] + Form("%dUp_sub", c - 5));
-        hist_dn->SetName(process[c] + "_" + sys_n[s] + Form("%dDown_sub", c - 5));
+        hist_up->SetName(process[c] + "_" + sys_n[s] + Form("%dUp", c - 5));
+        hist_dn->SetName(process[c] + "_" + sys_n[s] + Form("%dDown", c - 5));
     }
     else if (sys_n[s].Contains("SF_lepton") && sets.cut_name.Contains("E_"))
     {
-        hist_up->SetName(process[c] + "_SF_ElecUp_sub");
-        hist_dn->SetName(process[c] + "_SF_ElecDown_sub");
+        hist_up->SetName(process[c] + "_SF_ElecUp");
+        hist_dn->SetName(process[c] + "_SF_ElecDown");
     }
     else if (sys_n[s].Contains("SF_lepton") && sets.cut_name.Contains("M_"))
     {
-        hist_up->SetName(process[c] + "_SF_MuonUp_sub");
-        hist_dn->SetName(process[c] + "_SF_MuonDown_sub");
+        hist_up->SetName(process[c] + "_SF_MuonUp");
+        hist_dn->SetName(process[c] + "_SF_MuonDown");
     }
     else
     {
-        hist_up->SetName(process[c] + "_" + sys_n[s] + "Up_sub");
-        hist_dn->SetName(process[c] + "_" + sys_n[s] + "Down_sub");
+        hist_up->SetName(process[c] + "_" + sys_n[s] + "Up");
+        hist_dn->SetName(process[c] + "_" + sys_n[s] + "Down");
     }
     if (c < 5)
         weight = weight + EW[c] + "*nnlo_wt";
@@ -316,6 +316,7 @@ void prepare::add_qcd()
     {
         delete it->second;
     }
+    sets.set_suf("");
 }
 void prepare::set_dir(int option)
 {
@@ -366,7 +367,7 @@ void prepare::set_dir(int option)
 
 void prepare::draw_data()
 {
-    TString data_name = "data_obs_sub";
+    TString data_name = "data_obs";
     TH1 *h1;
     create_hist(h1, data_name);
     draw(h1, data_dir + sets.dataName(), "mytree", "1");
@@ -433,35 +434,35 @@ void prepare::create_hist(TH1 *&hist, TString name)
 void prepare::run()
 {
     file = new TFile(outputDir + category + ".root", "recreate");
-    // for (int c = begin; c < min(9, end); c++)
-    // {
-    //     draw_nom(c);
-    //     cout << "finished nom of " << process[c] << endl;
-    // }
-    // for (int s = 0; s < 31; s++)
-    // {
-    //     for (int c = begin; c < min(9, end); c++)
-    //     {
-    //         if (c > 4 && s > 24) // sys only for signal
-    //             break;
-    //         if (c == 5)
-    //             continue; // no sys for EW_no
-    //         draw_sys(c, s);
-    //         cout << "finished sys of " << sys_n[s] << " of " << process[c] << endl;
-    //     }
-    // }
-    // for (int c = begin; c < min(9, end); c++)
-    // {
-    //     for (int p = 0; p < npdf_w[c]; p++)
-    //     {
-    //         draw_pdf(c, p);
-    //         cout << "finished pdf_w" << p << " of " << process[c] << endl;
-    //     }
-    // }
+    for (int c = begin; c < min(9, end); c++)
+    {
+        draw_nom(c);
+        cout << "finished nom of " << process[c] << endl;
+    }
+    for (int s = 0; s < 31; s++)
+    {
+        for (int c = begin; c < min(9, end); c++)
+        {
+            if (c > 4 && s > 24) // sys only for signal
+                break;
+            if (c == 5)
+                continue; // no sys for EW_no
+            draw_sys(c, s);
+            cout << "finished sys of " << sys_n[s] << " of " << process[c] << endl;
+        }
+    }
+    for (int c = begin; c < min(9, end); c++)
+    {
+        for (int p = 0; p < npdf_w[c]; p++)
+        {
+            draw_pdf(c, p);
+            cout << "finished pdf_w" << p << " of " << process[c] << endl;
+        }
+    }
     if (end == 10)
     {
+        draw_data();
         add_qcd();
-        //draw_data();
     }
     cout << "finished all the things" << endl;
 }

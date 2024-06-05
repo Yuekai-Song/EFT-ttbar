@@ -1,6 +1,6 @@
-cut=(0)
-year=(2015)
-var=(8)
+cut=(0 1 2 3)
+year=(2015 2016 2017 2018)
+var=(0 1 2 6 7 8)
 rm -rf run_log/
 mkdir run_log/
 rm -rf sys_root

@@ -7,12 +7,12 @@ double midx(double x1, double x2, double y1, double y2, double y0)
 {
     return (x1 * y0 - x2 * y0 + x2 * y1 - x1 * y2) / (y1 - y2);
 }
-void get_1sigma(TString dir, TString poi_name)
+void get_1sigma(TString file_name, TString poi_name)
 {
     Float_t poi, deltaNLL;
     Float_t best_fit;
     vector<Float_t> result1, result2;
-    TFile *file = TFile::Open(dir + "limit_scan_" + poi_name + ".root");
+    TFile *file = TFile::Open(file_name);
     TTree *limit = (TTree *)file->Get("limit");
     limit->SetBranchAddress(poi_name, &poi);
     limit->SetBranchAddress("deltaNLL", &deltaNLL);

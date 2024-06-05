@@ -113,7 +113,7 @@ void set_th_lable(TH1D *h1, vector<vector<double>> xbins)
 void draw_pre(TString datacard_name, TString cutname, int year, vector<vector<double>> xbins, vector<double> ycuts)
 {
     double high = 0;
-    TString pros[] = {"EW_no", "STop", "WJets", "DYJets", "QCD"};
+    TString pros[] = {"ttbar_ci0000", "STop", "WJets", "DYJets", "QCD"};
     TString outpath = "./nom_pdf/" + datacard_name + "/" + cutname + Form("_%d/", year);
     TString filename = "ttbar_" + cutname + Form("_%d.root", year);
     TFile *file = TFile::Open("../" + datacard_name  + "/original/" + filename);

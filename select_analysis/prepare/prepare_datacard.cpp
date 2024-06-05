@@ -1,6 +1,5 @@
 #include "prepare.cpp"
-#include "settings.h"
-void prepare_datacard_3D(int i, int year, int option, bool is_ttx, bool is_corr = false)
+void prepare_datacard(int i, int year, int option, bool is_ttx, bool is_corr = false)
 {
     prepare *p = new prepare(i, year, is_ttx, option);
     p->set_bins(is_corr);

@@ -113,8 +113,8 @@ TH2D *frameTH2D(TH2D *in, double threshold)
     ybins[ny + 2] = y1 + eps * yw + yw;
 
     TH2D *framed = new TH2D(
-        Form("%s framed", in->GetName()),
-        Form("%s framed", in->GetTitle()),
+        Form("%s framed %.2f", in->GetName(), threshold),
+        Form("%s framed %.2f", in->GetTitle(), threshold),
         nx + 2, xbins,
         ny + 2, ybins);
 
@@ -231,12 +231,12 @@ void styleMultiGraphMarker(TList *tmg, int markerColor, int markerSize, int mark
  *     - the 99.7 contour is not plotted by default
  *     - the SM marker is not saved
  */
-void contour2D(TString datafile, TString xvar, int xbins, float xmin, float xmax, TString yvar, int ybins, float ymin, float ymax, float smx = 1.0, float smy = 1.0, TString name = "contour2D", TString xtitle = "#mu_{ggH,bbH,ttH}", TString ytitle = "#mu_{VBF,VH}", TFile *fOut = 0)
+void contour2D(TString dir, TString datafile, TString xvar, int xbins, float xmin, float xmax, TString yvar, int ybins, float ymin, float ymax, float smx = 1.0, float smy = 1.0, TString name = "contour2D", TString xtitle = "#mu_{ggH,bbH,ttH}", TString ytitle = "#mu_{VBF,VH}", TFile *fOut = 0)
 {
     //    TTree *tree = (TTree*) gFile->Get("limit") ;
     gStyle->SetOptStat(0);
     TChain *tree = new TChain("limit", "");
-    tree->Add(datafile);
+    tree->Add(dir + datafile);
     //    cout<< tree->GetEntries()<<endl;
     //	int ent =tree->Draw("deltaNLL:rv:rf","abs(deltaNLL)<20");
     int ent = tree->Draw("deltaNLL:" + yvar + ":" + xvar, "");
@@ -348,7 +348,7 @@ void contour2D(TString datafile, TString xvar, int xbins, float xmin, float xmax
     applylegendstyle(leg);
     applyaxesstyle(hist2d);
     setColZGradient_TwoColors(); // set color style
-    gPad->Print(name + ".pdf");
+    gPad->Print(dir + name + ".pdf");
     // gPad->Print(name+".pdf");
     // gPad->Print(name+".eps");
     // c68->Print();

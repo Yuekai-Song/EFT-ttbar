@@ -96,7 +96,7 @@ public:
 };
 void convert::set(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user)
 {
-    settings s(0, 0, false);
+    settings s(0, 2015, false);
     if (likelihood_cut <= s.xyz_range[5] && likelihood_cut > s.xyz_range[4])
         like_cut = static_cast<int>(std::round((likelihood_cut - s.xyz_range[4]) / (s.xyz_range[5] - s.xyz_range[4]) * s.xyz_bins[2]));
     else

@@ -174,7 +174,7 @@ double format_th_pad1(TH1D *h1, TString xtitle, int color)
     h1->GetXaxis()->SetLabelSize(0.0);
     h1->GetYaxis()->SetLabelSize(0.05);
     //h1->GetYaxis()->SetRangeUser(0.0, h1->GetMaximum() * 1.4);
-    h1->GetYaxis()->SetRangeUser(0.0, 80000);
+    h1->GetYaxis()->SetRangeUser(0.0, 160000);
     return h1->GetMaximum();
 }
 void format_line(TLine *l1, bool is_net = false)

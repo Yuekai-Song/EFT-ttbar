@@ -72,8 +72,11 @@ void format_th(TH1D *h1, TString xtitle, double *low, double *high)
     int bins = h1->GetNbinsX();
     up = fabs(up - 1);
     down = fabs(down - 1);
-    h1->SetMarkerStyle(20);
-    h1->SetMarkerSize(0.4);
+    *low = -0.2;
+    *high = 0.25;
+    h1->SetLineStyle(9);
+    h1->SetLineWidth(2);
+    h1->SetLineColor(1);
     h1->SetStats(kFALSE);
     h1->GetXaxis()->SetTitle(xtitle);
     h1->GetYaxis()->SetTitle("Ratio");
@@ -84,12 +87,10 @@ void format_th(TH1D *h1, TString xtitle, double *low, double *high)
     h1->GetXaxis()->SetTitleSize(0.04);
     h1->GetYaxis()->SetTitleSize(0.04);
     h1->GetXaxis()->SetTitleOffset(2.0);
-    h1->GetYaxis()->SetTitleOffset(1.1);
+    h1->GetYaxis()->SetTitleOffset(1.5);
     h1->GetXaxis()->SetLabelSize(0.04);
     h1->GetYaxis()->SetLabelSize(0.04);
-    h1->GetYaxis()->SetRangeUser(-0.2, 0.25);
-    *low = -0.3;
-    *high = 0.3;
+    h1->GetYaxis()->SetRangeUser(*low, *high);
     return;
 }
 
@@ -147,7 +148,7 @@ void draw_pre(TString datacard_name, TString cutname, int year, int type, double
 
     TString xtitle = "M_{t#bar{t}}";
     TString legend[5];
-    TString legend_l[3] = {"#kappa_{t} = ", "Im(C_{u#varphi}) = ", "C_{#varphiu}) = "};
+    TString legend_l[3] = {"#kappa_{t} = ", "Im(C_{u#varphi}) = ", "C_{#varphiu} = "};
     TString name[3] = {"Kappa", "Kappat", "Ztt"};
     for (int i = 0; i < 2; i++)
     {
@@ -194,7 +195,7 @@ void draw_pre(TString datacard_name, TString cutname, int year, int type, double
     seterror0(hd);
     TCanvas *c2 = new TCanvas("c1", "c1", 8, 30, 650, 650);
     c2->cd();
-    TLegend *leg = new TLegend(0.70, .85, 0.95, .95);
+    TLegend *leg = new TLegend(0.70, .80, 0.95, .90);
     format_leg(leg);
     format_canvas(c2);
     for (int i = 0; i < 2; i++)
@@ -240,9 +241,6 @@ void draw_pre(TString datacard_name, TString cutname, int year, int type, double
     }
     c2->cd();
     hd->Draw("hist");
-    hd->SetLineStyle(9);
-    hd->SetLineWidth(2);
-    hd->SetLineColor(1);
     cout << hd->GetSumOfWeights()<<endl;
     format_th(hd, xtitle, &low2, &high2);
     set_th_lable(hd, xbins);
