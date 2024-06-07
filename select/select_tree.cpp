@@ -307,7 +307,7 @@ Bool_t select_tree::select_jet()
     {
         TLorentzVector mom_jet;
         mom_jet.SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i], Jet_mass[i]);
-        if (fabs(Jet_eta[i]) < 2.4 && Jet_pt[i] > 30 && Jet_jetId[i] == 6 && (!is_lep_from_jet(mom_jet, OBJECT_TYPE::jet)))
+        if (fabs(Jet_eta[i]) < 4.7 && Jet_pt[i] > 30 && Jet_jetId[i] == 6 && (!is_lep_from_jet(mom_jet, OBJECT_TYPE::jet)))
         {
             // mom_jets[i].SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i],Jet_mass[i]);
             jet_index[jet_num] = i;
@@ -318,7 +318,7 @@ Bool_t select_tree::select_jet()
                 max_score = Jet_btagDeepFlavB[i];
         }
     }
-    if (jet_num >= 3 && nBtag >= bnum_dn && nBtag <= bnum_up)
+    if (jet_num >= 6 && nBtag >= bnum_dn && nBtag <= bnum_up)
     {
         jet_flag = true;
         for (int i = 0; i < jet_num; i++)
