@@ -16,7 +16,6 @@ private:
     int num_jets;
     TLorentzVector LHE_bl, LHE_bh, LHE_j1, LHE_j2;
     Float_t *btag_score;
-    int *index;
     bool ttx = false;
     bool gen_reco = 0; // 0: reco using likelihood and compare with gen; 1:reco using gen
     bool LHE = 0;
@@ -48,7 +47,7 @@ public:
     static TH1D *Dnu_4, *Dnu_3, *mth_ttx_3, *mth_3;
     Double_t mass_bjj, mass_jj, mass_lb;
     TLorentzVector mom_th, mom_tl, mom_wh, mom_wl;
-
+    int *index;
     double like = 0;
     double D_nu = 0;
     double chi = 0;

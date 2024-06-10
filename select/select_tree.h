@@ -47,7 +47,7 @@ enum OBJECT_TYPE {
 class read_object{
 public:
     read_object(TString input, int type);
-    UInt_t nj, ne, nm, ng;
+    UInt_t nj, ne, nm, ng, nLHE;
 };
 
 
@@ -86,8 +86,8 @@ private:
     ULong64_t event;
     Float_t Generator_weight;
     UInt_t luminosityBlock, run;
-    Float_t LHEPart_eta[9], LHEPart_mass[9], LHEPart_phi[9], LHEPart_pt[9];
-    Int_t LHEPart_pdgId[9], LHEPart_status[9];
+    Float_t *LHEPart_eta, *LHEPart_mass, *LHEPart_phi, *LHEPart_pt;
+    Int_t *LHEPart_pdgId, *LHEPart_status;
     UInt_t nLHEPart;
     Float_t LHEScaleWeight[9], PSWeight[4],LHEPdfWeight[150];
     UInt_t nLHEPdfWeight, nLHEScaleWeight, nPSWeight;
@@ -127,11 +127,14 @@ private:
     Float_t muR_up, muF_up, ISR_up, FSR_up;
     Float_t muR_down, muF_down, ISR_down, FSR_down;
     Float_t pdf_up, pdf_dn, alphas_dn, alphas_up;
+    Int_t *jet_LHE, *GenJet_LHE;
+    int *jet_index;
     int category;
     CATEGORY cate;
     Bool_t ele_trigger, mu_trigger;
     Bool_t select_jet();
     Bool_t select_lep();
+    void set_jet(int *index);
     void loop(TTree* trees[2], TH1* hists[20]);
     Bool_t is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type);
     void read_LHE();
@@ -141,9 +144,10 @@ private:
     Int_t *Electron_vidNestedWPBitmap;
     Bool_t id_noiso(Int_t i, Int_t wp);
     Int_t iso_select(Int_t i);
+    void match(Float_t *pt, Float_t *eta, Float_t *phi, Float_t *mass, int *index, int num);
 public:
     static TF1* h_ecorr;
-    select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, DATA_TYPE data_types, OP_TYPE op_types, OBJECT_SELECT_ORDER order_type, CATEGORY cates, int num_j, int num_e, int num_m, int num_g = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
+    select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, DATA_TYPE data_types, OP_TYPE op_types, OBJECT_SELECT_ORDER order_type, CATEGORY cates, int num_j, int num_e, int num_m, int num_g = 0, int num_LHE = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
     void write_select();
     void write_distribution();
     void write_ecorr();

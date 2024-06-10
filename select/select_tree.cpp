@@ -4,15 +4,19 @@
 read_object::read_object(TString input, int type)
 {
     TChain *chain = new TChain("Events");
-    UInt_t nMuon, nJet, nElectron, nGenJet;
+    UInt_t nMuon, nJet, nElectron, nGenJet, nLHEPart;
     chain->Add(input);
     cout << input << " is reading and processing" << endl;
     chain->SetBranchAddress("nMuon", &nMuon);
     chain->SetBranchAddress("nJet", &nJet);
     chain->SetBranchAddress("nElectron", &nElectron);
     if (type != 0)
+    {
         chain->SetBranchAddress("nGenJet", &nGenJet);
-    nm = 0, ne = 0, nj = 0, ng = 0;
+        if (input.Contains("TT"))
+            chain->SetBranchAddress("nLHEPart", &nLHEPart);
+    }
+    nm = 0, ne = 0, nj = 0, ng = 0, nLHE = 0;
     for (int num = 0; num < chain->GetEntries(); num++)
     {
         chain->GetEntry(num);
@@ -22,10 +26,12 @@ read_object::read_object(TString input, int type)
             ne = nElectron;
         if (nj < nJet)
             nj = nJet;
-        if (type == 1)
+        if (type != 0)
         {
             if (ng < nGenJet)
                 ng = nGenJet;
+            if (input.Contains("TT") && nLHE < nLHEPart)
+                nLHE = nLHEPart;
         }
     }
     delete chain;
@@ -94,7 +100,7 @@ Bool_t select_tree::is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type)
 }
 select_tree::select_tree(TString inputFile, TString outputFile, TString name_tree, TString name_jet,
                          TString name_MET, int sample_year, DATA_TYPE data_types, OP_TYPE op_types,
-                         OBJECT_SELECT_ORDER order_type, CATEGORY cates, int num_j, int num_e, int num_m, int num_g)
+                         OBJECT_SELECT_ORDER order_type, CATEGORY cates, int num_j, int num_e, int num_m, int num_g, int num_LHE)
 { // type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
     cate = cates;
     input = outputFile;
@@ -123,15 +129,6 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
 
     if (data_type == MC)
     {
-        GenJet_pt = new Float_t[ng];
-        GenJet_mass = new Float_t[ng];
-        GenJet_phi = new Float_t[ng];
-        GenJet_eta = new Float_t[ng];
-        chain->SetBranchAddress("nGenJet", &nGenJet);
-        chain->SetBranchAddress("GenJet_eta", GenJet_eta);
-        chain->SetBranchAddress("GenJet_pt", GenJet_pt);
-        chain->SetBranchAddress("GenJet_phi", GenJet_phi);
-        chain->SetBranchAddress("GenJet_mass", GenJet_mass);
         chain->SetBranchAddress("nLHEScaleWeight", &nLHEScaleWeight);
         chain->SetBranchAddress("nLHEPdfWeight", &nLHEPdfWeight);
         chain->SetBranchAddress("nPSWeight", &nPSWeight);
@@ -143,16 +140,41 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     }
     if (data_type != DATA_TYPE::data)
     {
+        GenJet_pt = new Float_t[ng];
+        GenJet_mass = new Float_t[ng];
+        GenJet_phi = new Float_t[ng];
+        GenJet_eta = new Float_t[ng];
+        GenJet_LHE = new Int_t[ng];
+        chain->SetBranchAddress("nGenJet", &nGenJet);
+        chain->SetBranchAddress("GenJet_eta", GenJet_eta);
+        chain->SetBranchAddress("GenJet_pt", GenJet_pt);
+        chain->SetBranchAddress("GenJet_phi", GenJet_phi);
+        chain->SetBranchAddress("GenJet_mass", GenJet_mass);
         jet_partonFlavour = new Int_t[nj];
         Jet_partonFlavour = new Int_t[nj];
         jet_hadronFlavour = new Int_t[nj];
         Jet_hadronFlavour = new Int_t[nj];
+        jet_LHE = new Int_t[nj];
         chain->SetBranchAddress("Jet_partonFlavour", Jet_partonFlavour);
         chain->SetBranchAddress("Jet_hadronFlavour", Jet_hadronFlavour);
         chain->SetBranchAddress("Generator_weight", &Generator_weight);
 
         chain->SetBranchAddress("L1PreFiringWeight_Nom", &L1PreFiringWeight_Nom);
         chain->SetBranchAddress("Pileup_nPU", &Pileup_nPU);
+        if (input.Contains("TT"))
+        {
+            LHEPart_eta = new Float_t[num_LHE];
+            LHEPart_pt = new Float_t[num_LHE];
+            LHEPart_phi = new Float_t[num_LHE];
+            LHEPart_mass = new Float_t[num_LHE];
+            LHEPart_pdgId = new Int_t[num_LHE];
+            chain->SetBranchAddress("LHEPart_eta", LHEPart_eta);
+            chain->SetBranchAddress("LHEPart_mass", LHEPart_mass);
+            chain->SetBranchAddress("LHEPart_phi", LHEPart_phi);
+            chain->SetBranchAddress("LHEPart_pt", LHEPart_pt);
+            chain->SetBranchAddress("LHEPart_pdgId", LHEPart_pdgId);
+            chain->SetBranchAddress("nLHEPart", &nLHEPart);
+        }
     }
     Electron_eta = new Float_t[ne];
     Electron_mass = new Float_t[ne];
@@ -190,15 +212,6 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     jet_phi = new Float_t[nj];
     mom_jets = new TLorentzVector[nj];
 
-    if (input.Contains("TT"))
-    {
-        chain->SetBranchAddress("LHEPart_eta", LHEPart_eta);
-        chain->SetBranchAddress("LHEPart_mass", LHEPart_mass);
-        chain->SetBranchAddress("LHEPart_phi", LHEPart_phi);
-        chain->SetBranchAddress("LHEPart_pt", LHEPart_pt);
-        chain->SetBranchAddress("LHEPart_pdgId", LHEPart_pdgId);
-        chain->SetBranchAddress("nLHEPart", &nLHEPart);
-    }
     chain->SetBranchAddress(name_MET, &MET_pt);
     chain->SetBranchAddress(name_MET.ReplaceAll("_pt", "_phi"), &MET_phi);
     chain->SetBranchAddress("Electron_phi", Electron_phi);
@@ -290,7 +303,7 @@ Bool_t select_tree::select_jet()
     nBtag = 0;
     jet_num = 0;
     max_score = 0;
-    int jet_index[nj];
+    jet_index = new int[nj];
     Bool_t jet_flag = false;
     Int_t bnum_up, bnum_dn;
     if (cate == CATEGORY::A || cate == CATEGORY::C)
@@ -324,20 +337,28 @@ Bool_t select_tree::select_jet()
         for (int i = 0; i < jet_num; i++)
         {
             mom_jets[i].SetPtEtaPhiM(Jet_pt[jet_index[i]], Jet_eta[jet_index[i]], Jet_phi[jet_index[i]], Jet_mass[jet_index[i]]);
-            jet_eta[i] = Jet_eta[jet_index[i]];
-            jet_pt[i] = Jet_pt[jet_index[i]];
-            jet_phi[i] = Jet_phi[jet_index[i]];
-            jet_mass[i] = Jet_mass[jet_index[i]];
             jet_btagDeepB[i] = Jet_btagDeepB[jet_index[i]];
             jet_btagDeepFlavB[i] = Jet_btagDeepFlavB[jet_index[i]];
-            if (data_type != DATA_TYPE::data)
-            {
-                jet_partonFlavour[i] = Jet_partonFlavour[jet_index[i]];
-                jet_hadronFlavour[i] = Jet_hadronFlavour[jet_index[i]];
-            }
         }
     }
     return jet_flag;
+}
+void select_tree::set_jet(int *index)
+{
+    for (int i = 0; i < jet_num; i++)
+    {
+        jet_eta[i] = Jet_eta[jet_index[index[i]]];
+        jet_pt[i] = Jet_pt[jet_index[index[i]]];
+        jet_phi[i] = Jet_phi[jet_index[index[i]]];
+        jet_mass[i] = Jet_mass[jet_index[index[i]]];
+        jet_btagDeepB[i] = Jet_btagDeepB[jet_index[index[i]]];
+        jet_btagDeepFlavB[i] = Jet_btagDeepFlavB[jet_index[index[i]]];
+        if (data_type != DATA_TYPE::data)
+        {
+            jet_partonFlavour[i] = Jet_partonFlavour[jet_index[index[i]]];
+            jet_hadronFlavour[i] = Jet_hadronFlavour[jet_index[index[i]]];
+        }    
+    }
 }
 Bool_t select_tree::select_lep()
 {
@@ -425,113 +446,146 @@ Bool_t select_tree::select_lep()
     }
     return true;
 }
-
+void select_tree:: match(Float_t *pt, Float_t *eta, Float_t *phi, Float_t *mass, int *index, int num)
+{
+    TLorentzVector P_pt, p4;
+    double min;
+    for (int i = 0; i < num; i++)
+    {
+        min = numeric_limits<double>::max();
+        p4.SetPtEtaPhiM(pt[i], eta[i], phi[i], mass[i]);
+        for (int j = 2; j < nLHEPart; j++)
+        {
+            P_pt.SetPtEtaPhiM(LHEPart_pt[j], LHEPart_eta[j], LHEPart_phi[j], LHEPart_mass[j]);
+            if (p4.DeltaR(P_pt) < min)
+            {
+                min = p4.DeltaR(P_pt);
+                index[i] = j;
+            }
+        }
+        if (min >= 0.4)
+            index[i] = -1;
+    }
+}
 void select_tree::read_LHE()
 {
     LHE_nhad = 0;
     LHE_nlep = 0;
-    for (int i = nLHEPart - 6; i < nLHEPart; i++)
+    if (!input.Contains("madgraph"))
     {
-        if (LHEPart_pdgId[i] == 2 || LHEPart_pdgId[i] == 4 || LHEPart_pdgId[i] == -2 || LHEPart_pdgId[i] == -4)
-            LHE_nhad++;
-        if (LHEPart_pdgId[i] == 1 || LHEPart_pdgId[i] == 3 || LHEPart_pdgId[i] == -1 || LHEPart_pdgId[i] == -3)
-            LHE_nhad++;
-        if (LHEPart_pdgId[i] == 11 || LHEPart_pdgId[i] == 13 || LHEPart_pdgId[i] == -11 || LHEPart_pdgId[i] == -13)
-            LHE_nlep++;
-        if (LHEPart_pdgId[i] == 15 || LHEPart_pdgId[i] == -15)
-            LHE_nlep++;
+        for (int i = 2; i < 8; i++)
+        {
+            if (LHEPart_pdgId[i] == 2 || LHEPart_pdgId[i] == 4 || LHEPart_pdgId[i] == -2 || LHEPart_pdgId[i] == -4)
+                LHE_nhad++;
+            if (LHEPart_pdgId[i] == 1 || LHEPart_pdgId[i] == 3 || LHEPart_pdgId[i] == -1 || LHEPart_pdgId[i] == -3)
+                LHE_nhad++;
+            if (LHEPart_pdgId[i] == 11 || LHEPart_pdgId[i] == 13 || LHEPart_pdgId[i] == -11 || LHEPart_pdgId[i] == -13)
+                LHE_nlep++;
+            if (LHEPart_pdgId[i] == 15 || LHEPart_pdgId[i] == -15)
+                LHE_nlep++;
+        }
+        if (LHE_nhad == 2 && LHE_nlep == 1)
+        {
+            // get information of ttbar process at parton level from LHEPart
+            for (int i = 0; i < 8; i++)
+            {
+                if (LHEPart_pdgId[i] == 5)
+                    index_b = i;
+                else if (LHEPart_pdgId[i] == -5)
+                    index_antib = i;
+                else if (LHEPart_pdgId[i] == 2 || LHEPart_pdgId[i] == 4 || LHEPart_pdgId[i] == -2 || LHEPart_pdgId[i] == -4)
+                    index_up = i;
+                else if (LHEPart_pdgId[i] == 1 || LHEPart_pdgId[i] == 3 || LHEPart_pdgId[i] == -1 || LHEPart_pdgId[i] == -3)
+                    index_down = i;
+                else if (LHEPart_pdgId[i] == 11 || LHEPart_pdgId[i] == 13 || LHEPart_pdgId[i] == 15 || LHEPart_pdgId[i] == -11 || LHEPart_pdgId[i] == -13 || LHEPart_pdgId[i] == -15)
+                    index_lep = i;
+                else if (LHEPart_pdgId[i] == 12 || LHEPart_pdgId[i] == 14 || LHEPart_pdgId[i] == 16 || LHEPart_pdgId[i] == -12 || LHEPart_pdgId[i] == -14 || LHEPart_pdgId[i] == -16)
+                    index_nu = i;
+            }
+            p4_b.SetPtEtaPhiM(LHEPart_pt[index_b], LHEPart_eta[index_b], LHEPart_phi[index_b], LHEPart_mass[index_b]);
+            p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib], LHEPart_phi[index_antib], LHEPart_mass[index_antib]);
+            p4_up.SetPtEtaPhiM(LHEPart_pt[index_up], LHEPart_eta[index_up], LHEPart_phi[index_up], LHEPart_mass[index_up]);
+            p4_down.SetPtEtaPhiM(LHEPart_pt[index_down], LHEPart_eta[index_down], LHEPart_phi[index_down], LHEPart_mass[index_down]);
+            p4_lep.SetPtEtaPhiM(LHEPart_pt[index_lep], LHEPart_eta[index_lep], LHEPart_phi[index_lep], LHEPart_mass[index_lep]);
+            p4_nu.SetPtEtaPhiM(LHEPart_pt[index_nu], LHEPart_eta[index_nu], LHEPart_phi[index_nu], LHEPart_mass[index_nu]);
+            if (LHEPart_pdgId[index_lep] > 0)
+            {
+                p4_antitop = p4_antib + p4_lep + p4_nu;
+                p4_top = p4_b + p4_up + p4_down;
+                lep_charge = -1;
+            }
+            else
+            {
+                p4_top = p4_b + p4_lep + p4_nu;
+                p4_antitop = p4_antib + p4_up + p4_down;
+                lep_charge = 1;
+            }
+        }
+        if (LHE_nhad == 0 && LHE_nlep == 2)
+        {
+            // get information of ttbar process at parton level from LHEPart
+            for (int i = 0; i < 8; i++)
+            {
+                if (LHEPart_pdgId[i] == 5)
+                    index_b = i;
+                else if (LHEPart_pdgId[i] == -5)
+                    index_antib = i;
+                else if (LHEPart_pdgId[i] == 11 || LHEPart_pdgId[i] == 13 || LHEPart_pdgId[i] == 15)
+                    index_lepn = i;
+                else if (LHEPart_pdgId[i] == 12 || LHEPart_pdgId[i] == 14 || LHEPart_pdgId[i] == 16)
+                    index_nun = i;
+                else if (LHEPart_pdgId[i] == -11 || LHEPart_pdgId[i] == -13 || LHEPart_pdgId[i] == -15)
+                    index_lepp = i;
+                else if (LHEPart_pdgId[i] == -12 || LHEPart_pdgId[i] == -14 || LHEPart_pdgId[i] == -16)
+                    index_nup = i;
+            }
+            p4_b.SetPtEtaPhiM(LHEPart_pt[index_b], LHEPart_eta[index_b], LHEPart_phi[index_b], LHEPart_mass[index_b]);
+            p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib], LHEPart_phi[index_antib], LHEPart_mass[index_antib]);
+            p4_lepp.SetPtEtaPhiM(LHEPart_pt[index_lepp], LHEPart_eta[index_lepp], LHEPart_phi[index_lepp], LHEPart_mass[index_lepp]);
+            p4_lepn.SetPtEtaPhiM(LHEPart_pt[index_lepn], LHEPart_eta[index_lepn], LHEPart_phi[index_lepn], LHEPart_mass[index_lepn]);
+            p4_nup.SetPtEtaPhiM(LHEPart_pt[index_nup], LHEPart_eta[index_nup], LHEPart_phi[index_nup], LHEPart_mass[index_nup]);
+            p4_nun.SetPtEtaPhiM(LHEPart_pt[index_nun], LHEPart_eta[index_nun], LHEPart_phi[index_nun], LHEPart_mass[index_nun]);
+            p4_top = p4_b + p4_lepp + p4_nun;
+            p4_antitop = p4_antib + p4_lepn + p4_nup;
+        }
+        if (LHE_nhad == 4 && LHE_nlep == 0)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                if (LHEPart_pdgId[i] == 5)
+                    index_b = i;
+                else if (LHEPart_pdgId[i] == -5)
+                    index_antib = i;
+                else if (LHEPart_pdgId[i] == 2 || LHEPart_pdgId[i] == 4)
+                    index_up = i;
+                else if (LHEPart_pdgId[i] == -2 || LHEPart_pdgId[i] == -4)
+                    index_upbar = i;
+                else if (LHEPart_pdgId[i] == 1 || LHEPart_pdgId[i] == 3)
+                    index_down = i;
+                else if (LHEPart_pdgId[i] == -1 || LHEPart_pdgId[i] == -3)
+                    index_downbar = i;
+            }
+            p4_b.SetPtEtaPhiM(LHEPart_pt[index_b], LHEPart_eta[index_b], LHEPart_phi[index_b], LHEPart_mass[index_b]);
+            p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib], LHEPart_phi[index_antib], LHEPart_mass[index_antib]);
+            p4_up.SetPtEtaPhiM(LHEPart_pt[index_up], LHEPart_eta[index_up], LHEPart_phi[index_up], LHEPart_mass[index_up]);
+            p4_upbar.SetPtEtaPhiM(LHEPart_pt[index_upbar], LHEPart_eta[index_upbar], LHEPart_phi[index_upbar], LHEPart_mass[index_upbar]);
+            p4_down.SetPtEtaPhiM(LHEPart_pt[index_down], LHEPart_eta[index_down], LHEPart_phi[index_down], LHEPart_mass[index_down]);
+            p4_downbar.SetPtEtaPhiM(LHEPart_pt[index_downbar], LHEPart_eta[index_downbar], LHEPart_phi[index_downbar], LHEPart_mass[index_downbar]);
+            p4_top = p4_b + p4_up + p4_downbar;
+            p4_antitop = p4_antib + p4_upbar + p4_down;
+        }
     }
-    if (LHE_nhad == 2 && LHE_nlep == 1)
+    else
     {
-        // get information of ttbar process at parton level from LHEPart
-        for (int i = 0; i < nLHEPart; i++)
+        for (int i = 2; i < 4; i++)
         {
-            if (LHEPart_pdgId[i] == 5)
-                index_b = i;
-            else if (LHEPart_pdgId[i] == -5)
-                index_antib = i;
-            else if (LHEPart_pdgId[i] == 2 || LHEPart_pdgId[i] == 4 || LHEPart_pdgId[i] == -2 || LHEPart_pdgId[i] == -4)
-                index_up = i;
-            else if (LHEPart_pdgId[i] == 1 || LHEPart_pdgId[i] == 3 || LHEPart_pdgId[i] == -1 || LHEPart_pdgId[i] == -3)
-                index_down = i;
-            else if (LHEPart_pdgId[i] == 11 || LHEPart_pdgId[i] == 13 || LHEPart_pdgId[i] == 15 || LHEPart_pdgId[i] == -11 || LHEPart_pdgId[i] == -13 || LHEPart_pdgId[i] == -15)
-                index_lep = i;
-            else if (LHEPart_pdgId[i] == 12 || LHEPart_pdgId[i] == 14 || LHEPart_pdgId[i] == 16 || LHEPart_pdgId[i] == -12 || LHEPart_pdgId[i] == -14 || LHEPart_pdgId[i] == -16)
-                index_nu = i;
-        }
-        p4_b.SetPtEtaPhiM(LHEPart_pt[index_b], LHEPart_eta[index_b], LHEPart_phi[index_b], LHEPart_mass[index_b]);
-        p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib], LHEPart_phi[index_antib], LHEPart_mass[index_antib]);
-        p4_up.SetPtEtaPhiM(LHEPart_pt[index_up], LHEPart_eta[index_up], LHEPart_phi[index_up], LHEPart_mass[index_up]);
-        p4_down.SetPtEtaPhiM(LHEPart_pt[index_down], LHEPart_eta[index_down], LHEPart_phi[index_down], LHEPart_mass[index_down]);
-        p4_lep.SetPtEtaPhiM(LHEPart_pt[index_lep], LHEPart_eta[index_lep], LHEPart_phi[index_lep], LHEPart_mass[index_lep]);
-        p4_nu.SetPtEtaPhiM(LHEPart_pt[index_nu], LHEPart_eta[index_nu], LHEPart_phi[index_nu], LHEPart_mass[index_nu]);
-        if (LHEPart_pdgId[index_lep] > 0)
-        {
-            p4_antitop = p4_antib + p4_lep + p4_nu;
-            p4_top = p4_b + p4_up + p4_down;
-            lep_charge = -1;
-        }
-        else
-        {
-            p4_top = p4_b + p4_lep + p4_nu;
-            p4_antitop = p4_antib + p4_up + p4_down;
-            lep_charge = 1;
+            if (LHEPart_pdgId[i] == 6)
+                p4_top.SetPtEtaPhiM(LHEPart_pt[i], LHEPart_eta[i], LHEPart_phi[i], LHEPart_mass[i]);
+            else
+                p4_antitop.SetPtEtaPhiM(LHEPart_pt[i], LHEPart_eta[i], LHEPart_phi[i], LHEPart_mass[i]);
+            
         }
     }
-    if (LHE_nhad == 0 && LHE_nlep == 2)
-    {
-        // get information of ttbar process at parton level from LHEPart
-        for (int i = 0; i < nLHEPart; i++)
-        {
-            if (LHEPart_pdgId[i] == 5)
-                index_b = i;
-            else if (LHEPart_pdgId[i] == -5)
-                index_antib = i;
-            else if (LHEPart_pdgId[i] == 11 || LHEPart_pdgId[i] == 13 || LHEPart_pdgId[i] == 15)
-                index_lepn = i;
-            else if (LHEPart_pdgId[i] == 12 || LHEPart_pdgId[i] == 14 || LHEPart_pdgId[i] == 16)
-                index_nun = i;
-            else if (LHEPart_pdgId[i] == -11 || LHEPart_pdgId[i] == -13 || LHEPart_pdgId[i] == -15)
-                index_lepp = i;
-            else if (LHEPart_pdgId[i] == -12 || LHEPart_pdgId[i] == -14 || LHEPart_pdgId[i] == -16)
-                index_nup = i;
-        }
-        p4_b.SetPtEtaPhiM(LHEPart_pt[index_b], LHEPart_eta[index_b], LHEPart_phi[index_b], LHEPart_mass[index_b]);
-        p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib], LHEPart_phi[index_antib], LHEPart_mass[index_antib]);
-        p4_lepp.SetPtEtaPhiM(LHEPart_pt[index_lepp], LHEPart_eta[index_lepp], LHEPart_phi[index_lepp], LHEPart_mass[index_lepp]);
-        p4_lepn.SetPtEtaPhiM(LHEPart_pt[index_lepn], LHEPart_eta[index_lepn], LHEPart_phi[index_lepn], LHEPart_mass[index_lepn]);
-        p4_nup.SetPtEtaPhiM(LHEPart_pt[index_nup], LHEPart_eta[index_nup], LHEPart_phi[index_nup], LHEPart_mass[index_nup]);
-        p4_nun.SetPtEtaPhiM(LHEPart_pt[index_nun], LHEPart_eta[index_nun], LHEPart_phi[index_nun], LHEPart_mass[index_nun]);
-        p4_top = p4_b + p4_lepp + p4_nun;
-        p4_antitop = p4_antib + p4_lepn + p4_nup;
-    }
-    if (LHE_nhad == 4 && LHE_nlep == 0)
-    {
-        for (int i = 0; i < nLHEPart; i++)
-        {
-            if (LHEPart_pdgId[i] == 5)
-                index_b = i;
-            else if (LHEPart_pdgId[i] == -5)
-                index_antib = i;
-            else if (LHEPart_pdgId[i] == 2 || LHEPart_pdgId[i] == 4)
-                index_up = i;
-            else if (LHEPart_pdgId[i] == -2 || LHEPart_pdgId[i] == -4)
-                index_upbar = i;
-            else if (LHEPart_pdgId[i] == 1 || LHEPart_pdgId[i] == 3)
-                index_down = i;
-            else if (LHEPart_pdgId[i] == -1 || LHEPart_pdgId[i] == -3)
-                index_downbar = i;
-        }
-        p4_b.SetPtEtaPhiM(LHEPart_pt[index_b], LHEPart_eta[index_b], LHEPart_phi[index_b], LHEPart_mass[index_b]);
-        p4_antib.SetPtEtaPhiM(LHEPart_pt[index_antib], LHEPart_eta[index_antib], LHEPart_phi[index_antib], LHEPart_mass[index_antib]);
-        p4_up.SetPtEtaPhiM(LHEPart_pt[index_up], LHEPart_eta[index_up], LHEPart_phi[index_up], LHEPart_mass[index_up]);
-        p4_upbar.SetPtEtaPhiM(LHEPart_pt[index_upbar], LHEPart_eta[index_upbar], LHEPart_phi[index_upbar], LHEPart_mass[index_upbar]);
-        p4_down.SetPtEtaPhiM(LHEPart_pt[index_down], LHEPart_eta[index_down], LHEPart_phi[index_down], LHEPart_mass[index_down]);
-        p4_downbar.SetPtEtaPhiM(LHEPart_pt[index_downbar], LHEPart_eta[index_downbar], LHEPart_phi[index_downbar], LHEPart_mass[index_downbar]);
-        p4_top = p4_b + p4_up + p4_downbar;
-        p4_antitop = p4_antib + p4_upbar + p4_down;
-    }
-
     top_pt = p4_top.Pt();
     top_eta = p4_top.Eta();
     top_phi = p4_top.Phi();
@@ -611,7 +665,6 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
     Bool_t jet_flag, lep_flag, trigger_flag;
     for (int entry = 0; entry < chain->GetEntries(); entry++)
     {
-        nLHEPart = 0;
         chain->GetEntry(entry);
         if ((data_type == MC || data_type == MC_sys) && (op_type == select_reco || op_type == select_reco_ttx))
             rawtree->Fill();
@@ -732,6 +785,12 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
                 if (!reco->reco()){
                     delete reco;
                     continue;
+                }
+                set_jet(reco->index);
+                if (data_type != DATA_TYPE::data && input.Contains("TT"))
+                {
+                    match(jet_pt, jet_eta, jet_phi, jet_mass, jet_LHE, jet_num);
+                    match(GenJet_pt, GenJet_eta, GenJet_phi, GenJet_mass, GenJet_LHE, nGenJet);
                 }
                 if (input.Contains("TTToSemi") && data_type == MC)
                     category = reco->category;
@@ -880,7 +939,8 @@ void select_tree::write_select()
     mytree->Branch("nBtag", &nBtag, "nBtag/i");
     mytree->Branch("jet_eta", jet_eta, "jet_eta[jet_num]/F");
     mytree->Branch("jet_pt", jet_pt, "jet_pt[jet_num]/F");
-
+    mytree->Branch("jet_mass", jet_mass, "jet_mass[jet_num]/F");
+    mytree->Branch("jet_phi", jet_phi, "jet_phi[jet_num]/F");
     mytree->Branch("rapidity_tt", &rapidity_tt, "rapidity_tt/F");
     mytree->Branch("mass_tt", &mass_tt, "mass_tt/F");
     mytree->Branch("likelihood", &like, "likelihood/D");
@@ -940,17 +1000,31 @@ void select_tree::write_select()
     }
     if (data_type != DATA_TYPE::data)
     {
-        if (input.Contains("TT"))
-        {
-            mytree->Branch("ctstar", &ctstar, "ctstar/F");
-            mytree->Branch("M_tt_gen", &M_tt_gen, "M_tt_gen/F");
-            mytree->Branch("delta_rapidity_gen", &delta_rapidity_gen, "delta_rapidity_gen/F");
-        }
+        mytree->Branch("nGenJet", &nGenJet, "nGenJet/i");
+        mytree->Branch("GenJet_eta", GenJet_eta, "GenJet_eta[nGenJet]/F");
+        mytree->Branch("GenJet_phi", GenJet_phi, "GenJet_phi[nGenJet]/F");
+        mytree->Branch("GenJet_pt", GenJet_pt, "GenJet_pt[nGenJet]/F");
+        mytree->Branch("GenJet_mass", GenJet_mass, "GenJet_mass[nGenJet]/F");
         mytree->Branch("Generator_weight", &Generator_weight, "Generator_weight/F");
         mytree->Branch("jet_hadronFlavour", jet_hadronFlavour, "jet_hadronFlavour[jet_num]/I");
         mytree->Branch("electron_deltaEtaSC", &electron_deltaEtaSC, "electron_deltaEtaSC/F");
         mytree->Branch("L1PreFiringWeight_Nom", &L1PreFiringWeight_Nom, "L1PreFiringWeight_Nom/F");
         mytree->Branch("Pileup_nPU", &Pileup_nPU, "Pileup_nPU/I");
+        if (input.Contains("TT"))
+        {
+            mytree->Branch("ctstar", &ctstar, "ctstar/F");
+            mytree->Branch("M_tt_gen", &M_tt_gen, "M_tt_gen/F");
+            mytree->Branch("delta_rapidity_gen", &delta_rapidity_gen, "delta_rapidity_gen/F");
+            mytree->Branch("GenJet_LHE", GenJet_LHE, "GenJet_LHE[nGenJet]/I");
+            mytree->Branch("jet_LHE", jet_LHE, "jet_LHE[jet_num]/I");
+            mytree->Branch("nLHEPart", &nLHEPart, "nLHEPart/i");
+            //mytree->Branch("entry", &index, "entry/I");
+            mytree->Branch("LHEPart_pdgId", LHEPart_pdgId, "LHEPart_pdgId[nLHEPart]/I");
+            mytree->Branch("LHEPart_eta", LHEPart_eta, "LHEPart_eta[nLHEPart]/F");
+            mytree->Branch("LHEPart_pt", LHEPart_pt, "LHEPart_pt[nLHEPart]/F");
+            mytree->Branch("LHEPart_phi", LHEPart_phi, "LHEPart_phi[nLHEPart]/F");
+            mytree->Branch("LHEPart_mass", LHEPart_mass, "LHEPart_mass[nLHEPart]/F");
+        }
     }
     trees[0] = rawtree;
     trees[1] = mytree;
@@ -1022,15 +1096,17 @@ void select_tree::write()
 }
 select_tree::~select_tree()
 {
-    if (data_type == 1)
+    if (data_type != DATA_TYPE::data)
     {
         delete[] GenJet_pt;
         delete[] GenJet_mass;
         delete[] GenJet_phi;
         delete[] GenJet_eta;
-    }
-    if (data_type != 0)
-    {
+        if (input.Contains("TT"))
+        {
+            delete[] GenJet_LHE;
+            delete[] jet_LHE;
+        }
         delete[] jet_partonFlavour;
         delete[] Jet_partonFlavour;
         delete[] jet_hadronFlavour;

@@ -326,11 +326,34 @@ bool RECO::reco_top()
     {
         mom_th = mom_jets[reco_index[2]] + mom_jets[reco_index[3]] + mom_jets[reco_index[1]];
         mom_wh = mom_jets[reco_index[2]] + mom_jets[reco_index[3]];
+        for (int i = 0; i < 4; i++)
+            index[i] = reco_index[i];
+        bool in;
+        int num = 0;
+        for (int i = 0; i < num_jets; i++)
+        {
+            in = false;
+            for (int j = 0; j < 4; j++)
+            {
+                if (i == reco_index[j])
+                {    
+                    in = true;
+                    break;
+                }
+            }
+            if (!in)
+            {
+                index[4 + num] = i;
+                num++; 
+            }
+        }
     }
     else
     {
         mom_th = mom_jets[reco_index[2]] + mom_jets[reco_index[1]];
         mom_wh = mom_jets[reco_index[2]];
+        for (int i = 0; i < 3; i++)
+            index[i] = reco_index[i];
     }
     return true;
 }
