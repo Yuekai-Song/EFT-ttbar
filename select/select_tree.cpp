@@ -145,11 +145,13 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
         GenJet_phi = new Float_t[ng];
         GenJet_eta = new Float_t[ng];
         GenJet_LHE = new Int_t[ng];
+        GenJet_partonFlavour = new Int_t[ng];
         chain->SetBranchAddress("nGenJet", &nGenJet);
         chain->SetBranchAddress("GenJet_eta", GenJet_eta);
         chain->SetBranchAddress("GenJet_pt", GenJet_pt);
         chain->SetBranchAddress("GenJet_phi", GenJet_phi);
         chain->SetBranchAddress("GenJet_mass", GenJet_mass);
+        chain->SetBranchAddress("GenJet_partonFlavour", GenJet_partonFlavour);
         jet_partonFlavour = new Int_t[nj];
         Jet_partonFlavour = new Int_t[nj];
         jet_hadronFlavour = new Int_t[nj];
@@ -1005,7 +1007,9 @@ void select_tree::write_select()
         mytree->Branch("GenJet_phi", GenJet_phi, "GenJet_phi[nGenJet]/F");
         mytree->Branch("GenJet_pt", GenJet_pt, "GenJet_pt[nGenJet]/F");
         mytree->Branch("GenJet_mass", GenJet_mass, "GenJet_mass[nGenJet]/F");
+        mytree->Branch("GenJet_partonFlavour", GenJet_partonFlavour, "GenJet_partonFlavour[nGenJet]/I");
         mytree->Branch("Generator_weight", &Generator_weight, "Generator_weight/F");
+        mytree->Branch("jet_partonFlavour", jet_partonFlavour, "jet_partonFlavour[jet_num]/I");
         mytree->Branch("jet_hadronFlavour", jet_hadronFlavour, "jet_hadronFlavour[jet_num]/I");
         mytree->Branch("electron_deltaEtaSC", &electron_deltaEtaSC, "electron_deltaEtaSC/F");
         mytree->Branch("L1PreFiringWeight_Nom", &L1PreFiringWeight_Nom, "L1PreFiringWeight_Nom/F");

@@ -75,7 +75,7 @@ private:
     Int_t *Muon_charge, *Electron_charge;
     Float_t *Jet_btagDeepB, *Jet_btagDeepFlavB, *Jet_eta, *Jet_mass, *Jet_phi, *Jet_pt;
     Float_t *GenJet_pt, *GenJet_eta, *GenJet_phi, *GenJet_mass;
-    Int_t *Jet_partonFlavour, *Jet_hadronFlavour;
+    Int_t *Jet_partonFlavour, *Jet_hadronFlavour, *GenJet_partonFlavour;
     Float_t *Muon_pfRelIso04_all;
     Int_t *Electron_cutBased, *Jet_jetId;
     Bool_t *Muon_tightId, *Muon_looseId;
