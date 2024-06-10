@@ -32,7 +32,7 @@ void process_test(TString outdir, TString outputFile, TString input, int year, b
     // num_m = 20;
     // num_g = 50;
     // num_lhe = 20;
-    TFile* dis_file = TFile::Open(Form("../../select/dis/dis_%d.root", year));
+    TFile* dis_file = TFile::Open(Form("./dis/dis_%d.root", year));
     RECO::mth_vs_mwh_ttx_4 = (TH2D*)dis_file->Get("mth_vs_mwh_ttx_4");
     RECO::mth_vs_mwh_4 = (TH2D*)dis_file->Get("mth_vs_mwh_4");
     RECO::mtl_vs_mwl_4 = (TH2D*)dis_file->Get("mtl_vs_mwl_4");
@@ -43,9 +43,9 @@ void process_test(TString outdir, TString outputFile, TString input, int year, b
     RECO::Dnu_3 = (TH1D*)dis_file->Get("Dnu_3");
     TFile* tf_file;
     if (ttx)
-        tf_file = TFile::Open(Form("../../select/corr/tf_ttx/tf_%d.root", year));
+        tf_file = TFile::Open(Form("./corr/tf_ttx/tf_%d.root", year));
     else
-        tf_file = TFile::Open(Form("../../select/corr/tf/tf_%d.root", year));
+        tf_file = TFile::Open(Form("./corr/tf/tf_%d.root", year));
     select_tree::h_ecorr = (TF1 *)tf_file->Get("Func");
 
     s = new select_tree(input, outdir+"/"+"new_"+outputFile, "mytree", "Jet_pt", "MET_pt", year, DATA_TYPE::MC_sys, op_type, order_type, cate, num_j, num_e, num_m, num_g, num_lhe);
