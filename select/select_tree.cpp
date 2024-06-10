@@ -13,8 +13,7 @@ read_object::read_object(TString input, int type)
     if (type != 0)
     {
         chain->SetBranchAddress("nGenJet", &nGenJet);
-        if (input.Contains("TT"))
-            chain->SetBranchAddress("nLHEPart", &nLHEPart);
+        chain->SetBranchAddress("nLHEPart", &nLHEPart);
     }
     nm = 0, ne = 0, nj = 0, ng = 0, nLHE = 0;
     for (int num = 0; num < chain->GetEntries(); num++)
@@ -30,7 +29,7 @@ read_object::read_object(TString input, int type)
         {
             if (ng < nGenJet)
                 ng = nGenJet;
-            if (input.Contains("TT") && nLHE < nLHEPart)
+            if (nLHE < nLHEPart)
                 nLHE = nLHEPart;
         }
     }
@@ -1106,10 +1105,16 @@ select_tree::~select_tree()
         delete[] GenJet_mass;
         delete[] GenJet_phi;
         delete[] GenJet_eta;
+        delete[] GenJet_partonFlavour;
         if (input.Contains("TT"))
         {
             delete[] GenJet_LHE;
             delete[] jet_LHE;
+            delete[] LHEPart_eta;
+            delete[] LHEPart_mass;
+            delete[] LHEPart_pt;
+            delete[] LHEPart_phi;
+            delete[] LHEPart_pdgId;
         }
         delete[] jet_partonFlavour;
         delete[] Jet_partonFlavour;

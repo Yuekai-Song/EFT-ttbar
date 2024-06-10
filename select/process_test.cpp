@@ -18,7 +18,6 @@ void process_test(TString outdir, TString outputFile, TString input, int year, b
         order_type = OBJECT_SELECT_ORDER::lepton_jet;
         outputFile += "_lj";
     }
-    outputFile += ".root";
     select_tree *s;
     CATEGORY cate = CATEGORY::A;
     int num_j, num_e, num_m, num_g, num_lhe;
