@@ -271,7 +271,7 @@ void format(TGraphAsymmErrors *hg, int color)
     hg->SetFillColor(color);
     hg->SetFillStyle(3353);
 }
-void draw_pre(TString cut_name, int var, int year)
+void draw_qcd(TString cut_name, int var, int year)
 { // 2, 0
     TString legend[] = {"tt", "DY", "single top", "V+jets", "QCD"};
     TString pro[] = {"ttbar_ci0000", "DYJets", "STop", "WJets", "QCD"};
@@ -282,7 +282,7 @@ void draw_pre(TString cut_name, int var, int year)
     Int_t bins;
     Double_t nums, events;
 
-    TString path = Form("../sys_root/%d/", year);
+    TString path = Form("../sys_root_ttx/%d/", year);
     int color[] = {2, 46, 9, 29, 8, kYellow, 93};
 
     TString sys_file = path + title[var] + "_ttbar_" + cut_name + ".root";
@@ -417,7 +417,7 @@ void draw_pre(TString cut_name, int var, int year)
     hc->Draw("PY+");
     hc->GetYaxis()->SetTitleSize(0);
 
-    c2->Print(Form("../qcd_pdf/%d/", year) + title[var] + "_" + cut_name + ".pdf");
+    c2->Print(Form("../qcd_pdf_ttx/%d/", year) + title[var] + "_" + cut_name + ".pdf");
 
     for (int i = 0; i < 3; i++)
         delete l1[i];
@@ -436,18 +436,4 @@ void draw_pre(TString cut_name, int var, int year)
     delete pad3;
     delete c1;
     delete c2;
-}
-void draw_qcd()
-{
-    TString cutsName[] = {"E_3jets", "E_4jets", "M_3jets", "M_4jets"};
-    int year[] = {2015, 2016, 2017, 2018};
-    int var[] = {0, 5, 6, 8, 10};
-    for (int i = 0; i < 4; i++)
-    {
-        for (int y = 0; y < 4; y++)
-        {
-            for (int v = 0; v < 5; v++)
-                draw_pre(cutsName[i], var[v], year[y]);
-        }
-    }
 }
