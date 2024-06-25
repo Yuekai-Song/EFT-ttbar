@@ -151,15 +151,18 @@ settings::settings(int cut_num, int years, bool ttxs)
         xsection[fileName[i]] = pair<double, double>(cross_section[i], K_Factor[i]);
     }
     if (ttx)
-        cut += "*(D_nu < 150)";
+        cut += "*(D_nu < 150)*(nBtag == 2)";
 
 }
 void settings::set_suf(TString cg)
 {
-    if ((cg == "A" || cg == "C") && ttx && cut.Contains("*(nBtag == 2)"))
-        cut += "*(nBtag == 2)";
-    else
-        cut.ReplaceAll("*(nBtag == 2)", "");
+    if (ttx)
+    {
+        if ((cg == "B" || cg == "D") && cut.Contains("*(nBtag == 2)"))
+            cut.ReplaceAll("*(nBtag == 2)", "");
+        else if ((cg == "A" || cg == "C" || cg == "") && (!cut.Contains("*(nBtag == 2)")))
+            cut += "*(nBtag == 2)";
+    }
     
     Double_t pre_scale_year[][2] = {{369.84, 130.38}, {1570.17, 162.22}, {1085.83, 224.41}, {1536.28, 474.95}};
     if (cg != "B" && cg != "A" && cg != "")

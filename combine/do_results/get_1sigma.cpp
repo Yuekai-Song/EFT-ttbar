@@ -19,7 +19,7 @@ void get_1sigma(TString file_name, TString poi_name)
     limit->GetEntry(0);
     best_fit = poi;
     float dis = 1000;
-    int best_entry = -1, left_entry = -1, right_entry = -1;
+    int best_entry = -1;
     float pois[2], deltaNLLs[2];
     bool not_found_68 = true;
     float poi2s[2], deltaNLL2s[2];  
@@ -34,7 +34,10 @@ void get_1sigma(TString file_name, TString poi_name)
         }
     }
     if (best_entry == -1)
+    {
         cout << "can't find the best fit point" << endl;
+        return;
+    }
     for (int d = 0; d < 2; d++)
     {
         int entry = best_entry;
@@ -64,13 +67,27 @@ void get_1sigma(TString file_name, TString poi_name)
         //cout << pois[0] << " " << deltaNLLs[0] << ", " << pois[1] << " " << deltaNLLs[1] << endl;
         //cout << (pois[0] - pois[1] + pois[1] * deltaNLLs[0] - pois[0] * deltaNLLs[1]) / (deltaNLLs[0] - deltaNLLs[1]) << endl;
     }
-    if (result1.size() > 0)
+    if (result1.size() == 2)
         cout << "under 68%: (" << result1[0] << ", " << result1[1] << ")" <<endl;
+    else if (result1.size() == 1)
+    {
+        if (result1[0] < best_fit)
+            cout << "under 68%: (" << result1[0] << ", +inf" << ")" <<endl;
+        else
+            cout << "under 68%: (" << "-inf, " << result1[0] << ")" <<endl;
+    }
     else
         cout << "68% not limited" << endl;
 
-    if (result2.size() > 0)
+    if (result2.size() == 2)
         cout << "under 95%: (" << result2[0] << ", " << result2[1] << ")" <<endl;
+    else if (result2.size() == 1)
+    {
+        if (result2[0] < best_fit)
+            cout << "under 95%: (" << result2[0] << ", +inf" << ")" <<endl;
+        else
+            cout << "under 95%: (" << "-inf, " << result2[0] << ")" <<endl;
+    }
     else
         cout << "95% not limited" << endl;
     //return result;

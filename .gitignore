@@ -205,3 +205,4 @@ Eigen
 *.sub
 lhcut_check
 *.sh
+ttjets
