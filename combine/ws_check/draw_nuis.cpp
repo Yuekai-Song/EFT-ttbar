@@ -56,7 +56,7 @@ void draw_nuis(TString dir, std::vector<TString> sys = {}, double zval = 0, doub
                 range = 0;
             else
                 range = sys_range[sys_name];
-            draw_pre(h1[0], h1 + 1, legend, dir + "/nuis/ttbar_" + sys_name + "_" + channelToTag[Form("ch%d", ch_index + 1)], range, xbins, ycuts);
+            draw_pre(h1[0], h1 + 1, legend, dir + "/nuis/ttbar_" + sys_name + Form("z%.1fy%.1fk%.1f", zval, yval, kval) + "_"  + channelToTag[Form("ch%d", ch_index + 1)], range, xbins, ycuts);
             for (int i = 0; i < 5; i++)
                 delete h1[i];
         }
