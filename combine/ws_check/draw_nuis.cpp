@@ -6,10 +6,10 @@
 #include <string>
 #include "draw_pre.cpp"
 
-void draw_nuis(TString dir)
+void draw_nuis(TString dir, std::vector<TString> sys = {}, double zval = 0, double kval = 0, double yval = 0)
 {
     std::map<TString, TString> channelToTag;
-    std::vector<TString> sys;
+    // std::vector<TString> sys;
     gSystem->Load("libHiggsAnalysisCombinedLimit.so");//cmsenv needed!
     gStyle->SetOptStat(0);
     gStyle->SetOptTitle(0);
@@ -29,23 +29,26 @@ void draw_nuis(TString dir)
     TH1D *h1[5];
     double vals[5] = {0, -1, -0.5, 0.5, 1};
     TString ws_name = dir + "/workspace_ttbar.root";
-    TString datacard = dir + "/ttbar.txt";
+    TString datacard = dir + "/../ttbar.txt";
     get_ch(datacard, channelToTag);
     TFile *ws_file = TFile::Open(ws_name);
     RooWorkspace *w = (RooWorkspace *)ws_file->Get("w");
     const RooArgSet *nuis = w->set("nuisances");
     TIterator* iter = nuis->createIterator();
-    RooRealVar* var;
-    while ((var = dynamic_cast<RooRealVar*>(iter->Next()))) {
-        if (var)
-            sys.push_back(var->GetName());
+    if (sys.size() == 0)
+    {
+        RooRealVar* var;
+        while ((var = dynamic_cast<RooRealVar*>(iter->Next()))) {
+            if (var)
+                sys.push_back(var->GetName());
+        }
     }
     for (int ch_index = 0; ch_index < channelToTag.size(); ch_index++)
     {
         for (auto const& sys_name : sys)
         {
             for (int i = 0; i < 5; i++)
-                get_th(h1[i], w, vector<TString> {sys_name}, vector<double> {vals[i]}, ch_index);
+                get_th(h1[i], w, vector<TString> {sys_name, "y", "z", "k"}, vector<double> {vals[i], yval, zval, kval}, ch_index);
             TString legend[4];
             for (int i = 0; i < 4; i++)
                 legend[i] = sys_name + " = " + Form("%.1f", vals[i + 1]);

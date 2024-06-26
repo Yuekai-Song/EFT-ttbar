@@ -27,7 +27,7 @@ void draw_fp(TString dir)
 
     TH1D *h1[5];
     TString ws_name = dir + "/workspace_ttbar.root";
-    TString datacard = dir + "/ttbar.txt";
+    TString datacard = dir + "/../ttbar.txt";
     get_ch(datacard, channelToTag);
     TFile *ws_file = TFile::Open(ws_name);
     RooWorkspace *w = (RooWorkspace *)ws_file->Get("w");
