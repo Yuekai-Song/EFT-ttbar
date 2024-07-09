@@ -18,8 +18,8 @@ def obtain_initial(filename):
 if __name__ == "__main__":
     path = os.path.abspath("")
     name = sys.argv[1]
-    dir_sys = path + "/../sys_pdf/datacard_" + name
-    dir_ew = path + "/../ew_pdf/datacard_" + name
+    dir_sys = path + "/../sys_pdf/datacard" + name
+    dir_ew = path + "/../ew_pdf/datacard" + name
     modelfile = obtain_initial('./temp/temp.tex')
     filename = "./ttbar/ttbar.tex"
 

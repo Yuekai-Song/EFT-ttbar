@@ -40,7 +40,7 @@ void format_leg(TLegend *leg)
     leg->SetEntrySeparation(0.0);
     leg->SetBorderSize(0);
     leg->SetTextFont(42);
-    leg->SetTextSize(0.03);
+    leg->SetTextSize(0.04);
     leg->SetLineColor(1);
     leg->SetLineStyle(1);
     leg->SetLineWidth(1);
@@ -78,33 +78,7 @@ void format_pad(TPad *pad1, TPad *pad2)
     pad2->SetBottomMargin(0.45);
     pad2->SetLeftMargin(0.15);
 }
-void get_range_pad2(TH1D *h1[5], double *ranges, double range)
-{
-    float up = h1[0]->GetMaximum();
-    float down = h1[0]->GetMinimum();
-    for(int i = 1; i < 5; i++){
-        if (up < h1[i]->GetMaximum())
-            up = h1[i]->GetMaximum();
-        if (down > h1[i]->GetMinimum())
-            down = h1[i]->GetMinimum();
-    }
-    up = fabs(up);
-    down = fabs(down);
-    if (range != 0)
-    {
-        *ranges = range;
-        return;
-    }
-    if (up == 0.1 || down == 0.1)
-    {
-        *ranges = 0.1;
-        return;
-    }
-    if (up > down)
-        *ranges = +1.3 * up;
-    else
-        *ranges = +1.3 * down;
-}
+
 void set_th_lable(TH1D *h1, vector<vector<double>> xbins)
 {
     double nbin = 0;
@@ -174,7 +148,7 @@ double format_th_pad1(TH1D *h1, TString xtitle, int color)
     h1->GetXaxis()->SetLabelSize(0.0);
     h1->GetYaxis()->SetLabelSize(0.05);
     //h1->GetYaxis()->SetRangeUser(0.0, h1->GetMaximum() * 1.4);
-    h1->GetYaxis()->SetRangeUser(0.0, 160000);
+    h1->GetYaxis()->SetRangeUser(0.0, 120000);
     return h1->GetMaximum();
 }
 void format_line(TLine *l1, bool is_net = false)
@@ -211,20 +185,19 @@ void model(TH1D *h1, TH1D *h2[5], double y, double z, double k)
         //h1->SetBinError(bin + 1, 0);
     }
 }
-void draw_pre(TString datacard_name, TString cutname, int year, int type, double value[5], int index[5], bool rel, vector<vector<double>> xbins, vector<double> ycuts)
+void draw_pre(TString datacard_name, TString cutname, int year, int type, double range, double value[5], int index[5], bool rel, vector<vector<double>> xbins, vector<double> ycuts)
 {
-    double range;
     TString process[] = {"ttbar_ci0100", "ttbar_ci0010", "ttbar_ci0001", "ttbar_ci0000", "ttbar_ci0200"};
     TString outpath = "./ew_pdf/" + datacard_name + "/" + cutname + Form("_%d/", year);
     TString filename = "ttbar_" + cutname + Form("_%d.root", year);
-    TFile *file = TFile::Open("../" + datacard_name + "/original/" + filename);
+    TFile *file = TFile::Open("../datacards/" + datacard_name + "/original/" + filename);
     TH1D *hmc1[5], *h1[5], *hd[5];
     TH1D *hno;
     int color[] = {2, 1, 8, 4, 6};
 
     TString xtitle = "M_{t#bar{t}}";
     TString legend[5];
-    TString legend_l[3] = {"Re(C_{u#varphi}) = ", "Im(C_{u#varphi}) = ", "C_{#varphiu} = "};
+    TString legend_l[3] = {"C_{t#varphi} = ", "C_{t#varphi}^{I} = ", "C_{#varphit} = "};
     TString name[3] = {"Kappa", "Kappat", "Ztt"};
     for (int i = 0; i < 5; i++)
         legend[i] = legend_l[type] + Form("%.2f", value[i]);
@@ -258,7 +231,7 @@ void draw_pre(TString datacard_name, TString cutname, int year, int type, double
     if (rel == true)
         hno = (TH1D *)file->Get("EW_no");
     else
-        hno = (TH1D *)file->Get("ttbar_ci0000");
+        hno = (TH1D *)file->Get("ttbar_ci0000")->Clone();
     
     hno->SetName("hno");
 
@@ -295,7 +268,7 @@ void draw_pre(TString datacard_name, TString cutname, int year, int type, double
         format_th_pad1(hmc1[i], xtitle, color[i]);
     }
 
-    TLegend *leg = new TLegend(nbins[nnbins - 2] + 0.5, high1 * 0.65, nbins[nnbins - 1] - 1, high1 * 0.85, "", "br");
+    TLegend *leg = new TLegend(nbins[nnbins - 2] + 0.5, high1 * 0.55, nbins[nnbins - 1] - 1, high1 * 0.85, "", "br");
     format_leg(leg);
     for (int i = 0; i < 5; i++)
         leg->AddEntry(hmc1[index[i]], legend[index[i]], "l");
@@ -320,7 +293,6 @@ void draw_pre(TString datacard_name, TString cutname, int year, int type, double
     }
 
     pad2->cd();
-    get_range_pad2(hd, &range, 0);
     for (int i = 0; i < 5; i++)
     {
         if (i == 0)
@@ -352,7 +324,10 @@ void draw_pre(TString datacard_name, TString cutname, int year, int type, double
             l3[net_num]->Draw("same");
         } 
     }
-    c2->Print(outpath + name[type] + ".pdf");
+    if (rel)
+        c2->Print(outpath + name[type] + "_rel.pdf");
+    else
+        c2->Print(outpath + name[type] + ".pdf");
     for (int d = 0; d < ndiv; d++)
     {
         delete l1[d];

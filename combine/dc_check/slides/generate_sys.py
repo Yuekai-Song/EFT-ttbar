@@ -5,23 +5,31 @@ def sys_and_nom(h1_sys_name: str) -> tuple:
     h1_sys_name_new = h1_sys_name.replace(".pdf", "")
     #names of sys with 201* and M/E need to be same for all years and all channels
     years = ["2015", "2016", "2017", "2018"]
+    cates = ["E3j", "M3j", "E4j", "M4j"]
     for year in years:
+        for cate in cates:
+            h1_sys_name_new = h1_sys_name_new.replace("_" + cate + "_" + year, "-ch")
         h1_sys_name_new = h1_sys_name_new.replace("_" + year, "unco")
         h1_sys_name_new = h1_sys_name_new.replace(year, "unco")
 
     leps = ["Muon", "Elec"]
     for lep in leps:
         h1_sys_name_new = h1_sys_name_new.replace(lep, "lep")
-    pos = 0
-    while h1_sys_name_new[pos] != '_':
-        pos += 1
+    
     #pdf_w, jes_, SF_
-    odds = ["pdf_w", "jes", "SF", "nnlo", "EW"]
+    shift = 1
+    odds = ["pdf_w", "jes", "SF", "nnlo_wt", "EW", "btag"]
     for odd in odds:
         if odd in h1_sys_name_new:
-            pos += 1
-            break
-    while h1_sys_name_new[pos] != '_':
+            shift += 1
+    if "btag_jes" in h1_sys_name_new:
+        shift -= 1
+    pos = 0
+    i = 1
+    # print(h1_sys_name_new, " ", shift)
+    while h1_sys_name_new[pos] != '_' or i < shift:
+        if h1_sys_name_new[pos] == '_':
+            i += 1
         pos += 1
 
     sys = h1_sys_name_new[:pos]

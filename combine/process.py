@@ -93,8 +93,8 @@ def get_sys_name(h1_sys_name: str) -> None:
     return h1_sys_name[pos + 1 :]
 
 
-def process(file_name: str, original: str, flat_bg: bool, sys_type: dict,
-            xs_22014: dict, xs_self: dict, qnorm_fix: float, start: list, base_file: str, sys_same_year: list) -> None:
+def process(file_name: str, original: str, flat_bg: bool, sys_type: dict, xs_22014: dict, xs_self: dict,
+            qnorm_fix: float, start: list, base_file: str, sys_same_year: list) -> None:
     file = ROOT.TFile(file_name, "recreate")
     old_file = ROOT.TFile(original, "read")
     base = ROOT.TFile(base_file, "read")
@@ -112,7 +112,8 @@ def process(file_name: str, original: str, flat_bg: bool, sys_type: dict,
 
         hist_map[hist_name] = hist
         hist_map[hist_name].SetDirectory(0)
-        hist_map[hist_name].Scale(xs_22014[nom_name] / xs_self[nom_name])
+        if nom_name != "Eta":
+            hist_map[hist_name].Scale(xs_22014[nom_name] / xs_self[nom_name])
 
         if ("Up" in hist_name or "Down" in hist_name):
             hist_name = hist_name.replace("Up", "")

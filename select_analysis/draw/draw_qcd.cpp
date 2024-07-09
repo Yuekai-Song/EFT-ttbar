@@ -273,17 +273,17 @@ void format(TGraphAsymmErrors *hg, int color)
 }
 void draw_qcd(TString cut_name, int var, int year)
 { // 2, 0
-    TString legend[] = {"tt", "DY", "single top", "V+jets", "QCD"};
-    TString pro[] = {"ttbar_ci0000", "DYJets", "STop", "WJets", "QCD"};
+    TString legend[] = {"#eta_{t}", "tt", "DY", "single top", "V+jets", "QCD"};
+    TString pro[] = {"Eta", "ttbar_ci0000", "DYJets", "STop", "WJets", "QCD"};
     TString legendd = "data";
-    TString xtitle[] = {"-lnL", "M_{t}", "M_{#bar{t}}", "M_{Wl}", "M_{Wh}", "M_{th}", "M_{tl}", "P_{T}^{l}", "P_{T}^{leading-jet}", "jet_num", "p_{T}^{t}", "M_{t#bar{t}}", "#Deltay_{t#bar{t}}"};
-    TString title[] = {"likelihood", "mass_t", "mass_at", "mass_wlep", "mass_whad", "mass_thad", "mass_tlep", "lepton_pt", "leading_pt", "jet_num", "top_pt", "Mtt", "deltay"};
+    TString xtitle[] = {"-lnL", "M_{t}", "M_{#bar{t}}", "M_{Wl}", "M_{Wh}", "M_{th}", "M_{tl}", "P_{T}^{l}", "P_{T}^{leading-jet}", "jet_num", "p_{T}^{t}", "M_{t#bar{t}}", "M_{t#bar{t}}", "#Deltay_{t#bar{t}}"};
+    TString title[] = {"likelihood", "mass_t", "mass_at", "mass_wlep", "mass_whad", "mass_thad", "mass_tlep", "lepton_pt", "leading_pt", "jet_num", "top_pt", "Mtt_un", "Mtt", "deltay"};
     Double_t xup, xdown, bin_len;
     Int_t bins;
     Double_t nums, events;
 
-    TString path = Form("../sys_root_ttx/%d/", year);
-    int color[] = {2, 46, 9, 29, 8, kYellow, 93};
+    TString path = Form("../sys_root/%d/", year);
+    int color[] = {93, 2, 46, 9, 29, 8, kYellow};
 
     TString sys_file = path + title[var] + "_ttbar_" + cut_name + ".root";
     TFile *file = TFile::Open(sys_file);
@@ -319,7 +319,7 @@ void draw_qcd(TString cut_name, int var, int year)
         }
     }
     file->Close();
-    TH1D *nmc, *hist, *h1[5];
+    TH1D *nmc, *hist, *h1[6];
     TH1D *hdata, *hdatad, *hmc;
     TGraphAsymmErrors *hmcdg, *hmcg;
 
@@ -356,7 +356,7 @@ void draw_qcd(TString cut_name, int var, int year)
     // hmc->Add(h1[4]);
     // nums+=h1[4]->GetSumOfWeights();
     // leg->AddEntry(h1[4], legend[4], "f");
-    for (int k = 4; k >= 0; k--)
+    for (int k = 5; k >= 0; k--)
     {
         h1[k] = &hist_map[pro[k]];
         // cout<<legend[k]<<": "<<h1[k]->GetSumOfWeights()<<endl;
@@ -365,7 +365,7 @@ void draw_qcd(TString cut_name, int var, int year)
         h1[k]->SetFillColor(color[k]);
         hstack->Add(h1[k]);
     }
-    for (int k = 0; k < 5; k++)
+    for (int k = 0; k < 6; k++)
     {
         leg->AddEntry(h1[k], legend[k], "f");
     }
@@ -377,8 +377,8 @@ void draw_qcd(TString cut_name, int var, int year)
     hratio->Divide(hmc);
     hmcdg = new TGraphAsymmErrors(hratio);
     hmcg = new TGraphAsymmErrors(hmc);
-    set_error(hmcdg, hmc, bin_len, hist_map, nom_sys, nom_pdf, 0);
-    set_error(hmcg, hmc, bin_len, hist_map, nom_sys, nom_pdf, 1);
+    //set_error(hmcdg, hmc, bin_len, hist_map, nom_sys, nom_pdf, 0);
+    //set_error(hmcg, hmc, bin_len, hist_map, nom_sys, nom_pdf, 1);
     // cout<<nums<<" "<<events<<endl;
 
     pad1->cd();
@@ -387,15 +387,15 @@ void draw_qcd(TString cut_name, int var, int year)
     leg->Draw("same");
     hdata->Draw("PSame");
     format(hdata, "", 0);
-    hmcg->Draw("2Same");
-    format(hmcg, 1);
+    //hmcg->Draw("2Same");
+    //format(hmcg, 1);
 
     pad2->cd();
     gStyle->SetOptStat(0);
     format(hdatad, xtitle[var], 1);
     hdatad->Draw();
-    hmcdg->Draw("2same");
-    format(hmcdg, 2);
+    //hmcdg->Draw("2same");
+    //format(hmcdg, 2);
     TLine *l1[bins];
     for (int r = 0; r < 3; r++)
     {
@@ -417,7 +417,7 @@ void draw_qcd(TString cut_name, int var, int year)
     hc->Draw("PY+");
     hc->GetYaxis()->SetTitleSize(0);
 
-    c2->Print(Form("../qcd_pdf_ttx/%d/", year) + title[var] + "_" + cut_name + ".pdf");
+    c2->Print(Form("../qcd_pdf/%d/", year) + title[var] + "_" + cut_name + ".pdf");
 
     for (int i = 0; i < 3; i++)
         delete l1[i];

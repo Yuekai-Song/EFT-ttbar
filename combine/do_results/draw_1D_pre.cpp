@@ -35,14 +35,15 @@ void draw_pre(TString dir, vector<TString> fileName, vector<TString> text, TStri
     c2->SetFrameBorderMode(0);
     c2->SetFrameFillStyle(0);
     c2->SetFrameBorderMode(0);
-    TLegend *leg = new TLegend(0.3, 0.70, 0.7, 0.90);
+    TLegend *leg = new TLegend(0.4, 0.80, 0.7, 0.90);
     leg->SetFillColor(0);
     leg->SetLineColor(0);
     leg->SetBorderSize(0);
     leg->SetFillStyle(0);
     leg->SetTextFont(42);
     leg->SetTextSize(0.04);
-    TH1 *frame = c2->DrawFrame(downedge, 0, upedge, 28); // Draw an empty pad frame
+    double range = 10;
+    TH1 *frame = c2->DrawFrame(downedge, 0, upedge, range); // Draw an empty pad frame
     for (int i = 0; i < fileName.size(); i++)
     {
         TGraph *gr0;
@@ -85,7 +86,7 @@ void draw_pre(TString dir, vector<TString> fileName, vector<TString> text, TStri
     frame->GetXaxis()->SetTitle(xtitle);
     frame->GetYaxis()->SetTitle("-2#Deltaln L");
 
-    TPaveText *oneSig = new TPaveText(legend_left, 0.16, legend_right, 0.21, "NDC");
+    TPaveText *oneSig = new TPaveText(legend_left, 0.21, legend_right, 0.26, "NDC");
     // TPaveText (Double_t x1, Double_t y1, Double_t x2, Double_t y2, Option_t *option="br")
     oneSig->SetFillColor(0);
     oneSig->SetTextFont(42);
@@ -101,7 +102,7 @@ void draw_pre(TString dir, vector<TString> fileName, vector<TString> text, TStri
     l1->DrawLine(downedge, 1.0, upedge, 1.0);
     l1->Draw("same");
 
-    TPaveText *twoSig = new TPaveText(legend_left, 0.24, legend_right, 0.29, "NDC");
+    TPaveText *twoSig = new TPaveText(legend_left, 0.435, legend_right, 0.485, "NDC");
     // TPaveText (Double_t x1, Double_t y1, Double_t x2, Double_t y2, Option_t *option="br")
     twoSig->SetFillColor(0);
     twoSig->SetTextFont(42);
@@ -118,7 +119,7 @@ void draw_pre(TString dir, vector<TString> fileName, vector<TString> text, TStri
     l2->Draw("same");
     // TLatex lumi;
     // lumi.DrawLatex(-0.35,15,"\\mathscr{L}=300 \\mathrm{fb^{-1}}");
-    TPaveText *lumi = new TPaveText(0.68, 0.80, 0.78, 0.90, "NDC");
+    TPaveText *lumi = new TPaveText(0.50, 0.65, 0.60, 0.75, "NDC");
     // TPaveText (Double_t x1, Double_t y1, Double_t x2, Double_t y2, Option_t *option="br")
     lumi->SetFillColor(0);
     lumi->SetTextFont(42);

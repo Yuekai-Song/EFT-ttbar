@@ -71,7 +71,7 @@ class stagex_ttwc(PhysicsModel):
                     self.modelBuilder.factory_("expr::r_tt_times_ci0010(\"@0-(@1-1)*(@1-1)\", mu, z)")
                     self.modelBuilder.factory_("expr::r_tt_times_ci0000(\"-@0*@0-1.5*@1+0.5*@1*@1+(@2-1)*(@2-1)\", k, y, z)")
                     self.pois.append("y,z,k")
-            else:
+            elif not self.test:
                 self.modelBuilder.doVar("y[0.0,-5,5]" )
                 self.modelBuilder.doVar("z[0.0,-5,5]" )
                 self.modelBuilder.doVar("k[0.0,-5,5]" )
@@ -82,7 +82,17 @@ class stagex_ttwc(PhysicsModel):
                 self.modelBuilder.factory_("expr::r_tt_times_ci0010(\"(2*@0-@0*@0)*@1\", z, norm)")
                 self.modelBuilder.factory_("expr::r_tt_times_ci0000(\"(-@0*@0-1.5*@1+0.5*@1*@1+(@2-1)*(@2-1))*@3\", k, y, z, norm)")
                 self.pois.append("y,z,k")
-            
+            else:
+                self.modelBuilder.doVar("y[0.0,-5,5]" )
+                self.modelBuilder.doVar("z[0.0,-5,5]" )
+                self.modelBuilder.doVar("k[0.0,-5,5]" )
+                self.modelBuilder.doVar("norm[1.0,0,10]" )
+                self.modelBuilder.factory_("expr::r_tt_times_ci0001(\"@0*@0*@1\", k, norm)")
+                self.modelBuilder.factory_("expr::r_tt_times_ci0100(\"(2*@0-@0*@0)*@1\", y, norm)")
+                self.modelBuilder.factory_("expr::r_tt_times_ci0200(\"(0.5*@0*@0-0.5*@0)*@1\", y, norm)")
+                self.modelBuilder.factory_("expr::r_tt_times_ci0010(\"(2*@0*@2-@0*@0*@2*@2)*@1\", z, norm, mtop3)")
+                self.modelBuilder.factory_("expr::r_tt_times_ci0000(\"(-@0*@0-1.5*@1+0.5*@1*@1+(@2*@4-1)*(@2*@4-1))*@3\", k, y, z, norm, mtop3)")
+                self.pois.append("y,z,k")
         else:
             self.modelBuilder.doVar("y[0.0,-5,5]" )
             self.modelBuilder.doVar("fcp[0.0,-1.0,1.0]")

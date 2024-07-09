@@ -35,7 +35,7 @@ bool compare(process pro1, process pro2)
     return pro1.id < pro2.id;
 }
 map<int, TString> sys_lumi_year = {{2015, "1.012"}, {2016, "1.012"}, {2017, "1.023"}, {2018, "1.025"}};
-map<TString, TString> sys_norm_bg = {{"STop", "1.15"}, {"DYJets", "1.30"}, {"WJets", "1.30"}};
+map<TString, TString> sys_norm_bg = {{"STop", "1.15"}, {"DYJets", "1.30"}, {"WJets", "1.30"}, {"Eta", "2.0"}};
 void sys_and_nom(TString hist_name, TString &sys_name, TString &nom_name)
 {
     int pos = 0;
@@ -82,35 +82,31 @@ void write_pro(vector<process> pro_v, ofstream &card)
         card << pro_v[i].yield << "\t";
     card << endl;
 }
-void write_sys(vector<process> pro_v, map<TString, std::vector<TString>> sys_nom, vector<TString> sys_of_shapeU, ofstream &card)
+void write_sys(vector<process> pro_v, map<pair<TString, TString>, map<TString, TString>> sys_map, ofstream &card)
 {
-    for (map<TString, std::vector<TString>>::iterator iter = sys_nom.begin(); iter != sys_nom.end(); iter++)
+    vector<bool> nom_index;
+    bool in;
+    for (map<pair<TString, TString>, map<TString, TString>>::iterator iter = sys_map.begin(); iter != sys_map.end(); iter++)
     {
-        auto is_shapeU = find(sys_of_shapeU.begin(), sys_of_shapeU.end(), iter->first);
-        if (is_shapeU != sys_of_shapeU.end())
-            card << iter->first << "\t shapeU \t";
-        else
-            card << iter->first << "\t shape \t";
-        for (int i = 0; i < pro_v.size(); i++)
-        {
-            auto it = find((iter->second).begin(), (iter->second).end(), pro_v[i].name);
-            if (it != (iter->second).end())
-                card << "1\t";
-            else
-                card << "-\t";
-        }
-        card << endl;
-    }
-}
-void write_sys(vector<process> pro_v, map<TString, map<TString, TString>> sys_lnN, ofstream &card)
-{
-    for (map<TString, map<TString, TString>>::iterator iter = sys_lnN.begin(); iter != sys_lnN.end(); iter++)
-    {
-        card << iter->first << "\t lnN \t";
+        nom_index.clear();
+        in = false;
         for (int i = 0; i < pro_v.size(); i++)
         {
             auto it = (iter->second).find(pro_v[i].name);
             if (it != (iter->second).end())
+            {
+                nom_index.push_back(true);
+                in = true;
+            }
+            else
+                nom_index.push_back(false);
+        }
+        if (!in)
+            continue;
+        card << iter->first.second << "\t " << iter->first.first << " \t";
+        for (int i = 0; i < nom_index.size(); i++)
+        {
+            if(nom_index[i])
                 card << (iter->second)[pro_v[i].name] << "\t";
             else
                 card << "-\t";
@@ -133,8 +129,7 @@ bool is_small_effect(TH1D hist_nom, TH1D hist_up, TH1D hist_dn)
     return !is_big;
 }
 void write_card(ofstream &card, TString dir, TString category, std::vector<process> pro_v,
-                map<TString, std::vector<TString>> sys_shape, vector<TString> sys_of_shapeU,
-                map<TString, map<TString, TString>> sys_lnN, bool autostat)
+                map<pair<TString, TString>, map<TString, TString>> sys_map, bool autostat)
 {
     card << "Datacard for event category: " << category << endl;
     card << "imax 1 number of channels" << endl;
@@ -156,8 +151,7 @@ void write_card(ofstream &card, TString dir, TString category, std::vector<proce
     card << endl;
     write_pro(pro_v, card);
     // write_sys("cms_lumi", cms_lumi, card);
-    write_sys(pro_v, sys_lnN, card);
-    write_sys(pro_v, sys_shape, sys_of_shapeU, card);
+    write_sys(pro_v, sys_map, card);
     if(autostat)
         card << "* autoMCStats 0" << endl;
     /*card<<"sig_norm"<<"\t lnN \t";
@@ -173,16 +167,16 @@ void write_card(ofstream &card, TString dir, TString category, std::vector<proce
 }
 
 void write(TString datacard_name, TString dir, TString cut_name, int year, bool lnN_bg,
-           vector<TString> lnNed_sys, vector<TString> saved,
-           vector<TString> sys_of_shapeU, bool autostat)
+           vector<TString> lnNed_sys, vector<TString> saved, vector<TString> sys_of_shapeU,
+           bool autostat, vector<TString> pro_drop)
 {
-    TString path = "./" + datacard_name + "/" + dir;
+    TString path = "./datacards/" + datacard_name + "/" + dir;
     TString category = "ttbar" + cut_name + Form("_%d", year);
     cout << path + category + ".txt" << endl;
 
     ofstream card;
     card.open(path + category + ".txt");
-    TFile *file = TFile::Open("./" + datacard_name + "/" + category + ".root");
+    TFile *file = TFile::Open("./datacards/" + datacard_name + "/" + category + ".root");
     TList *list = file->GetListOfKeys();
     TKey *key;
     TIter iter(list);
@@ -193,8 +187,7 @@ void write(TString datacard_name, TString dir, TString cut_name, int year, bool 
     process pro;
     TString sys_name, nom_name;
     std::vector<process> pro_v;
-    map<TString, std::vector<TString>> sys_shape;
-    map<TString, map<TString, TString>> sys_lnN;
+    map<pair<TString, TString>, map<TString, TString>> sys_map;
     map<TString, TH1D> hist_map;
     while ((key = (TKey *)iter()))
     {
@@ -214,8 +207,6 @@ void write(TString datacard_name, TString dir, TString cut_name, int year, bool 
     {
         
         hist_name = iter->first;
-        if (hist_name.Contains("QCD") && dir.Contains("noQCD"))
-            continue;
         if (hist_name.Contains("Up"))
         {
             hist_name.ReplaceAll("Up", "");
@@ -226,14 +217,28 @@ void write(TString datacard_name, TString dir, TString cut_name, int year, bool 
                 continue;
             if (find(lnNed_sys.begin(), lnNed_sys.end(), sys_name) != lnNed_sys.end())//is_small_effect(hist_map[nom_name], hist_map[hist_name + "Up"], hist_map[hist_name + "Down"]))
             {
-                sys_lnN[sys_name][nom_name] = Form("%.6f/%.6f", hist_map[hist_name + "Up"].GetSumOfWeights() / hist_map[nom_name].GetSumOfWeights(),
+                sys_map[{"lnN", sys_name}][nom_name] = Form("%.6f/%.6f", hist_map[hist_name + "Up"].GetSumOfWeights() / hist_map[nom_name].GetSumOfWeights(),
                                                 hist_map[hist_name + "Down"].GetSumOfWeights() / hist_map[nom_name].GetSumOfWeights());
                 continue;
             }
-            sys_shape[sys_name].push_back(nom_name);
+            if (find(sys_of_shapeU.begin(), sys_of_shapeU.end(), sys_name) != sys_of_shapeU.end())
+                sys_map[{"shapeU", sys_name}][nom_name] = "1";
+            else
+                sys_map[{"shape", sys_name}][nom_name] = "1";
         }
         else if (!hist_name.Contains("Down") && !hist_name.Contains("EW_no") && !hist_name.Contains("data_obs"))
         {
+            if (find(saved.begin(), saved.end(), "cms_lumi") != saved.end())
+                sys_map[{"lnN", Form("cms_lumi_%d", year)}][hist_name] = sys_lumi_year[year];
+
+            if (find(saved.begin(), saved.end(), "stat") != saved.end() && hist_name.Contains("ttbar"))
+                sys_map[{"lnN", "stat"}][hist_name] = "1.000001";
+            
+            if (!hist_name.Contains("ttbar") && !hist_name.Contains("Eta") && !hist_name.Contains("QCD") && lnN_bg)
+                sys_map[{"lnN", hist_name + "_norm"}][hist_name] = sys_norm_bg[hist_name];
+        
+            if (find(pro_drop.begin(), pro_drop.end(), hist_name) != pro_drop.end())
+                continue;
             pro.name = hist_name;
             pro.yield = hist_map[pro.name].GetSumOfWeights();
             pro.bin = category;
@@ -249,18 +254,11 @@ void write(TString datacard_name, TString dir, TString cut_name, int year, bool 
             }
             pro_v.push_back(pro);
             // need to add some lnN sys manually
-            if (find(saved.begin(), saved.end(), "cms_lumi") != saved.end())
-                sys_lnN[Form("cms_lumi_%d", year)][hist_name] = sys_lumi_year[year];
-
-            if (find(saved.begin(), saved.end(), "stat") != saved.end() && hist_name.Contains("ttbar"))
-                sys_lnN["stat"][hist_name] = "1.000001";
-            
-            if (!hist_name.Contains("ttbar") && !hist_name.Contains("QCD") && lnN_bg)
-                sys_lnN[hist_name + "_norm"][hist_name] = sys_norm_bg[hist_name];
         }
     }
+    sys_map[{"lnN", "Eta_norm"}]["Eta"] = sys_norm_bg["Eta"];
     sort(pro_v.begin(), pro_v.end(), compare);
-    write_card(card, dir, category, pro_v, sys_shape, sys_of_shapeU, sys_lnN, autostat);
+    write_card(card, dir, category, pro_v, sys_map, autostat);
     card.close();
     file->Close();
 }

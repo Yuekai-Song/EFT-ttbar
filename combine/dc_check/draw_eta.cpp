@@ -15,7 +15,6 @@
 #include <string.h>
 #include <fstream>
 #include <iostream>
-#include <TKey.h>
 #include <TPaveText.h>
 using namespace std;
 double p2weight = 0.65 / 0.3;
@@ -26,19 +25,12 @@ void seterror0(TH1D *h1)
         h1->SetBinError(i, 0);
     }
 }
-void format_text(TPaveText *lumi, bool option)
+void format_text(TPaveText *lumi)
 {
     lumi->SetFillColor(0);
     lumi->SetTextFont(42);
-    if (option)
-    {
-        lumi->SetTextColor(1);
-        lumi->SetTextSize(0.045);
-    }
-    else{
-        lumi->SetTextSize(0.035);
-        lumi->SetTextColor(13);
-    }
+    lumi->SetTextSize(0.035);
+    lumi->SetTextColor(1);
     lumi->SetBorderSize(0);
 }
 void format_leg(TLegend *leg)
@@ -48,7 +40,7 @@ void format_leg(TLegend *leg)
     leg->SetEntrySeparation(0.0);
     leg->SetBorderSize(0);
     leg->SetTextFont(42);
-    leg->SetTextSize(0.03);
+    leg->SetTextSize(0.05);
     leg->SetLineColor(1);
     leg->SetLineStyle(1);
     leg->SetLineWidth(1);
@@ -62,10 +54,10 @@ void format_canvas(TCanvas *c)
     c->SetBorderSize(2);
     c->SetTickx(1);
     c->SetTicky(1);
-    c->SetLeftMargin(0.01);
-    c->SetRightMargin(0.00);
+    c->SetLeftMargin(0.18);
+    c->SetRightMargin(0.05);
     c->SetTopMargin(0.01);
-    c->SetBottomMargin(0.01);
+    c->SetBottomMargin(0.05);
     c->SetFrameFillStyle(0);
     c->SetFrameBorderMode(0);
     c->SetFrameFillStyle(0);
@@ -78,14 +70,15 @@ void format_pad(TPad *pad1, TPad *pad2)
     pad1->cd();
     pad1->SetTopMargin(0.1);
     pad1->SetBottomMargin(0.02);
-    pad1->SetLeftMargin(0.14);
+    pad1->SetLeftMargin(0.15);
     // pad1->SetTopMargin(0);
     pad2->cd();
     // pad2->SetTopMargin(0);
     pad2->SetTopMargin(0.03);
     pad2->SetBottomMargin(0.45);
-    pad2->SetLeftMargin(0.14);
+    pad2->SetLeftMargin(0.15);
 }
+
 void set_th_lable(TH1D *h1, vector<vector<double>> xbins)
 {
     double nbin = 0;
@@ -105,11 +98,6 @@ void format_th_pad2(TH1D *h1, TString xtitle, double range, int color, int type,
     int bins = h1->GetNbinsX();
     h1->SetLineColor(color);
     if (type == 1)
-    { // filled TH1D
-        h1->SetFillColorAlpha(color, 0.3);
-        h1->SetLineWidth(0);
-    }
-    else if(type == 2)
     { // real TH1D(line)
         h1->SetLineWidth(2);
         h1->SetMarkerColor(color);
@@ -135,7 +123,7 @@ void format_th_pad2(TH1D *h1, TString xtitle, double range, int color, int type,
     h1->GetYaxis()->SetTitleOffset(1.1 / p2weight);
     h1->GetXaxis()->SetLabelSize(0.08 * 33 / bins);
     h1->GetYaxis()->SetLabelSize(0.05 * p2weight);
-    h1->GetYaxis()->SetRangeUser(-range, range);
+    h1->GetYaxis()->SetRangeUser(0, range);
     set_th_lable(h1, xbins);
 }
 double format_th_pad1(TH1D *h1, TString xtitle, int color)
@@ -159,13 +147,9 @@ double format_th_pad1(TH1D *h1, TString xtitle, int color)
     h1->GetYaxis()->SetTitleOffset(1.20);
     h1->GetXaxis()->SetLabelSize(0.0);
     h1->GetYaxis()->SetLabelSize(0.05);
-    // h1->GetYaxis()->SetRangeUser(0.0, h1->GetMaximum()*1.4);
-    if (TString(h1->GetName()).Contains("ttbar"))
-        h1->GetYaxis()->SetRangeUser(0.0, 80000);
-    else
-        h1->GetYaxis()->SetRangeUser(0.0, 3000);
+    //h1->GetYaxis()->SetRangeUser(0.0, h1->GetMaximum() * 1.4);
+    h1->GetYaxis()->SetRangeUser(0.0, 120000);
     return h1->GetMaximum();
-    // h1->GetYaxis()->SetRangeUser(0.0, 800000);
 }
 void format_line(TLine *l1, bool is_net = false)
 {
@@ -182,13 +166,20 @@ void format_line(TLine *l1, bool is_net = false)
     }
     l1->SetLineColor(1);
 }
-void draw_pre(TH1D *hsm, TH1D *hmc[4], TString sys, TString pdf_name, double range, vector<vector<double>> xbins, vector<double> ycuts)
+
+void draw_pre(TString datacard_name, TString cutname, int year, double range, vector<vector<double>> xbins, vector<double> ycuts)
 {
-    double high;
-    TString name[] = {"Up", "Down"};
-    int color[] = {2, 4};
+    TString process[] = {"Eta", "ttbar_ci0000"};
+    TString outpath = "./eta_pdf/" + datacard_name + "/" + cutname + Form("_%d/", year);
+    TString filename = "ttbar_" + cutname + Form("_%d.root", year);
+    TFile *file = TFile::Open("../datacards/" + datacard_name + "/original/" + filename);
+    TH1D *hmc[2], *hd;
+    int color[] = {2, 1, 8, 4, 6};
+
     TString xtitle = "M_{t#bar{t}}";
-    TString legend[] = {"#theta = +1#sigma", "#theta = -1#sigma"};
+    TString legend[2] = {"t#bar{t}+#eta_{t}", "t#bar{t}"};
+    // TString legend[] = {"#kappa = 1", "#kappa = 0.5", "#kappa = 0", "#kappa = 1.5", "#kappa = 2.0"};
+
     const int ndiv = xbins.size() - 1;
     const int nnbins = xbins.size() + 1;
     const int ncuts = ycuts.size();
@@ -206,42 +197,44 @@ void draw_pre(TH1D *hsm, TH1D *hmc[4], TString sys, TString pdf_name, double ran
     cut[ncuts - 1] = Form("|#Deltay| > %.1f", ycuts[ncuts - 1]);
     for (int i = 1; i < ncuts - 1; i++)
         cut[i] = Form("%.1f < |#Deltay| < %.1f", ycuts[i], ycuts[i + 1]);
-
+    
     TLine *l1[ndiv], *l2[ndiv], *l3[bins];
-    TPaveText *t[ncuts], *sys_text[2];
-    TH1D *hd[4];
+    TPaveText *t[ncuts];
+
+    for (int c = 0; c < 2; c++)
+    {
+        hmc[c] = (TH1D *)file->Get(process[c]);
+    }
+    hmc[0]->Add(hmc[1]);
     TCanvas *c2 = new TCanvas("c1", "c1", 8, 30, 650, 650);
     TPad *pad1 = new TPad("pad1", "This is pad1", 0.05, 0.32, 0.95, 0.97);
     TPad *pad2 = new TPad("pad2", "This is pad2", 0.05, 0.02, 0.95, 0.32);
     c2->cd();
     format_pad(pad1, pad2);
-    //TLegend *leg = new TLegend(0.75, .55, 0.85, .70);
+    
     format_canvas(c2);
-    for (int i = 0; i < 4; i++)
-    {
-        hd[i] = (TH1D *)hmc[i]->Clone();
-        hd[i]->SetName(Form("hd_%d", i));
-        hd[i]->Add(hsm, -1);
-        hd[i]->Divide(hsm);
-    }
-    pad1->cd();
-    hsm->Draw();
-    high = format_th_pad1(hsm, xtitle, 1);
+    
+    hd = (TH1D *)hmc[0]->Clone();
+    hd->SetName("hd");
+    hd->Add(hmc[1], -1);
+    hd->Divide(hmc[1]);
+    
 
-    TLegend *leg = new TLegend(nbins[nnbins - 2] + 1, high * 0.55, nbins[nnbins - 1] - 1, high * 0.75, "", "br");
+    pad1->cd();
+    hmc[0]->Draw();
+    hmc[1]->Draw("Same");
+    double high1 = format_th_pad1(hmc[0], xtitle, color[0]);
+    format_th_pad1(hmc[1], xtitle, color[1]);
+
+    TLegend *leg = new TLegend(nbins[nnbins - 2] + 0.5, high1 * 0.65, nbins[nnbins - 1] - 1, high1 * 0.85, "", "br");
     format_leg(leg);
-    leg->AddEntry(hsm, "SM case", "l");
     for (int i = 0; i < 2; i++)
-    {
-        hmc[i]->Draw("Same");
-        format_th_pad1(hmc[i], xtitle, color[i]);
         leg->AddEntry(hmc[i], legend[i], "l");
-    }
     leg->Draw("Same");
 
     for (int d = 0; d < ndiv; d++)
     {
-        l1[d] = new TLine(div[d], 0, div[d], high);
+        l1[d] = new TLine(div[d], 0, div[d], high1);
         format_line(l1[d]);
         pad1->cd();
         l1[d]->Draw("same");
@@ -249,60 +242,27 @@ void draw_pre(TH1D *hsm, TH1D *hmc[4], TString sys, TString pdf_name, double ran
     for (int tex = 0; tex < ncuts; tex++)
     {
         double mid_row = (nbins[tex] + nbins[tex + 1]) / 2.0;
-        double mid_col = high * 0.9;
+        double mid_col = high1 * 0.9;
         //cout << mid << endl;
         t[tex] = new TPaveText(mid_row - 1, mid_col * 0.95, mid_row + 1, mid_col * 1.05);
-        if (tex == ncuts / 2 - 1)
-        {
-            sys_text[0] = new TPaveText(mid_row - 1, mid_col * 0.75, mid_row + 1, mid_col * 0.85);
-            format_text(sys_text[0], 1);
-            sys_text[0]->AddText(sys);
-            sys_text[0]->Draw("same");
-        }
-        if (tex == ncuts / 2 )
-        {
-            sys_text[1] = new TPaveText(mid_row - 1, mid_col * 0.75, mid_row + 1, mid_col * 0.85);
-            format_text(sys_text[1], 1);
-            if (pdf_name.Contains("E_4jets"))
-                sys_text[1]->AddText("e, #geq4jets");
-            if (pdf_name.Contains("E_3jets"))
-                sys_text[1]->AddText("e, 3jets");
-            if (pdf_name.Contains("M_4jets"))
-                sys_text[1]->AddText("#mu, #geq4jets");
-            if (pdf_name.Contains("M_3jets"))
-                sys_text[1]->AddText("#mu, 3jets");
-            sys_text[1]->Draw("same");
-        }
-        format_text(t[tex], 0);
+        format_text(t[tex]);
         t[tex]->AddText(cut[tex]);
         t[tex]->Draw("same");
     }
-    pad2->cd();
-    for (int i = 0; i < 2; i++)
-    {
-        if (i == 0)
-            hd[i]->Draw("Ph");
-        else
-            hd[i]->Draw("PhSame");
-        format_th_pad2(hd[i], xtitle, range, color[i], 2, xbins);
-    }
-    for (int i = 0; i < 2; i++)
-    {
-        hd[2 + i]->Draw("hSame");
-        format_th_pad2(hd[2 + i], xtitle, range, color[i], 1, xbins);
-    }
 
+    pad2->cd();
+    hd->Draw("h");
+    format_th_pad2(hd, xtitle, range, color[0], 1, xbins);
     TLine *lratio[3];
     for (int r = 0; r < 3; r++)
     {
-        lratio[r] = new TLine(0, 0.5 * range * (r - 1), bins, 0.5 * range * (r - 1));
+        lratio[r] = new TLine(0, 0.25 * range * (r + 1), bins, 0.25 * range * (r + 1));
         lratio[r]->Draw("Same");
         format_line(lratio[r], 1);
     }
-
     for (int d = 0; d < ndiv; d++)
     {
-        l2[d] = new TLine(div[d], -range, div[d], range);
+        l2[d] = new TLine(div[d], 0, div[d], range);
         format_line(l2[d]);
         l2[d]->Draw("same");
     }
@@ -311,12 +271,12 @@ void draw_pre(TH1D *hsm, TH1D *hmc[4], TString sys, TString pdf_name, double ran
     {
         for(int bin = nbins[d] + 1; bin < nbins[d + 1]; bin++, net_num++)
         {
-            l3[net_num] = new TLine(bin, -range, bin, range);
+            l3[net_num] = new TLine(bin, 0, bin, range);
             format_line(l3[net_num], 1);
             l3[net_num]->Draw("same");
         } 
     }
-    c2->Print("./sys_pdf/" + pdf_name + ".pdf");
+    c2->Print(outpath + "eta.pdf");
     for (int d = 0; d < ndiv; d++)
     {
         delete l1[d];
@@ -326,15 +286,33 @@ void draw_pre(TH1D *hsm, TH1D *hmc[4], TString sys, TString pdf_name, double ran
         delete l3[i];
     for (int tex = 0; tex < ncuts; tex++)
         delete t[tex];
-    delete leg;
-
-    for (int i = 0; i < 3; i++)
-        delete lratio[i];
-    for (int i = 0; i < 4; i++)
-        delete hd[i], hmc[i];
     for (int i = 0; i < 2; i++)
-        delete sys_text[i];
+        delete hmc[i];
+    delete hd;
+    delete leg;
     delete pad1;
     delete pad2;
     delete c2;
+}
+void draw_eta(TString datacard_name, TString cut_name, int year){
+    TString cutNames[] = {"M_4jets","M_3jets","E_4jets","E_3jets"};
+    int years[] = {2015, 2016, 2017, 2018};
+
+    int index[3][5] = {{2, 1, 0, 3, 4}, {0, 1, 2, 3, 4}, {2, 1, 0, 3, 4}}; //order of values
+    double v[3][5] = {{0, 0.5, 1.0, -0.5, -1.0}, {0, 0.5, 1.0, 1.5, 2.0}, {0, 0.5, 1.0, -0.5, -1.0}};
+    vector<double> ycuts;
+    vector<vector<double>> xbins;
+    if (datacard_name.Contains("2cuts")) {
+        ycuts = {0.0, 1.4};
+        xbins = {{300,340,360,380,400,420,440,460,480,500,520,540,570,600,640,700,3000},
+                                   {300,450,500,570,630,700,820,3000}};
+    }
+    else
+    {
+        ycuts = {0.0, 0.4, 1.0, 2.0};
+        xbins = {{0,340,380,420,460,500,600,3000}, {0,350,400,450,500,550,600,700,800,3000}, 
+                               {0,450,500,550,600,650,700,800,1000,3000}, {0,650,700,750,800,900,1000,1200,3000}};
+    }
+    //TString filenames[] = {"ttbar_M_4jets.root","ttbar_M_3jets.root","ttbar_E_4jets.root","ttbar_E_3jets.root"};
+    draw_pre(datacard_name, cut_name, year, 0.1, xbins, ycuts);
 }

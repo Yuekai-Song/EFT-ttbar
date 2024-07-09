@@ -329,12 +329,12 @@ void prepare::set_dir(int option)
     TString sf_bl[] = {"SF_btag_co", "SF_ltag_co", "SF_btag_un", "SF_btag_un"};
 
 
-    TString process_s[] = {"ttbar_ci0200", "ttbar_ci0100", "ttbar_ci0010", "ttbar_ci0001", "ttbar_ci0000", "EW_no", "DYJets", "STop", "WJets"};
-    TString fileTitle_s[] = {"ttbar", "ttbar", "ttbar", "ttbar", "ttbar", "ttbar", "DYJets", "STop", "WJets"};
+    TString process_s[] = {"ttbar_ci0200", "ttbar_ci0100", "ttbar_ci0010", "ttbar_ci0001", "ttbar_ci0000", "EW_no", "Eta", "DYJets", "STop", "WJets"};
+    TString fileTitle_s[] = {"ttbar", "ttbar", "ttbar", "ttbar", "ttbar", "ttbar", "Eta", "DYJets", "STop", "WJets"};
     TString EWs[5] = {"*weight_ci0200", "*weight_ci0100", "*weight_ci0010", "*weight_ci0001", "*weight_ci0000"};
-    Int_t npdf_ws[] = {103, 103, 103, 103, 103, 0, 103, 101, 103};
+    Int_t npdf_ws[] = {103, 103, 103, 103, 103, 0, 0, 103, 101, 103};
     
-    for (int i = 0; i < 9; i++)
+    for (int i = 0; i < 10; i++)
     {
         fileTitle[i] = fileTitle_s[i];
         npdf_w[i] = npdf_ws[i];
@@ -357,8 +357,8 @@ void prepare::set_dir(int option)
     for (int i = 0; i < 5; i++)
         EW[i] = EWs[i];
 
-    int begins[] = {0, 1, 2, 3, 4, 5, 4, 9};
-    int ends[] = {1, 2, 3, 4, 5, 9, 10, 10};
+    int begins[] = {0, 1, 2, 3, 4, 6, 4, 10};
+    int ends[] = {1, 2, 3, 4, 5, 10, 11, 11};
     TString categorys[] = {"ttbar200", "ttbar100", "ttbar010", "ttbar001", "ttbar000", "bg", "ttbar", "QCD"};
     begin = begins[option];
     end = ends[option];
@@ -434,24 +434,24 @@ void prepare::create_hist(TH1 *&hist, TString name)
 void prepare::run()
 {
     file = new TFile(outputDir + category + ".root", "recreate");
-    for (int c = begin; c < min(9, end); c++)
+    for (int c = begin; c < min(10, end); c++)
     {
         draw_nom(c);
         cout << "finished nom of " << process[c] << endl;
     }
     for (int s = 0; s < 31; s++)
     {
-        for (int c = begin; c < min(9, end); c++)
+        for (int c = begin; c < min(10, end); c++)
         {
             if (c > 4 && s > 24) // sys only for signal
                 break;
-            if (c == 5)
-                continue; // no sys for EW_no
+            if (c == 5 || c == 6)
+                continue; // no sys for EW_no and Eta
             draw_sys(c, s);
             cout << "finished sys of " << sys_n[s] << " of " << process[c] << endl;
         }
     }
-    for (int c = begin; c < min(9, end); c++)
+    for (int c = begin; c < min(10, end); c++)
     {
         for (int p = 0; p < npdf_w[c]; p++)
         {
@@ -459,7 +459,7 @@ void prepare::run()
             cout << "finished pdf_w" << p << " of " << process[c] << endl;
         }
     }
-    if (end == 10)
+    if (end == 11)
     {
         draw_data();
         add_qcd();

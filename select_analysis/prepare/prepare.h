@@ -40,9 +40,9 @@ private:
     double *xbin;
     // int bin_num;
     map<TString, pair<double, double>> xsection;
-    int npdf_w[9];
+    int npdf_w[10];
     TString sys_n[31], sys[31], sys_up[31], sys_down[31];
-    TString process[9], EW[5], fileTitle[9];
+    TString process[10], EW[5], fileTitle[10];
     TString weight_up, weight_dn;
     TString file_up, file_dn;
     TString tree_up, tree_dn;

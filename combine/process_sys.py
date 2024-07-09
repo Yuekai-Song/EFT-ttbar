@@ -3,7 +3,7 @@ import sys
 import process
 import ROOT
 
-cut_names = {"_E_3jets": "_elec_3J", "_M_3jets": "_mu_3J", "_E_4jets" : "_elec_4J", "_M_4jets": "_mu_4J"}
+cut_names = {"_E_3jets": "_E3j", "_M_3jets": "_M3j", "_E_4jets" : "_E4j", "_M_4jets": "_M4j"}
 years = [2015, 2016, 2017, 2018]
 name_datacard = sys.argv[1]
 cut_name = sys.argv[2]
@@ -13,9 +13,11 @@ renorm = int(sys.argv[5])
 
 sys_type_4cuts = {
     "TuneCP5": [2, 1],
+    "FSR": [1, 0, [0.9]],
+    "ISR": [1, 0, [1.0]],
     "mtop": [1, 0, [0.5]],
     "mtop3": [1, 0, [0.5]],
-    "hdamp": [1, 0, [0.5]],
+    "hdamp": [1, 0, [0.6]],
     "jes_Absolute": [1, 0, [0.5]],
     "jes_Absolute_{0}".format(year): [1, 0, [0.5]],
     "jes_FlavorQCD": [1, 0, [0.5]],
@@ -26,7 +28,7 @@ sys_type_4cuts = {
     "jes_EC2_{0}".format(year): [1, 0, [0.5]],
     "jes_RelativeBal": [1, 0, [0.5]],
     "jes_RelativeSample_{0}".format(year): [1, 0, [0.5]],
-    "jer": [1, 0, [0.5]],
+    "jer": [1, 0, [1.0]],
     "unclus": [2, 1]
 }
 sys_type_2cuts = {
@@ -44,11 +46,35 @@ sys_type_2cuts = {
     "jes_EC2_{0}".format(year): [1, 0, [0.3]],
     "jes_RelativeBal": [1, 0, [0.3]],
     "jes_RelativeSample_{0}".format(year): [1, 0, [0.3]],
-    "jer": [1, 0, [0.5]],
+    "jer": [1, 0, [0.5, 0.7]],
     "unclus": [2, 1],
     "qshape" + cut_names[cut_name] + "_{0}".format(year): [1, 1, [0.7]]
 }
-
+if "4jets" in cut_name:
+    sys_type_2cuts["ISR"] = [1, 0, [0.6, 0.0]]
+    if "E" in cut_name:
+        sys_type_2cuts["FSR"] = [1, 0, [0.3, 0.0]]
+elif "M" in cut_name:
+    sys_type_2cuts["FSR"] = [1, 0, [0.0, 0.6]]
+    sys_type_2cuts["ISR"] = [1, 0, [0.4]]
+else:
+    sys_type_2cuts["FSR"] = [1, 0, [0.3, 0.2]]
+    sys_type_2cuts["ISR"] = [1, 0, [0.4]]
+#     "FSR": [1, 0, [0.4]],
+#     "ISR": [1, 0, [0.4]],
+#     "SF_Elec_{0}".format(year): [1, 0, [0.4]],
+#     "SF_Muon_{0}".format(year): [1, 0, [0.4]],
+#     "jes_Absolute": [1, 0, [0.5]],
+#     "jes_Absolute_{0}".format(year): [1, 0, [0.5]],
+#     "jes_FlavorQCD": [1, 0, [0.5]],
+#     "jes_BBEC1": [1, 0, [0.6]],
+#     "jes_EC2": [1, 0, [0.5]],
+#     "jes_HF": [1, 0, [0.5]],
+#     "jes_BBEC1_{0}".format(year): [1, 0, [0.5]],
+#     "jes_EC2_{0}".format(year): [1, 0, [0.5]],
+#     "jes_RelativeBal": [1, 0, [0.5]],
+#     "jes_RelativeSample_{0}".format(year): [1, 0, [0.5]],
+#     "jer": [1, 0, [0.6]],
 xs_22014 = {
     "4jets_2018": {"ttbar": 1137810.2, "DYJets": 14427.6, "STop": 32311.8, "WJets": 14427.6, "QCD": 11543.4},
     "3jets_2018": {"ttbar": 714101.4, "DYJets": 30092.2, "STop": 45300.8, "WJets": 30092.2, "QCD": 31575.2},
@@ -65,12 +91,12 @@ qnorm_22014 = {"E3j_2015": 1.5, "M3j_2015": 1.2, "E4j_2015": 1.5, "M4j_2015": 1.
                "E3j_2017": 1.5, "M3j_2017": 1.2, "E4j_2017": 1.5, "M4j_2017": 1.2,
                "E3j_2018": 1.5, "M3j_2018": 1.2, "E4j_2018": 1.5, "M4j_2018": 3.5}
 
-sys_same_year = ["hdamp"]
+sys_same_year = ["hdamp", "FSR", "ISR", "jer"]
 for syss in sys_same_year:
     if "{0}".format(year) in syss:
         exit()
     
-flat_name = {0: "", 1: "_bg_flat"}
+flat_name = {0: "", 1: "_bg_flat_nu"}
 nom_name = {0: "", 1: "_renormed"}
 
 out_dir = name_datacard + "/processed" + flat_name[bg_flat] + nom_name[renorm]

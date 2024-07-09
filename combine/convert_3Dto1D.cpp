@@ -18,9 +18,9 @@ void convert_3Dto1D(TString input, TString datacard_name, TString cut_name, int 
     }
     
     TString output;
-    
+    map<TString, TString> name_change = {{"SF_Elec", Form("SF_Elec_%d", year)}, {"SF_Muon", Form("SF_Muon_%d", year)}};
     //input = Form("../select_analysis/output/%d/datacard_old/ttbar", year)+cut_name+".root";
     //input = Form("../select_analysis/output/%d/", year) + datacard_name + "ttbar" + cut_name + ".root";
-    output = "./" + datacard_name + "/original/ttbar" + cut_name + Form("_%d.root", year);
-    convert c(input, output, likelihood_cut, ycut_user, xbins_user, qcd_ttx);
+    output = datacard_name + "/original/ttbar" + cut_name + Form("_%d.root", year);
+    convert c(input, output, likelihood_cut, ycut_user, xbins_user, name_change, qcd_ttx);
 }

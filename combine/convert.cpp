@@ -75,6 +75,7 @@ class convert
 {
 private:
     int like_cut, *ycut, *nbins, nycut, bin_num, *start;
+    map<TString, TString> name_change;
     bool ttx_qcd = false;
     TString ch;
     int (*xbins)[20];
@@ -89,11 +90,23 @@ private:
     void process_map();
     void process_pdf();
     void process_qcd();
+    void change_sysname(TString &original);
     void set(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user);
 
 public:
-    convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user, bool qcd_ttx = false);
+    convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user, map<TString, TString> name_change, bool qcd_ttx = false);
 };
+void convert::change_sysname(TString &original)
+{
+    if (!original.Contains("Up") && !original.Contains("Down"))
+        return;
+    TString temp = original;
+    temp.ReplaceAll("Up", "");
+    temp.ReplaceAll("Down", "");
+    temp.ReplaceAll(sys_to_nom(original) + "_", "");
+    if (name_change.find(temp) != name_change.end())
+        original.ReplaceAll(temp, name_change[temp]);
+}
 void convert::set(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user)
 {
     settings s(0, 2015, false);
@@ -172,7 +185,7 @@ void convert::get_TH1D()
         h1[f]->SetBins(nbins[f], 0, nbins[f]);
         h1[f]->SetName(Form("h1_%d", f));
         TString hname = TString(h3->GetName());
-        if (hname.Contains("QCD") && (!hname.Contains("_SG")))
+        if (hname.Contains("QCD") && (!hname.Contains("_A")))
             h3_1 = h3->ProjectionX("3_px", ycut[f] + 1, ycut[f + 1], 0, -1);
         else
             h3_1 = h3->ProjectionX("3_px", ycut[f] + 1, ycut[f + 1], 0, like_cut);
@@ -198,7 +211,7 @@ void convert::get_map()
     TKey *key;
     TIter iter(list); // or TIter iter(list->MakeIterator());
     static TString classname("TH3D");
-    TString hist_name;
+    TString hist_name, temp;
     while ((key = (TKey *)iter()))
     {
         if (key->GetClassName() == classname)
@@ -207,13 +220,13 @@ void convert::get_map()
             if (h3)
             {
                 hist_name = TString(h3->GetName());
-                hist_name.ReplaceAll("_sub", "");
                 if (hist_name.Contains("pdf") && (hist_name.Contains("_w101") || hist_name.Contains("_w102")))
                 {
                     hist_name.ReplaceAll("pdf", "alphas");
                     hist_name.ReplaceAll("_w101", "Up");
                     hist_name.ReplaceAll("_w102", "Down");
                 }
+                //change_sysname(hist_name);
                 cout << hist_name << endl;
                 hists = new TH1D(hist_name, "", bin_num, 0, bin_num);
                 get_TH1D();
@@ -297,7 +310,7 @@ void convert::process_pdf()
 }
 void convert::process_qcd()
 {
-    if (hist_map.find("QCD_MC_SG") != hist_map.end())
+    if (hist_map.find("QCD_MC_A") != hist_map.end())
     {
         TString En = "", CG = "C", CCG = "D", SCG = "B";
         if (ttx_qcd)
@@ -309,12 +322,12 @@ void convert::process_qcd()
                 CCG = "C";
             }
         }
-        double norm = hist_map["QCD_MC_SG" + En].GetSumOfWeights() / hist_map["QCD_MC_CG_" + CG + En].GetSumOfWeights();
-        TH1D *hist_qcd = (TH1D *)hist_map["QCD_prompt_CG_" + CG].Clone();
+        double norm = hist_map["QCD_MC_A" + En].GetSumOfWeights() / hist_map["QCD_MC_" + CG + En].GetSumOfWeights();
+        TH1D *hist_qcd = (TH1D *)hist_map["QCD_prompt_" + CG].Clone();
         set0(hist_qcd);
         hist_qcd->Scale(norm);
-        TH1D *hist_qcd_up = (TH1D *)hist_map["QCD_prompt_CG_" + SCG].Clone();
-        TH1D *hist_qcd_dn = (TH1D *)hist_map["QCD_prompt_CG_" + CCG].Clone();
+        TH1D *hist_qcd_up = (TH1D *)hist_map["QCD_prompt_" + SCG].Clone();
+        TH1D *hist_qcd_dn = (TH1D *)hist_map["QCD_prompt_" + CCG].Clone();
         set0(hist_qcd_up);
         set0(hist_qcd_dn);
         TH1D *hist_qcd_nup = (TH1D *)hist_qcd->Clone();
@@ -335,7 +348,7 @@ void convert::process_qcd()
         hist_qcd_up->Multiply(hist_qcd);
         hist_qcd_dn->Multiply(hist_qcd);
 
-        double ns = hist_map["QCD_MC_CG_" + SCG + En].GetSumOfWeights() / hist_map["QCD_MC_CG_" +  CCG + En].GetSumOfWeights();
+        double ns = hist_map["QCD_MC_" + SCG + En].GetSumOfWeights() / hist_map["QCD_MC_" +  CCG + En].GetSumOfWeights();
         ns /= norm;
         hist_qcd_nup->Scale(ns);
         hist_qcd_ndn->Scale(1.0 / ns);
@@ -352,9 +365,10 @@ void convert::process_qcd()
         delete hist_qcd_ndn;
     }
 }
-convert::convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user, bool qcd_ttx = false)
+convert::convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user, map<TString, TString> name_changes, bool qcd_ttx = false)
 {
     ttx_qcd = qcd_ttx;
+    name_change = name_changes;
     set(input, output, likelihood_cut, ycut_user, xbins_user);
     get_map();
     process_map();

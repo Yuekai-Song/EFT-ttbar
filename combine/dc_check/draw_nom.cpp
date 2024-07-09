@@ -57,7 +57,7 @@ void format_canvas(TCanvas *c)
     c->SetLeftMargin(0.16);
     c->SetRightMargin(0.05);
     c->SetTopMargin(0.05);
-    c->SetBottomMargin(0.15);
+    c->SetBottomMargin(0.17);
     c->SetFrameFillStyle(0);
     c->SetFrameBorderMode(0);
     c->SetFrameFillStyle(0);
@@ -84,7 +84,7 @@ void format_th(TH1D *h1, TString xtitle, int color)
     h1->GetYaxis()->SetNdivisions(ydivisions);
     h1->GetXaxis()->SetTitleSize(0.04);
     h1->GetYaxis()->SetTitleSize(0.04);
-    h1->GetXaxis()->SetTitleOffset(2.0);
+    h1->GetXaxis()->SetTitleOffset(2.2);
     h1->GetYaxis()->SetTitleOffset(2.0);
     h1->GetXaxis()->SetLabelSize(0.04);
     h1->GetYaxis()->SetLabelSize(0.04);
@@ -113,16 +113,16 @@ void set_th_lable(TH1D *h1, vector<vector<double>> xbins)
 void draw_pre(TString datacard_name, TString cutname, int year, vector<vector<double>> xbins, vector<double> ycuts)
 {
     double high = 0;
-    TString pros[] = {"ttbar_ci0000", "STop", "WJets", "DYJets", "QCD"};
+    TString pros[] = {"ttbar_ci0000", "Eta", "STop", "WJets", "DYJets", "QCD"};
     TString outpath = "./nom_pdf/" + datacard_name + "/" + cutname + Form("_%d/", year);
     TString filename = "ttbar_" + cutname + Form("_%d.root", year);
-    TFile *file = TFile::Open("../" + datacard_name  + "/original/" + filename);
+    TFile *file = TFile::Open("../datacards/" + datacard_name  + "/original/" + filename);
     //file[3] = TFile::Open("../" + datacard_name + dc_types[2] + "/processed_bg_flat/" + filename);
     TH1D *hmc[5];
     int color[] = {2, 4, 8, 1, 6};
     TString xtitle = "M_{t#bar{t}}";
     //TString legend[4] = {"our", "their"};
-    TString legend[5] = {"t#bar{t}", "single top", "V+jets", "Drell Yan", "QCD"};
+    TString legend[6] = {"t#bar{t}", "#eta_{t}", "single t", "WJets", "DYan", "QCD"};
 
     const int ndiv = xbins.size() - 1;
     const int nnbins = xbins.size() + 1;
@@ -150,7 +150,7 @@ void draw_pre(TString datacard_name, TString cutname, int year, vector<vector<do
     format_leg(leg);
     format_canvas(c2);
     c2->cd();
-    for (int c = 0; c < 5; c++)
+    for (int c = 0; c < 6; c++)
     {
         hmc[c] = (TH1D *)file->Get(pros[c]);
         cout << hmc[c]->GetSumOfWeights() << endl;
@@ -163,8 +163,8 @@ void draw_pre(TString datacard_name, TString cutname, int year, vector<vector<do
             high = hmc[c]->GetMaximum();
         leg->AddEntry(hmc[c], legend[c], "l");
     }
-    hmc[0]->GetYaxis()->SetRangeUser(0,160000);
-    high = 160000;
+    hmc[0]->GetYaxis()->SetRangeUser(0, 80000);
+    high = 80000;
     set_th_lable(hmc[0], xbins);
     leg->Draw("Same");
 

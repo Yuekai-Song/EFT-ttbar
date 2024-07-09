@@ -7,12 +7,12 @@ using namespace std;
 class settings
 {
 public:
-    const int nsample = 69;
+    const int nsample = 72;
     vector<TString> fileNames;
     map<TString, pair<double, double>> xsection;
     map<TString, pair<int, int>> index_pro = {{"ttbar", pair<int, int>(0, 3)}, {"DYJets", pair<int, int>(3, 11)}, {"STop", pair<int, int>(11, 16)},
                                               {"WJets", pair<int, int>(16, 20)}, {"other", pair<int, int>(0, 20)}, {"QCD_HT", pair<int, int>(44, 53)}, 
-                                              {"QCD_EMEn", pair<int, int>(53, 59)}, {"QCD_MuEn", pair<int, int>(59, 69)}};
+                                              {"QCD_EMEn", pair<int, int>(53, 59)}, {"QCD_MuEn", pair<int, int>(59, 69)}, {"Eta", pair<int, int>(69, 72)}};
     TString cut, cut_name, ch, suffix;
     TString data_name = "new_data.root"; 
     vector<int> xyz_bins = {270, 40, 100};
@@ -31,7 +31,7 @@ settings::settings(int cut_num, int years, bool ttxs)
 {
     ttx = ttxs;
     year = years;
-    TString fileName[69] = {"new_TTToSemiLeptonic_TuneCP5_13TeV-powheg.root",
+    TString fileName[72] = {"new_TTToSemiLeptonic_TuneCP5_13TeV-powheg.root",
                             "new_TTTo2L2Nu_TuneCP5_13TeV-powheg.root",
                             "new_TTToHadronic_TuneCP5_13TeV-powheg.root",
 
@@ -109,8 +109,11 @@ settings::settings(int cut_num, int years, bool ttxs)
                             "new_QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV.root",
                             "new_QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV.root",
                             "new_QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV.root",
-                            "new_QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV.root"};
-    Float_t cross_section[69] = {365.34, 88.29, 377.96,
+                            "new_QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV.root",
+                            "new_EtaTToSemileptonic_0J_M-337To349_TuneCP5_13TeV_madgraph.root",
+                            "new_EtaTTo2L2Nu_0J_M-337To349_TuneCP5_13TeV_madgraph.root",
+                            "new_EtaTToHadronic_0J_M-337To349_TuneCP5_13TeV_madgraph.root"};
+    Float_t cross_section[72] = {365.34, 88.29, 377.96,
                                  169.9, 147.4, 41.0, 5.7, 1.4, 0.63, 0.15, 0.0036,
                                  3.36, 136.02, 80.95, 35.6, 35.6,
                                  8927.0, 2809.0, 826.3, 544.3,
@@ -120,8 +123,9 @@ settings::settings(int cut_num, int years, bool ttxs)
                                  365.34, 88.29, 377.96, 365.34, 88.29, 377.96,
                                  186100000.0, 23590000, 1555000, 324500, 30310, 6444, 1127, 109.8, 21.98,
                                  6401000.0, 1993000.0, 364000.0, 66600.0, 16620.0, 1101.0,
-                                 1367000.0, 381700.0, 87740.0, 21280.0, 7000.0, 622.6, 58.9, 18.12, 3.318, 1.085};
-    Float_t K_Factor[69] = {1.0, 1.0, 1.0,
+                                 1367000.0, 381700.0, 87740.0, 21280.0, 7000.0, 622.6, 58.9, 18.12, 3.318, 1.085,
+                                 2.82, 0.683, 2.92};
+    Float_t K_Factor[72] = {1.0, 1.0, 1.0,
                             1.23, 1.23, 1.23, 1.23, 1.23, 1.23, 1.23, 1.23,
                             1.0, 1.0, 1.0, 1.0, 1.0,
                             1.21, 1.21, 1.21, 1.21,
@@ -131,7 +135,8 @@ settings::settings(int cut_num, int years, bool ttxs)
                             1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
                             1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
                             1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,};
+                            1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                            1.0, 1.0, 1.0};
     vector<TString> cuts = {"(jet_num == 3 && (!lep_flavour))", "(jet_num >= 4  && (!lep_flavour))",
                             "(jet_num == 3 && lep_flavour)", "(jet_num >= 4 && lep_flavour)"};
     vector<TString> cutsName = {"E_3jets", "E_4jets", "M_3jets", "M_4jets"};
@@ -143,6 +148,8 @@ settings::settings(int cut_num, int years, bool ttxs)
     ch = chs[cut_num];
     if (year == 2018)
         cut += "*(lep_flavour || ((!lep_flavour) && lepton_pt>34)) * (MtW<=140)";
+    else if (year == 2017)
+        cut += "*(lep_flavour || ((!lep_flavour) && lepton_pt>37)) * (MtW<=140)";
     else
         cut += "*(MtW<=140)";
     for (int i = 0; i < nsample; i++)
