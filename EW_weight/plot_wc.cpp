@@ -46,25 +46,27 @@ void plot(int c, bool lo)
     TString name[3] = {"C_{#varphit} = ", "C_{t#varphi} = ", "C_{t#varphi}^{I} = "};
     int legName[3][5] = {{-2, -1, 1, 2, 3}, {1, 2, 3, 4, 5}, {1, 2, 3, 4, 5}};
     // TString var_ew[] = {"id7", "id10", "id13", "id16"}; // mtt,pt,ytt, yt
-    TString var_ew[] = {"id7", "id10", "id13", "id16"};
-    float xlow[] = {350, 0, -4.0, -4.0};
-    float xup[] = {1200, 1200, 4.0, 4.0};
+    TString var_ew[] = {"id9", "id12", "id15", "id18", "id21", "id24"};
+    float xlow[] = {350, 0, -4.0, -3.0, -2000, -1};
+    float xup[] = {1200, 1200, 4.0, 3.0, 2000, 1};
     // float ylow[] = {-0.20, -0.15, -0.15, -0.15};
     // float yup[] = {0.1, 0.12, 0.10, 0.12};
     float ylow = -0.6, yup = 0.6;
     TString LO = "LO";
     if (!lo)
         LO = "SM";
-    TString xtitle[] = {"M_{t#bar{t}} [GeV]", "p_{T}^{t} [GeV]", "#Deltay_{t#bar{t}}", "y_{t}"};
+    TString xtitle[] = {"M_{t#bar{t}} [GeV]", "p^{T}_{t} [GeV]", "#Deltay_{t#bar{t}}", "y_{t#bar{t}}", "p^{z}_{t#bar{t}}", "cos#theta"};
     TString ytitle[] = {"(d#delta#sigma/dM_{t#bar{t}})/(d#sigma_{" + LO + "}/dM_{t#bar{t}})",
                         "(d#delta#sigma/dp_{T}^{t})/(d#sigma_{" + LO + "}/dp_{T}^{t})",
                         "(d#delta#sigma/d#Deltay_{t#bar{t}})/(d#sigma_{" + LO + "}/d#Deltay_{t#bar{t}})",
-                        "(d#delta#sigma_{weak}/dy_{t})/(d#sigma_{" + LO + "}/dy_{t})"};
-    TString title[] = {"dist_mtt", "dist_pt", "dist_ytt", "dis_yt"};
+                        "(d#delta#sigma_{weak}/dy_{t#bar{t}})/(d#sigma_{" + LO + "}/dy_{t#bar{t}})",
+                        "(d#delta#sigma_{weak}/dp^{z}_{t#bar{t}})/(d#sigma_{" + LO + "}/dp^{z}_{t#bar{t}})",
+                        "(d#delta#sigma_{weak}/dcos#theta)/(d#sigma_{" + LO + "}/dcos#theta)"};
+    TString title[] = {"dist_mtt", "dist_pt", "dist_dytt", "dist_ytt", "dist_pz", "dist_cost"};
     TString var_name[] = {"y", "z", "k"};
     int color[] = {2, 1, 4, 226, 6, kOrange + 2, kViolet + 1, kAzure + 10, 93};
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < 6; i++)
     {													   // loop over variables
         auto c2 = new TCanvas("c2", "", 30, 30, 800, 800); // draw on this canvas
         format_canvas(c2);
@@ -78,13 +80,13 @@ void plot(int c, bool lo)
         leg->SetTextSize(0.05);
         leg->SetNColumns(2);
         leg->SetColumnSeparation(0.03);
-        TFile *SM_file = TFile::Open("./EW_files/" + SM);
+        TFile *SM_file = TFile::Open("./EW_files_1D/" + SM);
         TH1F *SM_hist = (TH1F *)SM_file->Get(var_ew[i]);
         SM_hist->Smooth();
         for (int k = 0; k < 5; k++)
         { // loop over files
             // TH1F *ew_hist = (TH1F*) file->Get(varName[i]);
-            TFile *file = TFile::Open("./EW_files/" + fileName[c][k]);
+            TFile *file = TFile::Open("./EW_files_1D/" + fileName[c][k]);
             TH1F *ew_hist = (TH1F *)file->Get(var_ew[i]);
             ew_hist->Smooth();
             if (!lo)
@@ -97,7 +99,7 @@ void plot(int c, bool lo)
             {
                 x[ii] = ew_hist->GetXaxis()->GetBinCenter(ii + 1);
                 y[ii] = ew_hist->GetBinContent(ii + 1);
-                //	cout<<x[ii]<<" "<<y[ii]<<endl;
+                // cout << x[ii] << " " << y[ii] << endl;
             }
             TGraph *h1 = new TGraph(nbins, x, y);
 
@@ -128,7 +130,7 @@ void plot(int c, bool lo)
         c2->cd();
         leg->Draw("same");
         // c2->Print(title[i]+"_wc.png");
-        c2->Print("./pdf/" + title[i] + "_" + var_name[c] + "_" + LO + ".pdf");
+        c2->Print("./EW_files_1D/" + title[i] + "_" + var_name[c] + "_" + LO + ".pdf");
         delete SM_hist;
         SM_file->Close();
         delete leg;
