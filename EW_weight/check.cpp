@@ -15,6 +15,7 @@
 #include <fstream>
 #include <iostream>
 using namespace std;
+
 void format_leg(TLegend *leg)
 {
     // leg->SetNColumns(1);
