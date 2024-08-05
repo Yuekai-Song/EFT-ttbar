@@ -54,9 +54,9 @@ then
     root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,0,1)"
     root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,0,2)"
     root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,0,3)"
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,1,1)"
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,1,2)"
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,1,3)"
+    # root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,1,1)"
+    # root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,1,2)"
+    # root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,1,3)"
     num=$(ls $output|grep new|wc -l)
     if [ $num -gt 0 ]
     then
