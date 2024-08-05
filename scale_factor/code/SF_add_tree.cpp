@@ -265,10 +265,28 @@ void SF_add_tree::sf_jet_it(Float_t *pt, Float_t *eta, Int_t *flavour, Float_t *
         *weight = 1.0;
     }
 }
+void SF_add_tree::sf_pu(Float_t *pt, Float_t *eta, UInt_t jet_num, Float_t weight[3])
+{
+    for (int i = 0; i < 3; i++)
+        weight[i] = 1;
+    BTagEntry_off::JetFlavor flav;
+    for (int i = 0; i < jet_num; i++)
+    {
+        if (pt[i] < 50)
+        {
+            weight[0] *= h2_puid->GetBinContent(h2_puid->FindBin(pt[i], eta[i]));
+            weight[1] *= h2_puid->GetBinContent(h2_puid->FindBin(pt[i], eta[i])) + h2_puid_un->GetBinContent(h2_puid->FindBin(pt[i], eta[i]));
+            weight[2] *= h2_puid->GetBinContent(h2_puid->FindBin(pt[i], eta[i])) - h2_puid_un->GetBinContent(h2_puid->FindBin(pt[i], eta[i]));
+        }
+    }
+}
 void SF_add_tree::set_dir()
 {
+    TString bfile, bfile_it;
+    TString indir, sf_dir, muon_m_iso, muon_m_id, elec_reco_b20, elec_reco_a20, elec_id, muon_l_id, muon_l_reco, muon_m_reco;
     // indir="/home/yksong/code/ttbar/scale_factor";
     indir = "..";
+    fhist_puid = TFile::Open(indir + "/puID/PUID_106XTraining_ULRun2_EffSFandUncties_v1.root");
     // indir="/afs/cern.ch/user/r/repan/work/yuekai/scale_factor";
     if (year == 2018)
     {
@@ -283,6 +301,7 @@ void SF_add_tree::set_dir()
         muon_m_reco = "NUM_TrackerMuons_DEN_genTracks_Z_abseta_pt.json";
         bfile = indir + "/" + sf_dir + "/btag/wp_deepJet_106XUL18_v2.csv";
         bfile_it = indir + "/" + sf_dir + "/btag/reshaping_deepJet_106XUL18_v2.csv";
+        puid = "h2_eff_sfUL2018_T";
     }
     else if (year == 2017)
     {
@@ -298,6 +317,7 @@ void SF_add_tree::set_dir()
         muon_m_reco = "NUM_TrackerMuons_DEN_genTracks_Z_abseta_pt.json";
         bfile = indir + "/" + sf_dir + "/btag/wp_deepJet_106XUL17_v3.csv";
         bfile_it = indir + "/" + sf_dir + "/btag/reshaping_deepJet_106XUL17.csv";
+        puid = "h2_eff_sfUL2017_T";
     }
     else if (year == 2016)
     { // 2016_post
@@ -313,6 +333,7 @@ void SF_add_tree::set_dir()
         muon_m_reco = "NUM_TrackerMuons_DEN_genTracks_Z_abseta_pt.json";
         bfile = indir + "/" + sf_dir + "/btag/wp_deepJet_106XUL16postVFP_v3.csv";
         bfile_it = indir + "/" + sf_dir + "/btag/reshaping_deepJet_106XUL16postVFP_v3.csv";
+        puid = "h2_eff_sfUL2016_T";
     }
     else if (year == 2015)
     { // 2016_pre
@@ -328,7 +349,11 @@ void SF_add_tree::set_dir()
         muon_m_reco = "NUM_TrackerMuons_DEN_genTracks_Z_abseta_pt.json";
         bfile = indir + "/" + sf_dir + "/btag/wp_deepJet_106XUL16preVFP_v2.csv";
         bfile_it = indir + "/" + sf_dir + "/btag/reshaping_deepJet_106XUL16preVFP.csv";
+        puid = "h2_eff_sfUL2016APV_T";
     }
+
+    h2_puid = (TH2F *)fhist_puid->Get(puid);
+    h2_puid_un = (TH2F *)fhist_puid->Get(puid + "_Systuncty");
     fhist_muon_m_iso = TFile::Open(indir + "/" + sf_dir + "/muon_medium_pt/" + muon_m_iso);
     fhist_muon_m_id = TFile::Open(indir + "/" + sf_dir + "/muon_medium_pt/" + muon_m_id);
     fhist_elec_reco_b20 = TFile::Open(indir + "/" + sf_dir + "/electron_reco/" + elec_reco_b20);
@@ -356,6 +381,18 @@ void SF_add_tree::set_dir()
     if_muon_l_id.open(indir + "/" + sf_dir + "/muon_low_pt/" + muon_l_id);
     if_muon_l_reco.open(indir + "/" + sf_dir + "/muon_low_pt/" + muon_l_reco);
     if_muon_m_reco.open(indir + "/" + sf_dir + "/muon_medium_pt/" + muon_m_reco);
+
+    BTagCalibration_off calib("csvv1", bfile.Data());
+    BTagCalibration_off calib_it("csvv1", bfile_it.Data());
+    reader_bc = new BTagCalibration_offReader(BTagEntry_off::OP_MEDIUM, "central", {"up_jes", "down_jes", "up_pileup", "down_pileup", "up_statistic", "down_statistic", "up_type3", "down_type3"});
+    reader_l = new BTagCalibration_offReader(BTagEntry_off::OP_MEDIUM, "central", {"up_uncorrelated", "down_uncorrelated", "up_correlated", "down_correlated"});
+    reader_bc->load(calib, BTagEntry_off::FLAV_B, "mujets");
+    reader_bc->load(calib, BTagEntry_off::FLAV_C, "mujets");
+    reader_l->load(calib, BTagEntry_off::FLAV_UDSG, "incl");
+    reader_it = new BTagCalibration_offReader(BTagEntry_off::OP_RESHAPING, "central");
+    reader_it->load(calib_it, BTagEntry_off::FLAV_B, "iterativefit");
+    reader_it->load(calib_it, BTagEntry_off::FLAV_C, "iterativefit");
+    reader_it->load(calib_it, BTagEntry_off::FLAV_UDSG, "iterativefit");
 }
 SF_add_tree::SF_add_tree(TString inputFile_s, TString tree_name, bool remain_sys, int year_s)
 {
@@ -367,38 +404,41 @@ SF_add_tree::SF_add_tree(TString inputFile_s, TString tree_name, bool remain_sys
     set_dir();
     file = new TFile(inputFile, "update");
     TTree *mytree = (TTree *)file->Get(tree_name);
-    Float_t sf_lepton, sf_btag, sf_btag_it;
+    Float_t sf_lepton, sf_btag, sf_btag_it, sf_puid;
     UInt_t jet_num;
     Float_t jet_pt[45], jet_eta[45], lep_pt, lep_eta;
     Bool_t lep_flavour;
     Int_t jet_flavour[45];
     Float_t jet_score[45];
     Float_t electron_deltaEtaSC;
-    Float_t sf_lepton_up, sf_lepton_down;
+    Float_t sf_lepton_up, sf_lepton_down, sf_puid_up, sf_puid_dn;
     Float_t sf_btag_jesup, sf_btag_pileupup, sf_btag_statisticup, sf_btag_type3up;
     Float_t sf_btag_jesdn, sf_btag_pileupdn, sf_btag_statisticdn, sf_btag_type3dn;
     Float_t sf_ltag_up, sf_ltag_up_co, sf_ltag_down_co, sf_ltag_down;
-    TBranch *newbranch[17];
+    TBranch *newbranch[20];
     newbranch[0] = mytree->Branch("SF_lepton", &sf_lepton, "SF_lepton/F");
     newbranch[1] = mytree->Branch("SF_btag", &sf_btag, "SF_btag/F");
     newbranch[2] = mytree->Branch("SF_btag_it", &sf_btag_it, "SF_btag_it/F");
+    newbranch[3] = mytree->Branch("SF_puid", &sf_puid, "SF_puid/F");
     if (remain_sys)
     {
-        newbranch[3] = mytree->Branch("SF_lepton_up", &sf_lepton_up, "sf_lepton_up/F");
-        newbranch[4] = mytree->Branch("SF_lepton_down", &sf_lepton_down, "sf_lepton_down/F");
-        newbranch[5] = mytree->Branch("SF_btag_jesup", &sf_btag_jesup, "sf_btag_jesup/F");
-        newbranch[6] = mytree->Branch("SF_btag_jesdn", &sf_btag_jesdn, "sf_btag_jesdn/F");
-        newbranch[7] = mytree->Branch("SF_btag_pileupup", &sf_btag_pileupup, "sf_btag_pileupup/F");
-        newbranch[8] = mytree->Branch("SF_btag_pileupdn", &sf_btag_pileupdn, "sf_btag_pileupdn/F");
-        newbranch[9] = mytree->Branch("SF_btag_type3up", &sf_btag_type3up, "sf_btag_type3up/F");
-        newbranch[10] = mytree->Branch("SF_btag_type3dn", &sf_btag_type3dn, "sf_btag_type3dn/F");
-        newbranch[11] = mytree->Branch("SF_btag_statisticup", &sf_btag_statisticup, "sf_btag_statisticup/F");
-        newbranch[12] = mytree->Branch("SF_btag_statisticdn", &sf_btag_statisticdn, "sf_btag_statisticdn/F");
+        newbranch[4] = mytree->Branch("SF_lepton_up", &sf_lepton_up, "sf_lepton_up/F");
+        newbranch[5] = mytree->Branch("SF_lepton_down", &sf_lepton_down, "sf_lepton_down/F");
+        newbranch[6] = mytree->Branch("SF_btag_jesup", &sf_btag_jesup, "sf_btag_jesup/F");
+        newbranch[7] = mytree->Branch("SF_btag_jesdn", &sf_btag_jesdn, "sf_btag_jesdn/F");
+        newbranch[8] = mytree->Branch("SF_btag_pileupup", &sf_btag_pileupup, "sf_btag_pileupup/F");
+        newbranch[9] = mytree->Branch("SF_btag_pileupdn", &sf_btag_pileupdn, "sf_btag_pileupdn/F");
+        newbranch[10] = mytree->Branch("SF_btag_type3up", &sf_btag_type3up, "sf_btag_type3up/F");
+        newbranch[11] = mytree->Branch("SF_btag_type3dn", &sf_btag_type3dn, "sf_btag_type3dn/F");
+        newbranch[12] = mytree->Branch("SF_btag_statisticup", &sf_btag_statisticup, "sf_btag_statisticup/F");
+        newbranch[13] = mytree->Branch("SF_btag_statisticdn", &sf_btag_statisticdn, "sf_btag_statisticdn/F");
 
-        newbranch[13] = mytree->Branch("SF_ltag_up", &sf_ltag_up, "sf_ltag_up/F");
-        newbranch[14] = mytree->Branch("SF_ltag_down", &sf_ltag_down, "sf_ltag_down/F");
-        newbranch[15] = mytree->Branch("SF_ltag_up_co", &sf_ltag_up_co, "sf_ltag_up_co/F");
-        newbranch[16] = mytree->Branch("SF_ltag_down_co", &sf_ltag_down_co, "sf_ltag_down_co/F");
+        newbranch[14] = mytree->Branch("SF_ltag_up", &sf_ltag_up, "sf_ltag_up/F");
+        newbranch[15] = mytree->Branch("SF_ltag_down", &sf_ltag_down, "sf_ltag_down/F");
+        newbranch[16] = mytree->Branch("SF_ltag_up_co", &sf_ltag_up_co, "sf_ltag_up_co/F");
+        newbranch[17] = mytree->Branch("SF_ltag_down_co", &sf_ltag_down_co, "sf_ltag_down_co/F");
+        newbranch[18] = mytree->Branch("SF_puid_up", &sf_puid_up, "SF_puid_up/F");
+        newbranch[19] = mytree->Branch("SF_puid_dn", &sf_puid_dn, "SF_puid_dn/F");
     }
     mytree->SetBranchAddress("jet_num", &jet_num);
     mytree->SetBranchAddress("jet_pt", jet_pt);
@@ -423,18 +463,7 @@ SF_add_tree::SF_add_tree(TString inputFile_s, TString tree_name, bool remain_sys
     }
     // csv
     // TString bfile=indir+"/"+sf_dir+"/btag/reshaping_deepJet_106XUL18_v2.csv";
-    BTagCalibration_off calib("csvv1", bfile.Data());
-    BTagCalibration_off calib_it("csvv1", bfile_it.Data());
-    reader_bc = new BTagCalibration_offReader(BTagEntry_off::OP_MEDIUM, "central", {"up_jes", "down_jes", "up_pileup", "down_pileup", "up_statistic", "down_statistic", "up_type3", "down_type3"});
-    reader_l = new BTagCalibration_offReader(BTagEntry_off::OP_MEDIUM, "central", {"up_uncorrelated", "down_uncorrelated", "up_correlated", "down_correlated"});
-    reader_bc->load(calib, BTagEntry_off::FLAV_B, "mujets");
-    reader_bc->load(calib, BTagEntry_off::FLAV_C, "mujets");
-    reader_l->load(calib, BTagEntry_off::FLAV_UDSG, "incl");
-    reader_it = new BTagCalibration_offReader(BTagEntry_off::OP_RESHAPING, "central");
-    reader_it->load(calib_it, BTagEntry_off::FLAV_B, "iterativefit");
-    reader_it->load(calib_it, BTagEntry_off::FLAV_C, "iterativefit");
-    reader_it->load(calib_it, BTagEntry_off::FLAV_UDSG, "iterativefit");
-    Float_t weight_jet[13], weight_lep[3], weight_jet_it;
+    Float_t weight_jet[13], weight_lep[3], weight_jet_it, weight_puid[3];
     for (int entry = 0; entry < mytree->GetEntries(); entry++)
     {
         mytree->GetEntry(entry);
@@ -444,10 +473,12 @@ SF_add_tree::SF_add_tree(TString inputFile_s, TString tree_name, bool remain_sys
         sf_lep(lep_pt, lep_eta + electron_deltaEtaSC, lep_flavour, weight_lep);
         sf_jet(jet_pt, jet_eta, jet_flavour, jet_score, jet_num, weight_jet);
         sf_jet_it(jet_pt, jet_eta, jet_flavour, jet_score, jet_num, &weight_jet_it);
+        sf_pu(jet_pt, jet_eta, jet_num, weight_puid);
         sf_lepton = weight_lep[0];
         sf_btag = weight_jet[0];
         sf_btag_it = weight_jet_it;
-        for (int nbra = 0; nbra < 3; nbra++)
+        sf_puid = weight_puid[0];
+        for (int nbra = 0; nbra < 4; nbra++)
         {
             newbranch[nbra]->Fill();
             // if()
@@ -468,8 +499,10 @@ SF_add_tree::SF_add_tree(TString inputFile_s, TString tree_name, bool remain_sys
             sf_ltag_down = weight_jet[10];
             sf_ltag_up_co = weight_jet[11];
             sf_ltag_down_co = weight_jet[12];
+            sf_puid_up = weight_puid[1];
+            sf_puid_dn = weight_puid[2];
             // cout<<sf_btag_down<<endl;
-            for (int nbra = 3; nbra < 17; nbra++)
+            for (int nbra = 4; nbra < 20; nbra++)
                 newbranch[nbra]->Fill();
         }
     }
@@ -491,6 +524,9 @@ SF_add_tree::~SF_add_tree()
     delete h2_djEff_b;
     delete h2_djEff_c;
     delete h2_djEff_udsg;
+    delete h2_puid;
+    delete h2_puid_un;
+    fhist_puid->Close();
     fhist_elec_id->Close();
     fhist_muon_m_id->Close();
     fhist_muon_m_iso->Close();

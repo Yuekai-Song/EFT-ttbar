@@ -68,6 +68,39 @@ Int_t select_tree::iso_select(Int_t i)
             return 1;
     }
 }
+bool select_tree::is_form_gen_jet(TLorentzVector mom)
+{
+    bool flag = false;
+    TLorentzVector mom_genjet;
+    for (int i = 0; i < nGenJet; i++)
+    {
+        mom_genjet.SetPtEtaPhiM(GenJet_pt[i], GenJet_eta[i], GenJet_phi[i], GenJet_mass[i]);
+        if (mom.DeltaR(mom_genjet) < 0.4)
+        { 
+            flag = true;
+            break;
+        }
+    }
+    return flag;
+}
+bool select_tree::is_jet_from_pfmuon(TLorentzVector mom)
+{
+    bool flag = false;
+    TLorentzVector mom_muon;
+    for (int i = 0; i < nMuon; i++)
+    {
+        if (Muon_isPFcand[i])
+        {
+            mom_muon.SetPtEtaPhiM(Muon_pt[i], Muon_eta[i], Muon_phi[i], Muon_mass[i]);
+            if (mom.DeltaR(mom_muon) < 0.2)
+            { 
+                flag = true;
+                break;
+            }
+        }
+    }
+    return flag;
+}
 Bool_t select_tree::is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type)
 {
     Bool_t flag = false;
@@ -123,15 +156,6 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
 
     if (data_type == MC)
     {
-        GenJet_pt = new Float_t[ng];
-        GenJet_mass = new Float_t[ng];
-        GenJet_phi = new Float_t[ng];
-        GenJet_eta = new Float_t[ng];
-        chain->SetBranchAddress("nGenJet", &nGenJet);
-        chain->SetBranchAddress("GenJet_eta", GenJet_eta);
-        chain->SetBranchAddress("GenJet_pt", GenJet_pt);
-        chain->SetBranchAddress("GenJet_phi", GenJet_phi);
-        chain->SetBranchAddress("GenJet_mass", GenJet_mass);
         chain->SetBranchAddress("nLHEScaleWeight", &nLHEScaleWeight);
         chain->SetBranchAddress("nLHEPdfWeight", &nLHEPdfWeight);
         chain->SetBranchAddress("nPSWeight", &nPSWeight);
@@ -143,10 +167,20 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     }
     if (data_type != DATA_TYPE::data)
     {
+        GenJet_pt = new Float_t[ng];
+        GenJet_mass = new Float_t[ng];
+        GenJet_phi = new Float_t[ng];
+        GenJet_eta = new Float_t[ng];
+        chain->SetBranchAddress("nGenJet", &nGenJet);
+        chain->SetBranchAddress("GenJet_eta", GenJet_eta);
+        chain->SetBranchAddress("GenJet_pt", GenJet_pt);
+        chain->SetBranchAddress("GenJet_phi", GenJet_phi);
+        chain->SetBranchAddress("GenJet_mass", GenJet_mass);
         jet_partonFlavour = new Int_t[nj];
         Jet_partonFlavour = new Int_t[nj];
         jet_hadronFlavour = new Int_t[nj];
         Jet_hadronFlavour = new Int_t[nj];
+        jet_isgen = new Bool_t[nj];
         chain->SetBranchAddress("Jet_partonFlavour", Jet_partonFlavour);
         chain->SetBranchAddress("Jet_hadronFlavour", Jet_hadronFlavour);
         chain->SetBranchAddress("Generator_weight", &Generator_weight);
@@ -173,6 +207,7 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     Muon_pfRelIso04_all = new Float_t[nm];
     Muon_tightId = new Bool_t[nm];
     Muon_looseId = new Bool_t[nm];
+    Muon_isPFcand = new Bool_t[nm];
 
     Jet_btagDeepB = new Float_t[nj];
     Jet_btagDeepFlavB = new Float_t[nj];
@@ -181,6 +216,9 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     Jet_eta = new Float_t[nj];
     Jet_phi = new Float_t[nj];
     Jet_jetId = new Int_t[nj];
+    Jet_chEmEF = new Float_t[nj];
+    Jet_neEmEF = new Float_t[nj];
+    Jet_puId = new Int_t[nj];
 
     jet_btagDeepB = new Float_t[nj];
     jet_btagDeepFlavB = new Float_t[nj];
@@ -214,12 +252,16 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     chain->SetBranchAddress("Muon_phi", Muon_phi);
     chain->SetBranchAddress("Muon_mass", Muon_mass);
     chain->SetBranchAddress("Muon_charge", Muon_charge);
+    chain->SetBranchAddress("Muon_isPFcand", Muon_isPFcand);
     chain->SetBranchAddress("Jet_btagDeepB", Jet_btagDeepB);
     chain->SetBranchAddress("Jet_btagDeepFlavB", Jet_btagDeepFlavB);
     chain->SetBranchAddress("Jet_eta", Jet_eta);
     chain->SetBranchAddress(name_jet, Jet_pt);
     chain->SetBranchAddress(name_jet.ReplaceAll("_pt", "_mass"), Jet_mass);
     chain->SetBranchAddress("Jet_phi", Jet_phi);
+    chain->SetBranchAddress("Jet_chEmEF", Jet_chEmEF);
+    chain->SetBranchAddress("Jet_neEmEF", Jet_neEmEF);
+    chain->SetBranchAddress("Jet_puId", Jet_puId);
 
     chain->SetBranchAddress("Muon_pfRelIso04_all", Muon_pfRelIso04_all);
     chain->SetBranchAddress("Muon_tightId", Muon_tightId);
@@ -252,34 +294,29 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     if (year == 2018)
     {
         chain->SetBranchAddress("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf);
-        chain->SetBranchAddress("HLT_Ele115_CaloIdVT_GsfTrkIdT", &HLT_Ele115_CaloIdVT_GsfTrkIdT);
         chain->SetBranchAddress("HLT_IsoMu24", &HLT_IsoMu24);
-        chain->SetBranchAddress("HLT_Mu50", &HLT_Mu50);
-        chain->SetBranchAddress("HLT_OldMu100", &HLT_OldMu100);
-        chain->SetBranchAddress("HLT_TkMu100", &HLT_TkMu100);
         chain->SetBranchAddress("Flag_ecalBadCalibFilter", &Flag_met[10]);
         nFlag_met = 11;
     }
     else if (year == 2016 || year == 2015)
     { // 2015 means 2016_pre
         chain->SetBranchAddress("HLT_Ele27_WPTight_Gsf", &HLT_Ele27_WPTight_Gsf);
-        chain->SetBranchAddress("HLT_Ele115_CaloIdVT_GsfTrkIdT", &HLT_Ele115_CaloIdVT_GsfTrkIdT);
-        chain->SetBranchAddress("HLT_Photon175", &HLT_Photon175);
         chain->SetBranchAddress("HLT_IsoMu24", &HLT_IsoMu24);
         chain->SetBranchAddress("HLT_IsoTkMu24", &HLT_IsoTkMu24);
-        chain->SetBranchAddress("HLT_Mu50", &HLT_Mu50);
-        chain->SetBranchAddress("HLT_TkMu50", &HLT_TkMu50);
         nFlag_met = 10;
     }
     else
     {
         chain->SetBranchAddress("HLT_Ele35_WPTight_Gsf", &HLT_Ele35_WPTight_Gsf);
-        chain->SetBranchAddress("HLT_Ele115_CaloIdVT_GsfTrkIdT", &HLT_Ele115_CaloIdVT_GsfTrkIdT);
-        chain->SetBranchAddress("HLT_Photon200", &HLT_Photon200);
+        if (chain->GetBranch("HLT_Ele32_WPTight_Gsf") != NULL)
+            chain->SetBranchAddress("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf);
+        else
+            HLT_Ele32_WPTight_Gsf = false;
+        if (chain->GetBranch("HLT_Ele27_WPTight_Gsf") != NULL)
+            chain->SetBranchAddress("HLT_Ele27_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf);
+        else
+            HLT_Ele27_WPTight_Gsf = false;
         chain->SetBranchAddress("HLT_IsoMu27", &HLT_IsoMu27);
-        chain->SetBranchAddress("HLT_Mu50", &HLT_Mu50);
-        chain->SetBranchAddress("HLT_OldMu100", &HLT_OldMu100);
-        chain->SetBranchAddress("HLT_TkMu100", &HLT_TkMu100);
         chain->SetBranchAddress("Flag_ecalBadCalibFilter", &Flag_met[10]);
         nFlag_met = 11;
     }
@@ -293,6 +330,8 @@ Bool_t select_tree::select_jet()
     int jet_index[nj];
     Bool_t jet_flag = false;
     Int_t bnum_up, bnum_dn;
+    bool jet_veto_flag;
+    event_veto_flag = false;
     if (cate == CATEGORY::A || cate == CATEGORY::C)
     {
         bnum_up = nj;
@@ -305,11 +344,22 @@ Bool_t select_tree::select_jet()
     }
     for (int i = 0; i < nJet; i++)
     {
+        jet_veto_flag = false;
         TLorentzVector mom_jet;
         mom_jet.SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i], Jet_mass[i]);
-        if (fabs(Jet_eta[i]) < 2.4 && Jet_pt[i] > 30 && Jet_jetId[i] == 6 && (!is_lep_from_jet(mom_jet, OBJECT_TYPE::jet)))
+        if (Jet_pt[i] > 15 && Jet_jetId[i] >=2 && (Jet_pt[i] >= 50 || Jet_puId[i] > 0) && (Jet_neEmEF[i] + Jet_chEmEF[i] < 0.9) && !is_jet_from_pfmuon(mom_jet))
+        {
+            if (jet_veto_map->GetBinContent(jet_veto_map->FindBin(Jet_eta[i], Jet_phi[i])) != 0)
+            {
+                jet_veto_flag = true;
+                event_veto_flag = true;
+            }
+        }
+        if (fabs(Jet_eta[i]) < 2.4 && Jet_pt[i] > 30 && Jet_jetId[i] >= 2 && (!is_lep_from_jet(mom_jet, OBJECT_TYPE::jet)) && (!jet_veto_flag))
         {
             // mom_jets[i].SetPtEtaPhiM(Jet_pt[i], Jet_eta[i], Jet_phi[i],Jet_mass[i]);
+            if (Jet_pt[i] < 50 && Jet_puId[i] < 7) // tight jet pileup ID
+                continue;
             jet_index[jet_num] = i;
             jet_num = jet_num + 1;
             if (Jet_btagDeepFlavB[i] > btag_criteria)
@@ -332,6 +382,7 @@ Bool_t select_tree::select_jet()
             jet_btagDeepFlavB[i] = Jet_btagDeepFlavB[jet_index[i]];
             if (data_type != DATA_TYPE::data)
             {
+                jet_isgen[i] = is_form_gen_jet(mom_jets[i]);
                 jet_partonFlavour[i] = Jet_partonFlavour[jet_index[i]];
                 jet_hadronFlavour[i] = Jet_hadronFlavour[jet_index[i]];
             }
@@ -536,10 +587,10 @@ void select_tree::read_LHE()
     top_eta = p4_top.Eta();
     top_phi = p4_top.Phi();
     top_mass = p4_top.M();
-    antitop_pt = p4_antitop.Pt();
-    antitop_eta = p4_antitop.Eta();
-    antitop_phi = p4_antitop.Phi();
-    antitop_mass = p4_antitop.M();
+    atop_pt = p4_antitop.Pt();
+    atop_eta = p4_antitop.Eta();
+    atop_phi = p4_antitop.Phi();
+    atop_mass = p4_antitop.M();
     TLorentzVector p4_top_cms = p4_top;
     TLorentzVector p4_cms_lab = p4_antitop + p4_top;
     TVector3 p3_cms = p4_cms_lab.BoostVector();
@@ -655,7 +706,7 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
         {
             if (cate == CATEGORY::A || cate == CATEGORY::B)
             {
-                ele_trigger = HLT_Ele35_WPTight_Gsf;
+                ele_trigger = HLT_Ele35_WPTight_Gsf || HLT_Ele32_WPTight_Gsf || HLT_Ele27_WPTight_Gsf;
                 mu_trigger = HLT_IsoMu27;
             }
             else
@@ -737,7 +788,7 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
                     category = reco->category;
                 if (op_type == select_reco_ttx)
                     D_nu = reco->D_nu;
-                mass_tt_uncorr = (reco->mom_th + reco->mom_tl).M();
+                //mass_tt_uncorr = (reco->mom_th + reco->mom_tl).M();
                 if (jet_num == 3 && select_reco_ttx)
                 {
                     double rm =  172.0/(reco->mom_th).M();
@@ -752,11 +803,12 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
                 {
                     corr_f = 1;
                 }
-                reco->mom_th = corr_f * reco->mom_th;
-                mass_thad = reco->mom_th.M();
-                mass_tlep = reco->mom_tl.M();
-                mass_whad = reco->mom_wh.M();
-                mass_wlep = reco->mom_wl.M();
+                // reco->mom_th = corr_f * reco->mom_th;
+
+                // mass_thad = reco->mom_th.M();
+                // mass_tlep = reco->mom_tl.M();
+                // mass_whad = reco->mom_wh.M();
+                // mass_wlep = reco->mom_wl.M();
                 if(lep_c > 0)
                 {
                     mom_t = reco->mom_tl;
@@ -767,12 +819,28 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
                     mom_t = reco->mom_th;
                     mom_at = reco->mom_tl;
                 }
-                mass_t = mom_t.M();
-                mass_at = mom_at.M();
-                rectop_pt = mom_t.Pt();
-                recantitop_pt = mom_at.Pt();
-                mass_tt = (mom_t + mom_at).M();
-                rapidity_tt = mom_t.Rapidity() - mom_at.Rapidity();
+                top_px = mom_t.Px();
+                top_py = mom_t.Py();
+                top_pz = mom_t.Pz();
+                top_E = mom_t.E();
+                atop_px = mom_at.Px();
+                atop_py = mom_at.Py();
+                atop_pz = mom_at.Pz();
+                atop_E = mom_at.E();
+                wh_px = reco->mom_wh.Px();
+                wh_py = reco->mom_wh.Py();
+                wh_pz = reco->mom_wh.Pz();
+                wh_E = reco->mom_wh.E();
+                wl_px = reco->mom_wl.Px();
+                wl_py = reco->mom_wl.Py();
+                wl_pz = reco->mom_wl.Pz();
+                wl_E = reco->mom_wl.E();
+                // mass_t = mom_t.M();
+                // mass_at = mom_at.M();
+                // rectop_pt = mom_t.Pt();
+                // recantitop_pt = mom_at.Pt();
+                // mass_tt = (mom_t + mom_at).M();
+                // rapidity_tt = mom_t.Rapidity() - mom_at.Rapidity();
 
                 like = reco->like;
                 chi = reco->chi;
@@ -873,28 +941,53 @@ void select_tree::write_select()
 
     mytree->Branch("lepton_eta", &lepton_eta, "lepton_eta/F");
     mytree->Branch("lepton_pt", &lepton_pt, "lepton_pt/F");
+    mytree->Branch("lepton_mass", &lepton_mass, "lepton_eta/F");
+    mytree->Branch("lepton_phi", &lepton_pt, "lepton_pt/F");
     mytree->Branch("lep_flavour", &lep_flavour, "lep_flavour/O");
-    mytree->Branch("jet_num", &jet_num, "jet_num/i"); // number of jets satisfy the  seletion criteria
+    mytree->Branch("lepton_charge", &lep_c, "lepton_charge/I");
 
+    mytree->Branch("MET_pt", &MET_pt, "MET_pt/F");
+    mytree->Branch("MET_phi", &MET_phi, "MET_phi/F");
+
+    mytree->Branch("jet_num", &jet_num, "jet_num/i"); // number of jets satisfy the  seletion criteria
     mytree->Branch("jet_btagDeepFlavB", jet_btagDeepFlavB, "jet_btagDeepFlavB[jet_num]/F");
     mytree->Branch("nBtag", &nBtag, "nBtag/i");
     mytree->Branch("jet_eta", jet_eta, "jet_eta[jet_num]/F");
     mytree->Branch("jet_pt", jet_pt, "jet_pt[jet_num]/F");
 
-    mytree->Branch("rapidity_tt", &rapidity_tt, "rapidity_tt/F");
-    mytree->Branch("mass_tt", &mass_tt, "mass_tt/F");
-    mytree->Branch("likelihood", &like, "likelihood/D");
-    mytree->Branch("MtW", &MtW, "MtW/F");
-    mytree->Branch("corr_f", &corr_f, "corr_f/D");
-    mytree->Branch("lepton_charge", &lep_c, "lepton_charge/I");
+    mytree->Branch("top_px", &top_px, "top_px/F");
+    mytree->Branch("top_py", &top_py, "top_py/F");
+    mytree->Branch("top_pz", &top_pz, "top_pz/F");
+    mytree->Branch("top_E", &top_E, "top_E/F");
 
-    mytree->Branch("mass_tt_uncorr", &mass_tt_uncorr, "mass_tt_uncorr/F");
-    mytree->Branch("mass_whad", &mass_whad, "mass_whad/F");
-    mytree->Branch("mass_wlep", &mass_wlep, "mass_wlep/F");
-    mytree->Branch("mass_thad", &mass_thad, "mass_thad/F");
-    mytree->Branch("mass_tlep", &mass_tlep, "mass_tlep/F");
-    mytree->Branch("mass_t", &mass_t, "mass_t/F");
-    mytree->Branch("rectop_pt", &rectop_pt, "rectop_pt/F");
+    mytree->Branch("atop_px", &atop_px, "atop_px/F");
+    mytree->Branch("atop_py", &atop_py, "atop_py/F");
+    mytree->Branch("atop_pz", &atop_pz, "atop_pz/F");
+    mytree->Branch("atop_E", &atop_E, "atop_E/F");
+
+    mytree->Branch("wh_px", &atop_px, "atop_px/F");
+    mytree->Branch("wh_py", &atop_py, "atop_py/F");
+    mytree->Branch("wh_pz", &atop_pz, "atop_pz/F");
+    mytree->Branch("wh_E", &atop_E, "atop_E/F");
+
+    mytree->Branch("wl_px", &atop_px, "atop_px/F");
+    mytree->Branch("wl_py", &atop_py, "atop_py/F");
+    mytree->Branch("wl_pz", &atop_pz, "atop_pz/F");
+    mytree->Branch("wl_E", &atop_E, "atop_E/F");
+
+    mytree->Branch("likelihood", &like, "likelihood/D");
+    mytree->Branch("corr_f", &corr_f, "corr_f/D");
+    mytree->Branch("event_veto_flag", &event_veto_flag, "event_veto_flag/O");
+    // mytree->Branch("rapidity_tt", &rapidity_tt, "rapidity_tt/F");
+    // mytree->Branch("mass_tt", &mass_tt, "mass_tt/F");
+    // mytree->Branch("MtW", &MtW, "MtW/F");
+    // mytree->Branch("mass_tt_uncorr", &mass_tt_uncorr, "mass_tt_uncorr/F");
+    // mytree->Branch("mass_whad", &mass_whad, "mass_whad/F");
+    // mytree->Branch("mass_wlep", &mass_wlep, "mass_wlep/F");
+    // mytree->Branch("mass_thad", &mass_thad, "mass_thad/F");
+    // mytree->Branch("mass_tlep", &mass_tlep, "mass_tlep/F");
+    // mytree->Branch("mass_t", &mass_t, "mass_t/F");
+    // mytree->Branch("rectop_pt", &rectop_pt, "rectop_pt/F");
     mytree->Branch("PV_npvsGood", &PV_npvsGood, "PV_npvsGood/I");
 
     if (input.Contains("TTToSemi") && data_type == MC)
@@ -942,15 +1035,68 @@ void select_tree::write_select()
     {
         if (input.Contains("TT"))
         {
+            mytree->Branch("top_pt", &top_pt, "top_pt/F");
+            mytree->Branch("top_eta", &top_eta, "top_eta/F");
+            mytree->Branch("top_phi", &top_phi, "top_phi/F");
+            mytree->Branch("top_mass", &top_mass, "top_mass/F");
+
+            mytree->Branch("atop_pt", &atop_pt, "atop_pt/F");
+            mytree->Branch("atop_eta", &atop_eta, "atop_eta/F");
+            mytree->Branch("atop_phi", &atop_phi, "atop_phi/F");
+            mytree->Branch("atop_mass", &atop_mass, "atop_mass/F");
+
             mytree->Branch("ctstar", &ctstar, "ctstar/F");
             mytree->Branch("M_tt_gen", &M_tt_gen, "M_tt_gen/F");
             mytree->Branch("delta_rapidity_gen", &delta_rapidity_gen, "delta_rapidity_gen/F");
         }
+        mytree->Branch("jet_isgen", jet_isgen, "jet_isgen[jet_num]/O");
         mytree->Branch("Generator_weight", &Generator_weight, "Generator_weight/F");
         mytree->Branch("jet_hadronFlavour", jet_hadronFlavour, "jet_hadronFlavour[jet_num]/I");
         mytree->Branch("electron_deltaEtaSC", &electron_deltaEtaSC, "electron_deltaEtaSC/F");
         mytree->Branch("L1PreFiringWeight_Nom", &L1PreFiringWeight_Nom, "L1PreFiringWeight_Nom/F");
         mytree->Branch("Pileup_nPU", &Pileup_nPU, "Pileup_nPU/I");
+        if (year == 2018)
+        {
+            if (cate == CATEGORY::A || cate == CATEGORY::B)
+            {
+                mytree->Branch("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf, "HLT_Ele32_WPTight_Gsf/O");
+                mytree->Branch("HLT_IsoMu24", &HLT_IsoMu24, "HLT_IsoMu24/O");
+            }
+            else
+            {
+                mytree->Branch("HLT_Ele23_CaloIdM_TrackIdM_PFJet30", &HLT_Ele23_CaloIdM_TrackIdM_PFJet30, "HLT_Ele23_CaloIdM_TrackIdM_PFJet30/O");
+                mytree->Branch("HLT_Mu27", &HLT_Mu27, "HLT_Mu27/O"); 
+            }
+        }
+        else if (year == 2016 || year == 2015)
+        {
+            if (cate == CATEGORY::A || cate == CATEGORY::B)
+            {
+                mytree->Branch("HLT_Ele27_WPTight_Gsf", &HLT_Ele27_WPTight_Gsf, "HLT_Ele27_WPTight_Gsf/O");
+                mytree->Branch("HLT_IsoMu24", &HLT_IsoMu24, "HLT_IsoMu24/O");
+                mytree->Branch("HLT_IsoTkMu24", &HLT_IsoTkMu24, "HLT_IsoTkMu24/O");
+            }
+            else
+            {
+                mytree->Branch("HLT_Ele23_CaloIdM_TrackIdM_PFJet30", &HLT_Ele23_CaloIdM_TrackIdM_PFJet30, "HLT_Ele23_CaloIdM_TrackIdM_PFJet30/O");
+                mytree->Branch("HLT_Mu27", &HLT_Mu27, "HLT_Mu27/O");
+            }
+        }
+        else
+        {
+            if (cate == CATEGORY::A || cate == CATEGORY::B)
+            { 
+                mytree->Branch("HLT_Ele27_WPTight_Gsf", &HLT_Ele27_WPTight_Gsf, "HLT_Ele27_WPTight_Gsf/O");
+                mytree->Branch("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf, "HLT_Ele32_WPTight_Gsf/O");
+                mytree->Branch("HLT_Ele35_WPTight_Gsf", &HLT_Ele35_WPTight_Gsf, "HLT_Ele35_WPTight_Gsf/O");
+                mytree->Branch("HLT_IsoMu27", &HLT_IsoMu27, "HLT_IsoMu27/O");
+            }
+            else
+            {
+                mytree->Branch("HLT_Ele23_CaloIdM_TrackIdM_PFJet30", &HLT_Ele23_CaloIdM_TrackIdM_PFJet30, "HLT_Ele23_CaloIdM_TrackIdM_PFJet30/O");
+                mytree->Branch("HLT_Mu27", &HLT_Mu27, "HLT_Mu27/O");
+            }
+        }
     }
     trees[0] = rawtree;
     trees[1] = mytree;
@@ -1022,19 +1168,17 @@ void select_tree::write()
 }
 select_tree::~select_tree()
 {
-    if (data_type == 1)
-    {
-        delete[] GenJet_pt;
-        delete[] GenJet_mass;
-        delete[] GenJet_phi;
-        delete[] GenJet_eta;
-    }
-    if (data_type != 0)
+    if (data_type != DATA_TYPE::data)
     {
         delete[] jet_partonFlavour;
         delete[] Jet_partonFlavour;
         delete[] jet_hadronFlavour;
         delete[] Jet_hadronFlavour;
+        delete[] jet_isgen;
+        delete[] GenJet_pt;
+        delete[] GenJet_mass;
+        delete[] GenJet_phi;
+        delete[] GenJet_eta;
     }
     delete[] Electron_eta;
     delete[] Electron_mass;
@@ -1055,6 +1199,7 @@ select_tree::~select_tree()
     delete[] Muon_pfRelIso04_all;
     delete[] Muon_tightId;
     delete[] Muon_looseId;
+    delete[] Muon_isPFcand;
 
     delete[] Jet_btagDeepB;
     delete[] Jet_btagDeepFlavB;
@@ -1062,6 +1207,9 @@ select_tree::~select_tree()
     delete[] Jet_pt;
     delete[] Jet_phi;
     delete[] Jet_jetId;
+    delete[] Jet_puId;
+    delete[] Jet_chEmEF;
+    delete[] Jet_neEmEF;
 
     delete[] jet_btagDeepB;
     delete[] jet_btagDeepFlavB;

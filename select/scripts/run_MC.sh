@@ -50,7 +50,7 @@ then
     ofile=$(ls $output/*.root)
     cd /afs/cern.ch/user/y/yuekai/cmssw/CMSSW_13_3_0/src/PhysicsTools/mytools/scripts/jme
     eval `scramv1 runtime -sh`
-    source jme_${2}.sh $output $ofile
+    source jme.sh $output $ofile MC $2
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/select
     input=$(ls $output|grep Skim)
     #input=$(ls $output|grep root)

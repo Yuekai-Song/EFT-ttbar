@@ -20,11 +20,13 @@ using namespace std;
 class SF_add_tree{
 private:
     int year;
-    TString indir, sf_dir, muon_m_iso, muon_m_id, elec_reco_b20, elec_reco_a20, elec_id, muon_l_id, muon_l_reco, muon_m_reco, bfile, bfile_it;
     TString inputFile;
     TH2F *hist_elec_id, *hist_elec_reco_a20, *hist_elec_reco_b20;
     TH2F *hist_muon_m_id, *hist_muon_m_iso;
     TH2F *h2_djEff_b, *h2_djEff_c, *h2_djEff_udsg;
+    TString puid;
+    TH2F *h2_puid, *h2_puid_un;
+    TFile *fhist_puid;
     TFile *file, *fhist_elec_id, *fhist_elec_reco_a20, *fhist_elec_reco_b20, *fhist_muon_m_id, *fhist_muon_m_iso, *fhist_beff;
     ifstream if_muon_m_reco, if_muon_l_reco, if_muon_l_id;
     Json::Reader reader_muon_m_reco, reader_muon_l_reco, reader_muon_l_id;
@@ -42,6 +44,7 @@ private:
     void sf_lep(Float_t pt, Float_t eta, Bool_t flavour, Float_t weight[3]);
     void sf_jet(Float_t *pt, Float_t *eta, Int_t *flavour, Float_t* score, UInt_t jet_num, Float_t weight[13]);
     void sf_jet_it(Float_t *pt, Float_t *eta, Int_t *flavour, Float_t* score, UInt_t jet_num, Float_t* weight);
+    void sf_pu(Float_t *pt, Float_t *eta, UInt_t jet_num, Float_t weight[3]);
     void set_dir();
 public:
     SF_add_tree(TString inputFile_s, TString tree_name, bool remain_sys, int year_s);
