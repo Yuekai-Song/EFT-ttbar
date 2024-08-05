@@ -81,9 +81,9 @@ private:
     Int_t *Electron_cutBased, *Jet_jetId, *Jet_puId;
     Bool_t *Muon_tightId, *Muon_looseId;
     Float_t *Electron_deltaEtaSC, *Electron_dxy, *Electron_dz;
-    Bool_t HLT_Ele32_WPTight_Gsf, HLT_IsoMu27, HLT_IsoMu24;
-    Bool_t HLT_IsoTkMu24, HLT_Ele27_WPTight_Gsf, HLT_Ele35_WPTight_Gsf;
-    Bool_t HLT_Mu27, HLT_Ele23_CaloIdM_TrackIdM_PFJet30;
+    Bool_t HLT_IsoTkMu24 = false, HLT_IsoMu27 = false, HLT_IsoMu24 = false;
+    Bool_t HLT_Ele32_WPTight_Gsf = false, HLT_Ele27_WPTight_Gsf = false, HLT_Ele35_WPTight_Gsf = false;
+    Bool_t HLT_Mu27 = false, HLT_Ele23_CaloIdM_TrackIdM_PFJet30 = false;
     ULong64_t event;
     Float_t Generator_weight;
     UInt_t luminosityBlock, run;

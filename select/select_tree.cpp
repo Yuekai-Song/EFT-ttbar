@@ -308,14 +308,8 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     else
     {
         chain->SetBranchAddress("HLT_Ele35_WPTight_Gsf", &HLT_Ele35_WPTight_Gsf);
-        if (chain->GetBranch("HLT_Ele32_WPTight_Gsf") != NULL)
-            chain->SetBranchAddress("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf);
-        else
-            HLT_Ele32_WPTight_Gsf = false;
-        if (chain->GetBranch("HLT_Ele27_WPTight_Gsf") != NULL)
-            chain->SetBranchAddress("HLT_Ele27_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf);
-        else
-            HLT_Ele27_WPTight_Gsf = false;
+        chain->SetBranchAddress("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf);
+        chain->SetBranchAddress("HLT_Ele27_WPTight_Gsf", &HLT_Ele27_WPTight_Gsf);
         chain->SetBranchAddress("HLT_IsoMu27", &HLT_IsoMu27);
         chain->SetBranchAddress("Flag_ecalBadCalibFilter", &Flag_met[10]);
         nFlag_met = 11;
@@ -1055,47 +1049,47 @@ void select_tree::write_select()
         mytree->Branch("electron_deltaEtaSC", &electron_deltaEtaSC, "electron_deltaEtaSC/F");
         mytree->Branch("L1PreFiringWeight_Nom", &L1PreFiringWeight_Nom, "L1PreFiringWeight_Nom/F");
         mytree->Branch("Pileup_nPU", &Pileup_nPU, "Pileup_nPU/I");
-        if (year == 2018)
+    }
+    if (year == 2018)
+    {
+        if (cate == CATEGORY::A || cate == CATEGORY::B)
         {
-            if (cate == CATEGORY::A || cate == CATEGORY::B)
-            {
-                mytree->Branch("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf, "HLT_Ele32_WPTight_Gsf/O");
-                mytree->Branch("HLT_IsoMu24", &HLT_IsoMu24, "HLT_IsoMu24/O");
-            }
-            else
-            {
-                mytree->Branch("HLT_Ele23_CaloIdM_TrackIdM_PFJet30", &HLT_Ele23_CaloIdM_TrackIdM_PFJet30, "HLT_Ele23_CaloIdM_TrackIdM_PFJet30/O");
-                mytree->Branch("HLT_Mu27", &HLT_Mu27, "HLT_Mu27/O"); 
-            }
-        }
-        else if (year == 2016 || year == 2015)
-        {
-            if (cate == CATEGORY::A || cate == CATEGORY::B)
-            {
-                mytree->Branch("HLT_Ele27_WPTight_Gsf", &HLT_Ele27_WPTight_Gsf, "HLT_Ele27_WPTight_Gsf/O");
-                mytree->Branch("HLT_IsoMu24", &HLT_IsoMu24, "HLT_IsoMu24/O");
-                mytree->Branch("HLT_IsoTkMu24", &HLT_IsoTkMu24, "HLT_IsoTkMu24/O");
-            }
-            else
-            {
-                mytree->Branch("HLT_Ele23_CaloIdM_TrackIdM_PFJet30", &HLT_Ele23_CaloIdM_TrackIdM_PFJet30, "HLT_Ele23_CaloIdM_TrackIdM_PFJet30/O");
-                mytree->Branch("HLT_Mu27", &HLT_Mu27, "HLT_Mu27/O");
-            }
+            mytree->Branch("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf, "HLT_Ele32_WPTight_Gsf/O");
+            mytree->Branch("HLT_IsoMu24", &HLT_IsoMu24, "HLT_IsoMu24/O");
         }
         else
         {
-            if (cate == CATEGORY::A || cate == CATEGORY::B)
-            { 
-                mytree->Branch("HLT_Ele27_WPTight_Gsf", &HLT_Ele27_WPTight_Gsf, "HLT_Ele27_WPTight_Gsf/O");
-                mytree->Branch("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf, "HLT_Ele32_WPTight_Gsf/O");
-                mytree->Branch("HLT_Ele35_WPTight_Gsf", &HLT_Ele35_WPTight_Gsf, "HLT_Ele35_WPTight_Gsf/O");
-                mytree->Branch("HLT_IsoMu27", &HLT_IsoMu27, "HLT_IsoMu27/O");
-            }
-            else
-            {
-                mytree->Branch("HLT_Ele23_CaloIdM_TrackIdM_PFJet30", &HLT_Ele23_CaloIdM_TrackIdM_PFJet30, "HLT_Ele23_CaloIdM_TrackIdM_PFJet30/O");
-                mytree->Branch("HLT_Mu27", &HLT_Mu27, "HLT_Mu27/O");
-            }
+            mytree->Branch("HLT_Ele23_CaloIdM_TrackIdM_PFJet30", &HLT_Ele23_CaloIdM_TrackIdM_PFJet30, "HLT_Ele23_CaloIdM_TrackIdM_PFJet30/O");
+            mytree->Branch("HLT_Mu27", &HLT_Mu27, "HLT_Mu27/O"); 
+        }
+    }
+    else if (year == 2016 || year == 2015)
+    {
+        if (cate == CATEGORY::A || cate == CATEGORY::B)
+        {
+            mytree->Branch("HLT_Ele27_WPTight_Gsf", &HLT_Ele27_WPTight_Gsf, "HLT_Ele27_WPTight_Gsf/O");
+            mytree->Branch("HLT_IsoMu24", &HLT_IsoMu24, "HLT_IsoMu24/O");
+            mytree->Branch("HLT_IsoTkMu24", &HLT_IsoTkMu24, "HLT_IsoTkMu24/O");
+        }
+        else
+        {
+            mytree->Branch("HLT_Ele23_CaloIdM_TrackIdM_PFJet30", &HLT_Ele23_CaloIdM_TrackIdM_PFJet30, "HLT_Ele23_CaloIdM_TrackIdM_PFJet30/O");
+            mytree->Branch("HLT_Mu27", &HLT_Mu27, "HLT_Mu27/O");
+        }
+    }
+    else
+    {
+        if (cate == CATEGORY::A || cate == CATEGORY::B)
+        { 
+            mytree->Branch("HLT_Ele27_WPTight_Gsf", &HLT_Ele27_WPTight_Gsf, "HLT_Ele27_WPTight_Gsf/O");
+            mytree->Branch("HLT_Ele32_WPTight_Gsf", &HLT_Ele32_WPTight_Gsf, "HLT_Ele32_WPTight_Gsf/O");
+            mytree->Branch("HLT_Ele35_WPTight_Gsf", &HLT_Ele35_WPTight_Gsf, "HLT_Ele35_WPTight_Gsf/O");
+            mytree->Branch("HLT_IsoMu27", &HLT_IsoMu27, "HLT_IsoMu27/O");
+        }
+        else
+        {
+            mytree->Branch("HLT_Ele23_CaloIdM_TrackIdM_PFJet30", &HLT_Ele23_CaloIdM_TrackIdM_PFJet30, "HLT_Ele23_CaloIdM_TrackIdM_PFJet30/O");
+            mytree->Branch("HLT_Mu27", &HLT_Mu27, "HLT_Mu27/O");
         }
     }
     trees[0] = rawtree;
