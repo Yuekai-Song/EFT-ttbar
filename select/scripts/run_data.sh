@@ -50,10 +50,10 @@ then
     ofile=$(ls $output|grep root)
     cd /afs/cern.ch/user/y/yuekai/cmssw/CMSSW_13_3_0/src/
     eval `scramv1 runtime -sh`
-    period=$(echo $inputFile | sed -n 's/.*Run[0-9]\{4\}\([A-Za-z]\).*/\1/p')
-    source jme.sh $output $ofile data $2$period
+    # period=$(echo $inputFile | sed -n 's/.*Run[0-9]\{4\}\([A-Za-z]\).*/\1/p')
+    # source jme.sh $output $ofile data $2$period
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/select
-    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,$3)"
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$ofile\",20${2},0,$3)"
     num=$(ls $output|grep new|wc -l)
     if [ $num -eq 1 ]
     then
