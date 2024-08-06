@@ -22,7 +22,7 @@ read_object::read_object(TString input, int type)
             ne = nElectron;
         if (nj < nJet)
             nj = nJet;
-        if (type == 1)
+        if (type != 0)
         {
             if (ng < nGenJet)
                 ng = nGenJet;
