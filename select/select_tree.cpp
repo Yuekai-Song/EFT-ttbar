@@ -104,6 +104,8 @@ bool select_tree::is_jet_from_pfmuon(TLorentzVector mom)
 Bool_t select_tree::is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type)
 {
     Bool_t flag = false;
+    if (op_type == OP_TYPE::select_reco && (cate == CATEGORY::C || cate == CATEGORY::D))
+        return flag;
     if (object_type == OBJECT_TYPE::jet)
     {
         if (order == OBJECT_SELECT_ORDER::lepton_jet)
@@ -111,7 +113,7 @@ Bool_t select_tree::is_lep_from_jet(TLorentzVector mom, OBJECT_TYPE object_type)
     }
     else
     {
-        if (order == OBJECT_SELECT_ORDER::jet_lepton && (cate == CATEGORY::A || cate == CATEGORY::B))
+        if (order == OBJECT_SELECT_ORDER::jet_lepton)
         {
             for (int i = 0; i < jet_num; i++)
             {

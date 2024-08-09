@@ -76,6 +76,10 @@ then
         do
             root -l -q -b ./nnlo_add.cpp"(\"$outputFile\",1,20${2})"
         done
+        for outputFile in $(ls $output/new*.root)
+        do
+            root -l -q -b ./add_weight_branch.cpp"(\"$outputFile\",1,20${2})"
+        done
     fi
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/pileup
     for outputFile in $(ls $output/new*.root)

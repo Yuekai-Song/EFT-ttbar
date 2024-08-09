@@ -207,3 +207,4 @@ lhcut_check
 *.sh
 ttjets
 combine/do_results/draw_1D.cpp
+test/analysis
