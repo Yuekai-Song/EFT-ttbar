@@ -14,7 +14,7 @@ using namespace std;
 void add_pu_tree(TString fileName, TString tree_name, int year, bool remain_sys){
     Int_t Pileup_nPU;
     TH1D *hn, *hu, *hd;
-    Double_t pu_wt, pu_wt_up, pu_wt_dn;
+    Float_t pu_wt, pu_wt_up, pu_wt_dn;
     TFile *file=new TFile(fileName,"update");
     cout<<"add Pileup weight on "+tree_name<<endl;
     TTree *mytree=(TTree*) file->Get(tree_name);
@@ -24,10 +24,10 @@ void add_pu_tree(TString fileName, TString tree_name, int year, bool remain_sys)
     hu = (TH1D*)nfile->Get("pu_up"); 
     hd = (TH1D*)nfile->Get("pu_down"); 
     TBranch *branch1, *branch2, *branch3;
-    branch1 = mytree->Branch("pu_wt", &pu_wt, "pu_wt/D");
+    branch1 = mytree->Branch("pu_wt", &pu_wt, "pu_wt/F");
     if(remain_sys){
-        branch2 = mytree->Branch("pu_wt_up", &pu_wt_up, "pu_wt_up/D");
-        branch3 = mytree->Branch("pu_wt_dn", &pu_wt_dn, "pu_wt_dn/D");
+        branch2 = mytree->Branch("pu_wt_up", &pu_wt_up, "pu_wt_up/F");
+        branch3 = mytree->Branch("pu_wt_dn", &pu_wt_dn, "pu_wt_dn/F");
     }
     for(int i=0; i<mytree->GetEntries(); i++){
         mytree->GetEntry(i);

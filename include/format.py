@@ -77,6 +77,18 @@ def format_tex(text):
     text.SetTextFont(42)
     text.SetTextAlign(31)
     text.SetTextSize(0.06)
+
+def format_text(lumi, option):
+    lumi.SetFillColor(0)
+    lumi.SetTextFont(42)
+    if option:
+        lumi.SetTextColor(1)
+        lumi.SetTextSize(0.045)
+    else:
+        lumi.SetTextSize(0.035)
+        lumi.SetTextColor(r.kBlack)
+    lumi.SetBorderSize(0)
+
 def format_his(h1, xtitle, color, type):
     if type == 2:
         h1.SetMarkerStyle(1)
@@ -91,7 +103,7 @@ def format_his(h1, xtitle, color, type):
         h1.GetYaxis().SetNdivisions(505)
         h1.GetXaxis().SetTitleSize(0.12)
         h1.GetYaxis().SetTitleSize(0.06 * p2weight)
-        h1.GetXaxis().SetTitleOffset(1.0)
+        h1.GetXaxis().SetTitleOffset(3.8)
         h1.GetYaxis().SetTitleOffset(1.1 / p2weight)
         h1.GetXaxis().SetLabelSize(0.11)
         h1.GetYaxis().SetLabelSize(0.05 * p2weight)
@@ -117,10 +129,16 @@ def format_his(h1, xtitle, color, type):
         h1.GetXaxis().SetLabelSize(0)
         h1.GetYaxis().SetLabelSize(0.05)
         h1.GetYaxis().SetRangeUser(0, h1.GetMaximum() * 1.3)
-def format_line(l1):
-    l1.SetLineWidth(1)
-    l1.SetLineStyle(3)
+
+def format_line(l1, is_net = True):
+    if is_net:
+        l1.SetLineWidth(1)
+        l1.SetLineStyle(3)
+    else:
+        l1.SetLineWidth(2)
+        l1.SetLineStyle(9)
     l1.SetLineColor(1)
+
 def format_graph(hg, color):
     r.gStyle.SetHatchesSpacing(0.65)
     r.gStyle.SetHatchesLineWidth(1) 

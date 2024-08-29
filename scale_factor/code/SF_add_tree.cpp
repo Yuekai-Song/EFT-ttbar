@@ -31,66 +31,47 @@ void SF_add_tree::get_string2(Float_t eta, TString s[2])
 void SF_add_tree::sf_electronreco(Float_t pt, Float_t eta, Float_t weight[3])
 {
     Int_t nbin;
-    if (pt > 500.0 || eta > 2.5)
-    {
-        weight[0] *= 1.0;
-        weight[1] *= 1.0;
-        weight[2] *= 1.0;
+    if (pt > 500.0 || fabs(eta) > 2.5)
         return;
-    }
     if (pt < 20.0)
     {
         nbin = hist_elec_reco_b20->FindBin(eta, pt);
-        weight[0] *= hist_elec_reco_b20->GetBinContent(nbin);
-        weight[1] *= hist_elec_reco_b20->GetBinContent(nbin) + hist_elec_reco_b20->GetBinErrorUp(nbin);
-        weight[2] *= hist_elec_reco_b20->GetBinContent(nbin) - hist_elec_reco_b20->GetBinErrorLow(nbin);
+        read_hist(hist_elec_reco_b20, weight, nbin);
     }
     else
     {
         nbin = hist_elec_reco_a20->FindBin(eta, pt);
-        weight[0] *= hist_elec_reco_a20->GetBinContent(nbin);
-        weight[1] *= hist_elec_reco_a20->GetBinContent(nbin) + hist_elec_reco_a20->GetBinErrorUp(nbin);
-        weight[2] *= hist_elec_reco_a20->GetBinContent(nbin) - hist_elec_reco_a20->GetBinErrorLow(nbin);
+        read_hist(hist_elec_reco_a20, weight, nbin);
     }
 }
 void SF_add_tree::sf_electronid(Float_t pt, Float_t eta, Float_t weight[3])
 {
     Int_t nbin;
-    if (pt > 500.0 || eta > 2.5)
-    {
-        weight[0] *= 1.0;
-        weight[1] *= 1.0;
-        weight[2] *= 1.0;
+    if (pt > 500.0 || fabs(eta) > 2.5)
         return;
-    }
     nbin = hist_elec_id->FindBin(eta, pt);
-    weight[0] *= hist_elec_id->GetBinContent(nbin);
-    weight[1] *= hist_elec_id->GetBinContent(nbin) + hist_elec_id->GetBinErrorUp(nbin);
-    weight[2] *= hist_elec_id->GetBinContent(nbin) - hist_elec_id->GetBinErrorLow(nbin);
+    read_hist(hist_elec_id, weight, nbin);
+}
+void SF_add_tree::sf_electrontrig(Float_t pt, Float_t eta, Float_t weight[3])
+{
+    Int_t nbin;
+    if (pt > 500.0 || fabs(eta) > 2.5)
+        return;
+    nbin = hist_elec_trig->FindBin(eta, pt);
+    // std::cout<< "electron: "<< hist_elec_trig->GetBinContent(nbin)<<std::endl;
+    read_hist(hist_elec_trig, weight, nbin);
 }
 void SF_add_tree::sf_muoniso(Float_t pt, Float_t eta, Float_t weight[3])
 {
     if (pt < 15.0 || pt > 120.0 || eta > 2.4)
-    {
-        weight[0] *= 1.0;
-        weight[1] *= 1.0;
-        weight[2] *= 1.0;
         return;
-    }
     Int_t nbin = hist_muon_m_iso->FindBin(eta, pt);
-    weight[0] *= hist_muon_m_iso->GetBinContent(nbin);
-    weight[1] *= hist_muon_m_iso->GetBinContent(nbin) + hist_muon_m_iso->GetBinErrorUp(nbin);
-    weight[2] *= hist_muon_m_iso->GetBinContent(nbin) - hist_muon_m_iso->GetBinErrorLow(nbin);
+    read_hist(hist_muon_m_iso, weight, nbin);
 }
 void SF_add_tree::sf_muonid(Float_t pt, Float_t eta, Float_t weight[3])
 {
     if (pt < 2.0 || pt > 120.0 || eta > 2.4)
-    {
-        weight[0] *= 1.0;
-        weight[1] *= 1.0;
-        weight[2] *= 1.0;
         return;
-    }
     if (pt < 15.0)
     {
         TString s[2];
@@ -102,21 +83,14 @@ void SF_add_tree::sf_muonid(Float_t pt, Float_t eta, Float_t weight[3])
         return;
     }
     Int_t nbin = hist_muon_m_id->FindBin(eta, pt);
-    weight[0] *= hist_muon_m_id->GetBinContent(nbin);
-    weight[1] *= hist_muon_m_id->GetBinContent(nbin) + hist_muon_m_id->GetBinErrorUp(nbin);
-    weight[2] *= hist_muon_m_id->GetBinContent(nbin) - hist_muon_m_id->GetBinErrorLow(nbin);
+    read_hist(hist_muon_m_id, weight, nbin);
 }
 void SF_add_tree::sf_muonreco(Float_t pt, Float_t eta, Float_t weight[3])
 {
     TString s[2];
     float nom;
     if (pt < 2.0 || pt > 200.0 || eta > 2.4)
-    {
-        weight[0] *= 1.0;
-        weight[1] *= 1.0;
-        weight[2] *= 1.0;
         return;
-    }
     if (pt < 10.0)
     {
         get_string1(pt, eta, s);
@@ -131,6 +105,19 @@ void SF_add_tree::sf_muonreco(Float_t pt, Float_t eta, Float_t weight[3])
     weight[0] *= nom;
     weight[1] *= nom + root_muon_m_reco["NUM_TrackerMuons_DEN_genTracks"]["abseta_pt"][s[0]]["pt:[40,60]"]["error"].asDouble();
     weight[2] *= nom - root_muon_m_reco["NUM_TrackerMuons_DEN_genTracks"]["abseta_pt"][s[0]]["pt:[40,60]"]["error"].asDouble();
+}
+void SF_add_tree::sf_muontrig(Float_t pt, Float_t eta, Float_t weight[3])
+{
+    float ptmin;
+    if (year == 2017)
+        ptmin = 29;
+    else
+        ptmin = 26;
+    if (pt < ptmin || pt > 200.0 || eta > 2.4)
+        return;
+    Int_t nbin = hist_muon_m_trig->FindBin(eta, pt);
+    read_hist(hist_muon_m_trig, weight, nbin);
+    // std::cout<< "muon: "<< hist_muon_trig->GetBinContent(nbin)<<std::endl;
 }
 void SF_add_tree::sf_btag(BTagEntry_off::JetFlavor flav, Float_t pt, Float_t eta, Float_t sf[13])
 {   
@@ -187,14 +174,22 @@ void SF_add_tree::sf_lep(Float_t pt, Float_t eta, Bool_t flavour, Float_t weight
 {
     if (flavour == 0)
     { // electron
-        sf_electronid(pt, eta, weight);
         sf_electronreco(pt, eta, weight);
+        if (cg == "A" || cg == "B")
+        {
+            sf_electronid(pt, eta, weight); //ISO contained in Cut-based ID
+            sf_electrontrig(pt, eta, weight);
+        }
     }
     else
     {
         sf_muonreco(pt, fabs(eta), weight);
-        sf_muoniso(pt, fabs(eta), weight);
         sf_muonid(pt, fabs(eta), weight);
+        if (cg == "A" || cg == "B")
+        {
+            sf_muoniso(pt, fabs(eta), weight);
+            sf_muontrig(pt, fabs(eta), weight);
+        }
     }
 }
 void SF_add_tree::sf_jet(Float_t *pt, Float_t *eta, Int_t *flavour, Float_t *score, UInt_t jet_num, Float_t weight[13])
@@ -284,6 +279,7 @@ void SF_add_tree::set_dir()
 {
     TString bfile, bfile_it;
     TString indir, sf_dir, muon_m_iso, muon_m_id, elec_reco_b20, elec_reco_a20, elec_id, muon_l_id, muon_l_reco, muon_m_reco;
+    TString muon_m_trig, muon_m_trig_n, elec_trig;
     // indir="/home/yksong/code/ttbar/scale_factor";
     indir = "..";
     fhist_puid = TFile::Open(indir + "/puID/PUID_106XTraining_ULRun2_EffSFandUncties_v1.root");
@@ -296,9 +292,12 @@ void SF_add_tree::set_dir()
         elec_reco_b20 = "egammaEffi_ptBelow20.txt_EGM2D_UL2018.root";
         elec_reco_a20 = "egammaEffi_ptAbove20.txt_EGM2D_UL2018.root";
         elec_id = "egammaEffi.txt_Ele_Tight_EGM2D.root";
+        elec_trig = "egammaEffi_UL2018.root";
         muon_l_id = "Efficiency_muon_trackerMuon_Run2018_UL_ID.json";
         muon_l_reco = "Efficiency_muon_generalTracks_Run2018_UL_trackerMuon.json";
         muon_m_reco = "NUM_TrackerMuons_DEN_genTracks_Z_abseta_pt.json";
+        muon_m_trig = "Efficiencies_muon_generalTracks_Z_Run2018_UL_SingleMuonTriggers.root";
+        muon_m_trig_n = "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight_abseta_pt";
         bfile = indir + "/" + sf_dir + "/btag/wp_deepJet_106XUL18_v2.csv";
         bfile_it = indir + "/" + sf_dir + "/btag/reshaping_deepJet_106XUL18_v2.csv";
         puid = "h2_eff_sfUL2018_T";
@@ -312,9 +311,12 @@ void SF_add_tree::set_dir()
         elec_reco_b20 = "egammaEffi_ptBelow20.txt_EGM2D_UL2017.root";
         elec_reco_a20 = "egammaEffi_ptAbove20.txt_EGM2D_UL2017.root";
         elec_id = "egammaEffi.txt_EGM2D_Tight_UL17.root";
+        elec_trig = "egammaEffi_UL2017.root";
         muon_l_id = "Efficiency_muon_trackerMuon_Run2017_UL_ID.json";
         muon_l_reco = "Efficiency_muon_generalTracks_Run2017_UL_trackerMuon.json";
         muon_m_reco = "NUM_TrackerMuons_DEN_genTracks_Z_abseta_pt.json";
+        muon_m_trig = "Efficiencies_muon_generalTracks_Z_Run2017_UL_SingleMuonTriggers.root";
+        muon_m_trig_n = "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight_abseta_pt";
         bfile = indir + "/" + sf_dir + "/btag/wp_deepJet_106XUL17_v3.csv";
         bfile_it = indir + "/" + sf_dir + "/btag/reshaping_deepJet_106XUL17.csv";
         puid = "h2_eff_sfUL2017_T";
@@ -328,9 +330,12 @@ void SF_add_tree::set_dir()
         elec_reco_b20 = "egammaEffi_ptBelow20.txt_EGM2D_UL2016postVFP.root";
         elec_reco_a20 = "egammaEffi_ptAbove20.txt_EGM2D_UL2016postVFP.root";
         elec_id = "egammaEffi.txt_Ele_Tight_postVFP_EGM2D.root";
+        elec_trig = "egammaEffi_UL2016postVFP.root";
         muon_l_id = "Efficiency_muon_trackerMuon_Run2016postVFP_UL_ID.json";
         muon_l_reco = "Efficiency_muon_generalTracks_Run2016postVFP_UL_trackerMuon.json";
         muon_m_reco = "NUM_TrackerMuons_DEN_genTracks_Z_abseta_pt.json";
+        muon_m_trig = "Efficiencies_muon_generalTracks_Z_Run2016_UL_SingleMuonTriggers.root";
+        muon_m_trig_n = "NUM_IsoMu24_or_IsoTkMu24_DEN_CutBasedIdTight_and_PFIsoTight_abseta_pt";
         bfile = indir + "/" + sf_dir + "/btag/wp_deepJet_106XUL16postVFP_v3.csv";
         bfile_it = indir + "/" + sf_dir + "/btag/reshaping_deepJet_106XUL16postVFP_v3.csv";
         puid = "h2_eff_sfUL2016_T";
@@ -344,9 +349,12 @@ void SF_add_tree::set_dir()
         elec_reco_b20 = "egammaEffi_ptBelow20.txt_EGM2D_UL2016preVFP.root";
         elec_reco_a20 = "egammaEffi_ptAbove20.txt_EGM2D_UL2016preVFP.root";
         elec_id = "egammaEffi.txt_Ele_Tight_preVFP_EGM2D.root";
+        elec_trig = "egammaEffi_UL2016preVFP.root";
         muon_l_id = "Efficiency_muon_trackerMuon_Run2016preVFP_UL_ID.json";
         muon_l_reco = "Efficiency_muon_generalTracks_Run2016preVFP_UL_trackerMuon.json";
         muon_m_reco = "NUM_TrackerMuons_DEN_genTracks_Z_abseta_pt.json";
+        muon_m_trig = "Efficiencies_muon_generalTracks_Z_Run2016_UL_HIPM_SingleMuonTriggers.root";
+        muon_m_trig_n = "NUM_IsoMu24_or_IsoTkMu24_DEN_CutBasedIdTight_and_PFIsoTight_abseta_pt";
         bfile = indir + "/" + sf_dir + "/btag/wp_deepJet_106XUL16preVFP_v2.csv";
         bfile_it = indir + "/" + sf_dir + "/btag/reshaping_deepJet_106XUL16preVFP.csv";
         puid = "h2_eff_sfUL2016APV_T";
@@ -356,9 +364,11 @@ void SF_add_tree::set_dir()
     h2_puid_un = (TH2F *)fhist_puid->Get(puid + "_Systuncty");
     fhist_muon_m_iso = TFile::Open(indir + "/" + sf_dir + "/muon_medium_pt/" + muon_m_iso);
     fhist_muon_m_id = TFile::Open(indir + "/" + sf_dir + "/muon_medium_pt/" + muon_m_id);
+    fhist_muon_m_trig = TFile::Open(indir + "/" + sf_dir + "/muon_medium_pt/" + muon_m_trig);
     fhist_elec_reco_b20 = TFile::Open(indir + "/" + sf_dir + "/electron_reco/" + elec_reco_b20);
     fhist_elec_reco_a20 = TFile::Open(indir + "/" + sf_dir + "/electron_reco/" + elec_reco_a20);
     fhist_elec_id = TFile::Open(indir + "/" + sf_dir + "/electron_id/" + elec_id);
+    fhist_elec_trig = TFile::Open(indir + "/" + sf_dir + "/electron_trigger/" + elec_trig);
     if (inputFile.Contains("QCD"))
         fhist_beff = TFile::Open(indir + "/" + sf_dir + "/btag/btageff_QCD.root");
     else if (inputFile.Contains("W1") || inputFile.Contains("W2") || inputFile.Contains("W3") || inputFile.Contains("W4"))
@@ -371,9 +381,11 @@ void SF_add_tree::set_dir()
         fhist_beff = TFile::Open(indir + "/" + sf_dir + "/btag/btageff_TT.root");
     hist_muon_m_iso = (TH2F *)fhist_muon_m_iso->Get("NUM_TightRelIso_DEN_TightIDandIPCut_abseta_pt_efficiencyMC");
     hist_muon_m_id = (TH2F *)fhist_muon_m_id->Get("NUM_TightID_DEN_TrackerMuons_abseta_pt_efficiencyMC");
+    hist_muon_m_trig = (TH2F *)fhist_muon_m_trig->Get(muon_m_trig_n);
     hist_elec_reco_b20 = (TH2F *)fhist_elec_reco_b20->Get("EGamma_SF2D");
     hist_elec_reco_a20 = (TH2F *)fhist_elec_reco_a20->Get("EGamma_SF2D");
     hist_elec_id = (TH2F *)fhist_elec_id->Get("EGamma_SF2D");
+    hist_elec_trig = (TH2F *)fhist_elec_trig->Get("EGamma_SF2D");
     h2_djEff_b = (TH2F *)fhist_beff->Get("h2_djEff_b");
     h2_djEff_c = (TH2F *)fhist_beff->Get("h2_djEff_c");
     h2_djEff_udsg = (TH2F *)fhist_beff->Get("h2_djEff_udsg");

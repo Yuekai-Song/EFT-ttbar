@@ -2,7 +2,7 @@ import ROOT as r
 import os, sys
 import cmsstyle as CMS
 import math
-import format
+import include.format as form
 
 def sete0(h1):
     for i in range(h1.GetNbinsX()):
@@ -45,12 +45,10 @@ def get_error(h1_up: r.TH1D, h1_dn: r.TH1D, h1_nom: r.TH1D, up_vs, down_vs, enve
             if down_min < down_vs[b]:
                 down_vs[b] = abs(down_min)
 
-def set_error(hg: r.TGraphAsymmErrors, h1: r.TH1D, bin_len: float, hist_map: dict, nom_sys: dict, nom_pdf: dict, is_abs: bool):
+def set_error(hg: r.TGraphAsymmErrors, h1: r.TH1D, bin_len: float, hist_map: dict, nom_sys: dict, is_abs: bool):
     n = h1.GetNbinsX()
     up_vs =list()
     down_vs=list()
-    up_en=list()
-    down_en =list()
     pro = ["ttbar_ci0000", "DYJets", "STop", "WJets"]
     for i in range(n):
         up_vs.append(0)
@@ -59,18 +57,6 @@ def set_error(hg: r.TGraphAsymmErrors, h1: r.TH1D, bin_len: float, hist_map: dic
         for it_sys in nom_sys[pro[p]]:
             if it_sys != "muR" and it_sys != "muF":
                 get_error(hist_map[pro[p] + "_" + it_sys + "Up"], hist_map[pro[p] + "_" + it_sys + "Down"], hist_map[pro[p]], up_vs, down_vs)
-        if p == 0:
-            for it_sys in nom_pdf[pro[p]]:
-                get_error(hist_map[pro[p] + "_" + it_sys], 0, hist_map[pro[p]], up_vs, down_vs)
-        else:
-            for i in range(n):
-                up_en.append(0)
-                down_en.append(0)
-            for it_sys in nom_pdf[pro[p]]:
-                get_error(hist_map[pro[p] + "_" + it_sys], 0, hist_map[pro[p]], up_en, down_en, 1)
-            for i in range(i):
-                up_vs[i] += up_en[i]
-                down_vs[i] += down_en[i]
     if not is_abs:
         for i in range(n):
             nom = h1.GetBinContent(i + 1)
@@ -89,24 +75,21 @@ def set_error(hg: r.TGraphAsymmErrors, h1: r.TH1D, bin_len: float, hist_map: dic
         hg.SetPointEYlow(i, math.sqrt(down_vs[i]))
 
 # year = 2018
-# var = 3
+# # var = 3
 # cut_name = "M_4jets"
 year = int(sys.argv[1])
 cut_name = sys.argv[2]
-var = int(sys.argv[3])
 
 legendd = "data"
 lumi = {2015: 19.5, 2016: 16.8, 2017: 41.48, 2018: 59.83}
-cut = {"E_3jets": "e, 3jets", "E_4jets": "e, #geq4jets", "M_3jets": "#mu, 3jets", "M_4jets": "#mu, #geq4jets"}
-xtitle = ["-lnL",  "M_{th} [GeV]", "M_{tl} [GeV]", "P_{T}^{l} [GeV]", "p_{T}^{t} [GeV]"]
-title = ["likelihood", "mass_thad", "mass_tlep", "lepton_pt", "top_pt"]
-path = "../sys_root/{}/".format(year)
+cutn = {"E_3jets": "e, 3jets", "E_4jets": "e, #geq4jets", "M_3jets": "#mu, 3jets", "M_4jets": "#mu, #geq4jets"}
+xtitle = "M_{t#bar{t}} [GeV]"
+path = "../datacards/datacard/processed_bg_flat_nu/"
 
-sys_file = path + title[var] + "_ttbar_" + cut_name + ".root"
+sys_file = path + "ttbar_" + cut_name + "_{}.root".format(year)
 file = r.TFile(sys_file)
 hist_map = dict()
 nom_sys = dict()
-nom_pdf = dict()
 for key in file.GetListOfKeys():
     hist = key.ReadObj()
     hist_name = hist.GetName()
@@ -114,27 +97,41 @@ for key in file.GetListOfKeys():
     hist.SetName(hist_name)
     hist_map[hist_name] = hist
     hist_map[hist_name].SetDirectory(0)
-    # if "Up" in hist_name:
-    #     nom_name, sys_name = sys_and_nom(hist_name)
-    #     if nom_name not in nom_sys.keys():
-    #         nom_sys[nom_name] = list()
-    #     nom_sys[nom_name].append(sys_name)
-    # if "pdf" in hist_name:
-    #     nom_name, sys_name = sys_and_nom(hist_name)
-    #     if nom_name not in nom_pdf.keys():
-    #         nom_pdf[nom_name] = list()
-    #     nom_pdf[nom_name].append(sys_name)
+    if "Up" in hist_name:
+        nom_name, sys_name = sys_and_nom(hist_name)
+        if nom_name not in nom_sys.keys():
+            nom_sys[nom_name] = list()
+        nom_sys[nom_name].append(sys_name)
 # print(nom_sys)
 file.Close()
 hdata = hist_map["data_obs"]
 hdata.Sumw2(0)
 bins = hdata.GetNbinsX()
-xdown = hdata.GetXaxis().GetBinLowEdge(1)
-xup = hdata.GetXaxis().GetBinUpEdge(bins)
+xdown = 0
+xup = bins
 yup = hdata.GetMaximum() * 1.4
 bin_len = (xup - xdown) / (1.0 * bins)
+ycuts = [0.0, 0.4, 1.0, 2.0]
+xbins = [[0,340,380,420,460,500,600,3000], [0,350,400,450,500,550,600,700,800,3000], 
+                               [0,450,500,550,600,650,700,800,1000,3000], [0,650,700,750,800,900,1000,1200,3000]]
+ndiv = len(xbins) - 1
+nnbins = len(xbins) + 1
+ncuts = len(ycuts)
+div = []
+nbins = []
+nbins.append(0)
+for i in range(1, nnbins):
+    nbins.append(nbins[i - 1] + len(xbins[i - 1]) - 1)
+for i in range(ndiv):
+    div.append(nbins[i + 1])
 
-CMS.SetExtraText("Simulation")
+cut = []
+cut.append("|#Deltay| < {:.1f}".format(ycuts[1]))
+for i in range(1, ncuts - 1):
+    cut.append("{:.1f} < |#Deltay| < {:.1f}".format(ycuts[i], ycuts[i + 1]))
+cut.append("|#Deltay| > {:.1f}".format(ycuts[ncuts - 1]))
+
+CMS.SetExtraText("")
 CMS.SetLumi(lumi[year])
 CMS.SetEnergy("13")
 # CMS.AppendAdditionalInfo(cut[cut_name])
@@ -142,12 +139,13 @@ if (yup > 100000):
     es = 0.05
 else:
     es = 0.35
-canv = CMS.cmsDiCanvas("canv", xdown, xup, 0, yup, 0.5, 1.5, xtitle[var], "Events","#frac{data}{MC}", square=CMS.kSquare, extraSpace=es)
+
+canv = CMS.cmsDiCanvas("canv", xdown, xup, 0, yup, 0.5, 1.5, xtitle, "Events","#frac{data}{MC}", xbins, square=CMS.kSquare, extraSpace=es, iPos=0)
 # CMS.GetcmsCanvasHist(canv.cd(1)).GetYaxis().SetTitleOffset(1.1)
-pro = ["ttbar_ci0000", "Eta", "DYJets", "STop", "WJets", "QCD"]
+pro = ["ttbar_ci0010", "Eta", "DYJets", "STop", "WJets", "QCD"]
 name = ["t#bar{t}", "#eta_{t}", "DY", "single t", "WJets", "QCD"]
 stack = r.THStack("stack", "Stacked")
-leg = CMS.cmsLeg(0.78, 0.89 - 0.05 * 7, 0.95, 0.89, textSize=0.04)
+leg = CMS.cmsLeg(0.78, 0.75 - 0.05 * 7, 0.95, 0.75, textSize=0.04)
 hist_dict = {list(reversed(name))[i]: hist_map[list(reversed(pro))[i]] for i in range(6)}
 canv.cd(1)
 CMS.cmsDrawStack(stack, leg, hist_dict)
@@ -155,9 +153,28 @@ hmc = r.TH1D("mc", "", bins, xdown, xup)
 hmc.Sumw2()
 hdatad = hdata.Clone()
 hdatad.SetName("datad")
-text = r.TLatex()
-format.format_tex(text)
-text.DrawLatex(0.6, 0.8, cut[cut_name])
+l0 = []
+for d in range(ndiv):
+    l0.append(r.TLine(div[d], 0, div[d], yup))
+    form.format_line(l0[d], 0)
+    l0[d].Draw("same")
+t = []
+for tex in range(ncuts):
+    mid_row = (nbins[tex] + nbins[tex + 1]) / 2.0
+    mid_col = yup * 0.9
+    t.append(r.TPaveText(mid_row - 1, mid_col * 0.95, mid_row + 1, mid_col * 1.05))
+    if tex == ncuts / 2:
+        sys_text = r.TPaveText(mid_row - 1, mid_col * 0.75, mid_row + 1, mid_col * 0.85)
+        form.format_text(sys_text, 1)
+        sys_text.AddText(cutn[cut_name])
+        sys_text.Draw("same")
+    form.format_text(t[tex], 0)
+    t[tex].AddText(cut[tex])
+    t[tex].Draw("same")
+
+# text = r.TLatex()
+# form.format_tex(text)
+# text.DrawLatex(0.6, 0.8, cut[cut_name])
 for i in range(6):
     hmc.Add( hist_map[list(reversed(pro))[i]])
 sete0(hmc)
@@ -167,29 +184,42 @@ hratio.Divide(hmc)
 # text = r.TText(0.8, 0.6, 0.9, 0.8, cut[cut_name])
 hmcdg = r.TGraphAsymmErrors(hratio)
 hmcg = r.TGraphAsymmErrors(hmc)
-# set_error(hmcdg, hmc, bin_len, hist_map, nom_sys, nom_pdf, 0)
-# set_error(hmcg, hmc, bin_len, hist_map, nom_sys, nom_pdf, 1)
+set_error(hmcdg, hmc, bin_len, hist_map, nom_sys, 0)
+set_error(hmcg, hmc, bin_len, hist_map, nom_sys, 1)
 leg.AddEntry(hdata, legendd, "p")
 hdata.Draw("PSame")
-# hmcg.Draw("2Same")
+hmcg.Draw("2Same")
 
-format.format_graph(hmcg, 1)
-format.format_his(hdata, "", False)
+form.format_graph(hmcg, 1)
+form.format_his(hdata, "", 1, 0)
 
 canv.cd(2)
-format.format_his(hdatad, xtitle[var], 1)
+form.format_his(hdatad, xtitle, 1, 2)
 hdatad.Draw("same")
-# hmcdg.Draw("2same")
-format.format_graph(hmcdg, 2)
+hmcdg.Draw("2same")
+form.format_graph(hmcdg, 2)
 l1 = list()
 l2 = list()
+l3 = list()
 for i in range(3):
     l1.append(r.TLine(xdown, 0.75 + 0.25 * i, xup, 0.75 + 0.25 * i))
-    format.format_line(l1[i])
+    form.format_line(l1[i])
     l1[i].Draw("same"); 
-for d in range(1, bins):
-    l2.append(r.TLine(xdown + d * bin_len, 0.5, xdown + d * bin_len, 1.5))
-    format.format_line(l2[d - 1])
-    l2[d - 1].Draw("same") 
+
+for d in range(ndiv):
+    l2.append(r.TLine(div[d], 0.5, div[d], 1.5))
+    form.format_line(l2[d], 0)
+    l2[d].Draw("same")
+net_num = 0
+for d in range(ndiv + 1):
+    for bin in range(nbins[d] + 1, nbins[d + 1]):
+        l3.append(r.TLine(bin, 0.5, bin, 1.5))
+        form.format_line(l3[net_num], 1)
+        l3[net_num].Draw("same")
+        net_num = net_num + 1
+# for d in range(1, bins):
+#     l2.append(r.TLine(xdown + d * bin_len, 0.5, xdown + d * bin_len, 1.5))
+#     form.format_line(l2[d - 1])
+#     l2[d - 1].Draw("same") 
 # canv.Print("test.pdf")
-canv.Print("../qcd_pdf/{}/".format(year) + title[var] + "_" + cut_name + ".pdf")
+canv.Print("./qcd_pdf/data_" + cut_name + "_{}".format(year) + ".pdf")
