@@ -58,7 +58,7 @@ then
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/code
     for outputFile in $(ls $output/new*.root)
     do
-        root -l -q -b ./SF_add.cpp"(\"$outputFile\",0,20${2})"
+        root -l -q -b ./SF_add.cpp"(\"$outputFile\",0,20${2},"A")"
         #root -l -q -b ../../../EW_weight/add_weight_branch.c"(\"$outputFile\")"
     done
     if [[ $inputFile =~ "TTTo" ]]

@@ -66,7 +66,8 @@ then
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/scale_factor/code
     for outputFile in $(ls $output/new*.root)
     do
-        root -l -q -b ./SF_add.cpp"(\"$outputFile\",1,20${2})"
+        cg=$(echo "$outputFile" | sed -n 's/.*_\([A-Z]\)\.root/\1/p')
+        root -l -q -b ./SF_add.cpp"(\"$outputFile\",1,20${2},$cg)"
         #root -l -q -b ../../../EW_weight/add_weight_branch.c"(\"$outputFile\")"
     done
     if [[ $inputFile =~ "TTTo" ]]
@@ -76,6 +77,7 @@ then
         do
             root -l -q -b ./nnlo_add.cpp"(\"$outputFile\",1,20${2})"
         done
+        cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/EWweight
         for outputFile in $(ls $output/new*.root)
         do
             root -l -q -b ./add_weight_branch.cpp"(\"$outputFile\",1,20${2})"

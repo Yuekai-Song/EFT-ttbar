@@ -406,12 +406,13 @@ void SF_add_tree::set_dir()
     reader_it->load(calib_it, BTagEntry_off::FLAV_C, "iterativefit");
     reader_it->load(calib_it, BTagEntry_off::FLAV_UDSG, "iterativefit");
 }
-SF_add_tree::SF_add_tree(TString inputFile_s, TString tree_name, bool remain_sys, int year_s)
+SF_add_tree::SF_add_tree(TString inputFile_s, TString tree_name, bool remain_sys, int year_s, TString cg_s)
 {
     /*TString indir="/home/yksong/code/ttbar/scale_factor/2018";
     TString sf_dir="UL2018";*/
     // TString inputFile="new_TTTo2L2Nu_TuneCP5_13TeV-powheg_10.root";
     year = year_s;
+    cg = cg_s;
     inputFile = inputFile_s;
     set_dir();
     file = new TFile(inputFile, "update");

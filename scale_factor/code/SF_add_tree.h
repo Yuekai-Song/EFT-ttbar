@@ -52,7 +52,7 @@ private:
     void sf_pu(Float_t *pt, Float_t *eta, UInt_t jet_num, Float_t weight[3]);
     void set_dir();
 public:
-    SF_add_tree(TString inputFile_s, TString tree_name, bool remain_sys, int year_s);
+    SF_add_tree(TString inputFile_s, TString tree_name, bool remain_sys, int year_s, TString cg_s);
     ~SF_add_tree();
 };
 void read_hist(TH2F *h2, Float_t weight[3], Int_t nbin)
