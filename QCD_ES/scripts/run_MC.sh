@@ -67,7 +67,7 @@ then
     for outputFile in $(ls $output/new*.root)
     do
         cg=$(echo "$outputFile" | sed -n 's/.*_\([A-Z]\)\.root/\1/p')
-        root -l -q -b ./SF_add.cpp"(\"$outputFile\",1,20${2},$cg)"
+        root -l -q -b ./SF_add.cpp"(\"$outputFile\",1,20${2},\"$cg\")"
         #root -l -q -b ../../../EW_weight/add_weight_branch.c"(\"$outputFile\")"
     done
     if [[ $inputFile =~ "TTTo" ]]
