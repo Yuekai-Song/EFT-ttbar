@@ -9,6 +9,7 @@ void process(TString outdir, TString outputFile, TString input, int year, int da
         op_type = select_reco;
     order_type = OBJECT_SELECT_ORDER::lepton_jet;
     CATEGORY cate = CATEGORY::A;
+    outputFile.ReplaceAll(".root", "_A.root");
     TString tree_name[] = {"mytree", "mytree", "jerUp", "jerDown", "unclusUp", "unclusDown"};
     TString jet_name[] = {"Jet_pt", "Jet_pt_nom", "Jet_pt_jerUp", "Jet_pt_jerDown", "Jet_pt_nom", "Jet_pt_nom"};
     TString MET_name[] = {"MET_pt", "MET_T1Smear_pt", "MET_T1Smear_pt_jerUp", "MET_T1Smear_pt_jerDown", 
