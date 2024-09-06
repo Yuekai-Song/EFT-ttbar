@@ -51,6 +51,7 @@ then
     eval `scramv1 runtime -sh`
     cd /afs/cern.ch/user/y/yuekai/EFT-ttbar/QCD_ES
     input=$(ls $output|grep root)
+    root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,0,0)"
     root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,0,1)"
     root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,0,2)"
     root -l -q -b ./process.cpp"(\"$output\",\"$inputFile\",\"$output/$input\",20${2},0,0,3)"
