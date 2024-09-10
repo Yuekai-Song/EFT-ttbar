@@ -62,10 +62,11 @@ Int_t select_tree::iso_select(Int_t i)
     }
     else
     {
-        if (iso_id < 4)
-            return 2;
-        else
-            return 1;
+        return 2;
+        // if (iso_id < 4)
+        //     return 2;
+        // else
+        //     return 1;
     }
 }
 bool select_tree::is_form_gen_jet(TLorentzVector mom)
@@ -199,6 +200,7 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     Electron_deltaEtaSC = new Float_t[ne];
     Electron_dxy = new Float_t[ne];
     Electron_dz = new Float_t[ne];
+    Electron_pfRelIso03_all = new Float_t[ne];
     Electron_vidNestedWPBitmap = new Int_t[ne];
 
     Muon_mass = new Float_t[nm];
@@ -245,6 +247,7 @@ select_tree::select_tree(TString inputFile, TString outputFile, TString name_tre
     chain->SetBranchAddress("Electron_pt", Electron_pt);
     chain->SetBranchAddress("Electron_mass", Electron_mass);
     chain->SetBranchAddress("Electron_eta", Electron_eta);
+    chain->SetBranchAddress("Electron_pfRelIso03_all", Electron_pfRelIso03_all);
     chain->SetBranchAddress("nElectron", &nElectron);
     chain->SetBranchAddress("Electron_charge", Electron_charge);
     chain->SetBranchAddress("nMuon", &nMuon);
@@ -406,7 +409,7 @@ Bool_t select_tree::select_lep()
     {
         veto_muon_isodown = 0;
         veto_muon_isoup = 100000;
-        sel_muon_isodown = 0.15;
+        sel_muon_isodown = 0;
         sel_muon_isoup = 100000;
     }
     int num_veto = 0;
@@ -436,7 +439,7 @@ Bool_t select_tree::select_lep()
         muon_iso_sel = (Muon_pfRelIso04_all[i] <= sel_muon_isoup) && (Muon_pfRelIso04_all[i] >= sel_muon_isodown);
         if (Muon_looseId[i] == 1 && muon_iso_veto && Muon_pt[i] > 15 && fabs(Muon_eta[i]) < 2.4)
         {
-            if ((Muon_tightId[i] == 1 || cate == CATEGORY::C || cate == CATEGORY::D)&& muon_iso_sel && Muon_pt[i] > 30 && (!is_from_jet))
+            if ((Muon_tightId[i] == 1 || cate == CATEGORY::C || cate == CATEGORY::D) && muon_iso_sel && Muon_pt[i] > 30 && (!is_from_jet))
                 index_selected.push_back(i + nElectron);
             num_veto++;
         }
@@ -461,12 +464,14 @@ Bool_t select_tree::select_lep()
         mom_lep.SetPtEtaPhiM(Electron_pt[index_lep], Electron_eta[index_lep], Electron_phi[index_lep], Electron_mass[index_lep]);
         lep_flavour = false;
         electron_deltaEtaSC = Electron_deltaEtaSC[index_lep];
+        lepton_iso = Electron_pfRelIso03_all[index_lep];
     }
     else
     {
         index_lep -= nElectron;
         lep_c = Muon_charge[index_lep];
         mom_lep.SetPtEtaPhiM(Muon_pt[index_lep], Muon_eta[index_lep], Muon_phi[index_lep], Muon_mass[index_lep]);
+        lepton_iso = Muon_pfRelIso04_all[index_lep];
         lep_flavour = true;
         electron_deltaEtaSC = 0;
     }
@@ -939,6 +944,7 @@ void select_tree::write_select()
     mytree->Branch("lepton_phi", &lepton_pt, "lepton_pt/F");
     mytree->Branch("lep_flavour", &lep_flavour, "lep_flavour/O");
     mytree->Branch("lepton_charge", &lep_c, "lepton_charge/I");
+    mytree->Branch("lepton_iso", &lepton_iso, "lepton_iso/F");
 
     mytree->Branch("MET_pt", &MET_pt, "MET_pt/F");
     mytree->Branch("MET_phi", &MET_phi, "MET_phi/F");
@@ -1013,7 +1019,7 @@ void select_tree::write_select()
         mytree->Branch("muF_up", &muF_up, "muF_up/F");
         mytree->Branch("muF_down", &muF_down, "muF_down/F");
         mytree->Branch("ISR_up", &ISR_up, "ISR_up/F");
-        mytree->Branch("ISF_down", &ISR_down, "ISR_down/F");
+        mytree->Branch("ISR_down", &ISR_down, "ISR_down/F");
         mytree->Branch("FSR_up", &FSR_up, "FSR_up/F");
         mytree->Branch("FSR_down", &FSR_down, "FSR_down/F");
         /*mytree->Branch("pdf_up", &pdf_up, "pdf_up/F");
