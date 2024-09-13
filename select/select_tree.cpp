@@ -425,7 +425,7 @@ Bool_t select_tree::select_lep()
             if ((fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) < 1.479 && fabs(Electron_dxy[i]) < 0.05 && fabs(Electron_dz[i]) < 0.1) || (fabs(Electron_deltaEtaSC[i] + Electron_eta[i]) >= 1.479 && fabs(Electron_dxy[i]) < 0.1 && fabs(Electron_dz[i]) < 0.2))
             {
                 //Electron_cutBased[i] == 4
-                if ((id_noiso(i, 4) || cate == CATEGORY::C || cate == CATEGORY::D) && (elec_iso_id == 2) && Electron_pt[i] > 30 && (!is_from_jet))
+                if (id_noiso(i, 4) && (elec_iso_id == 2) && Electron_pt[i] > 30 && (!is_from_jet))
                     index_selected.push_back(i);
                 num_veto++;
             }
@@ -439,7 +439,7 @@ Bool_t select_tree::select_lep()
         muon_iso_sel = (Muon_pfRelIso04_all[i] <= sel_muon_isoup) && (Muon_pfRelIso04_all[i] >= sel_muon_isodown);
         if (Muon_looseId[i] == 1 && muon_iso_veto && Muon_pt[i] > 15 && fabs(Muon_eta[i]) < 2.4)
         {
-            if ((Muon_tightId[i] == 1 || cate == CATEGORY::C || cate == CATEGORY::D) && muon_iso_sel && Muon_pt[i] > 30 && (!is_from_jet))
+            if (Muon_tightId[i] == 1 && muon_iso_sel && Muon_pt[i] > 30 && (!is_from_jet))
                 index_selected.push_back(i + nElectron);
             num_veto++;
         }
