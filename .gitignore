@@ -182,7 +182,7 @@ run_log
 combine/**/*sh
 combine/output*
 combine/impact*
-combine/datacard*
+datacard*
 !combine/output/
 check.cpp
 check.sh
@@ -208,3 +208,8 @@ lhcut_check
 ttjets
 combine/do_results/draw_1D.cpp
 test/*analysis
+MCFM*
+combine/convert_3Dto1D.cpp
+prepare_datacard.cpp
+backup
+analysis/derive.cpp

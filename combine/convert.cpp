@@ -22,7 +22,7 @@
 #include <TKey.h>
 #include <vector>
 #include <map>
-#include "../select_analysis/prepare/settings.h"
+#include "../analysis/prepare/settings.h"
 using namespace std;
 TString sys_to_nom(TString h1_sys_name)
 {
@@ -74,11 +74,10 @@ void set0(TH1D *h1)
 class convert
 {
 private:
-    int like_cut, *ycut, *nbins, nycut, bin_num, *start;
+    int *nbins, ncut, bin_num, *start;
     map<TString, TString> name_change;
-    bool ttx_qcd = false;
     TString ch;
-    int (*xbins)[20];
+    vector<vector<int>> vbins[3];
     TH1D *hists, **h1;
     TH3D *h3;
     TFile *infile, *outfile;
@@ -91,10 +90,10 @@ private:
     void process_pdf();
     void process_qcd();
     void change_sysname(TString &original);
-    void set(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user);
+    void set(TString input, TString output, vector<vector<vector<double>>> xbins_user, vector<var> vars);
 
 public:
-    convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user, map<TString, TString> name_change, bool qcd_ttx = false);
+    convert(TString input, TString output, vector<vector<vector<double>>> xbins_user, vector<var> vars, map<TString, TString> name_change = {});
 };
 void convert::change_sysname(TString &original)
 {
@@ -107,43 +106,45 @@ void convert::change_sysname(TString &original)
     if (name_change.find(temp) != name_change.end())
         original.ReplaceAll(temp, name_change[temp]);
 }
-void convert::set(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user)
+vector<int> divide(vector<double> cuts, var variable)
 {
-    settings s(0, 2015, false);
-    if (likelihood_cut <= s.xyz_range[5] && likelihood_cut > s.xyz_range[4])
-        like_cut = static_cast<int>(std::round((likelihood_cut - s.xyz_range[4]) / (s.xyz_range[5] - s.xyz_range[4]) * s.xyz_bins[2]));
-    else
-        like_cut = -1;
-    nycut = ycut_user.size();
-    ycut = new int[nycut + 1];
-    for (int i = 1; i < nycut; i++)
-        ycut[i] = static_cast<int>(std::round(ycut_user[i] / s.xyz_range[3] * s.xyz_bins[1]));
-    ycut[nycut] = 41;
-    ycut[0] = -1;
-    xbins = new int[nycut][20];
-    nbins = new int[nycut];
-    for (int i = 0; i < nycut; i++)
+    vector<int> bins;
+    bins.clear();
+    for (int i = 0; i < cuts.size(); i++)
     {
-        nbins[i] = xbins_user[i].size() - 1;
-        // xbins[i] = new int[nbins[i]+1];
-        for (int j = 0; j < nbins[i] + 1; j++)
-        {
-            if (xbins_user[i][j] < s.xyz_range[0])
-                xbins[i][j] = -1;
-            else if (xbins_user[i][j] > s.xyz_range[1])
-                xbins[i][j] = s.xyz_bins[0] + 1;
-            else
-                xbins[i][j] = int(std::round((xbins_user[i][j] - s.xyz_range[0]) / (s.xyz_range[1] - s.xyz_range[0]) * s.xyz_bins[0]));
-        }
+        if (cuts[i] < variable.xlow)
+            bins.push_back(-1);
+        else if (cuts[i] > variable.xup)
+            bins.push_back(variable.bins + 1);
+        else
+            bins.push_back(static_cast<int>(std::round((cuts[i] - variable.xlow) / (variable.xup - variable.xlow) * variable.bins)));
     }
-    start = new int[nycut + 1];
+    return bins;
+}
+void convert::set(TString input, TString output, vector<vector<vector<double>>> xbins_user, vector<var> vars)
+{
+    ncut = xbins_user.size();
+    nbins = new int[ncut];
+    start = new int[ncut + 1];
     bin_num = 0;
-    for (int i = 0; i < nycut; i++)
+    for (int i = 0; i < xbins_user.size(); i++)
     {
+        for (int v = 0; v < 3; v++)
+            vbins[v].push_back(divide(xbins_user[i][v], vars[v]));
+        nbins[i] = xbins_user[i][2].size() - 1;
         start[i] = bin_num;
         bin_num += nbins[i];
     }
-    start[nycut] = bin_num;
+    // for (int i = 0; i < ncut; i++)
+    // {
+    //     for (int j = 0; j < 3; j++)
+    //     {
+    //         for (int k = 0; k < vbins[j][i].size(); k++)
+    //             cout << vbins[j][i][k] << " ";
+    //     }
+    //     cout << endl;
+    // }
+    start[ncut] = bin_num;
     infile = new TFile(input);
     outfile = new TFile(output, "recreate");
     ch = "";
@@ -163,43 +164,41 @@ void convert::set(TString input, TString output, double likelihood_cut, vector<d
 }
 void convert::sum_TH1D()
 {
-    for (int f = 0; f < nycut; f++)
+    for (int i = 0; i < ncut; i++)
     {
-        for (int i = 0; i < h1[f]->GetNbinsX(); i++)
+        for (int k = 0; k < h1[i]->GetNbinsX(); k++)
         {
-            hists->SetBinContent(i + 1 + start[f], h1[f]->GetBinContent(i + 1));
-            hists->SetBinError(i + 1 + start[f], h1[f]->GetBinError(i + 1));
+            hists->SetBinContent(k + 1 + start[i], h1[i]->GetBinContent(k + 1));
+            hists->SetBinError(k + 1 + start[i], h1[i]->GetBinError(k + 1));
         }
     }
     hists->ResetStats();
+    for (int i = 0; i < ncut; i++)
+        delete h1[i];
 }
 void convert::get_TH1D()
 {
     double value;
     double err2;
-    h1 = new TH1D *[nycut];
+    h1 = new TH1D *[ncut];
     TH1D *h3_1;
-    for (int f = 0; f < nycut; f++)
+    int f;
+    for (int f = 0; f < ncut; f++)
     {
-        h1[f] = new TH1D;
-        h1[f]->SetBins(nbins[f], 0, nbins[f]);
-        h1[f]->SetName(Form("h1_%d", f));
-        TString hname = TString(h3->GetName());
-        if (hname.Contains("QCD") && (!hname.Contains("_A")))
-            h3_1 = h3->ProjectionX("3_px", ycut[f] + 1, ycut[f + 1], 0, -1);
-        else
-            h3_1 = h3->ProjectionX("3_px", ycut[f] + 1, ycut[f + 1], 0, like_cut);
-        for (int i = 0; i < nbins[f]; i++)
+        h1[f] = new TH1D(Form("h1_%d", f), "", nbins[f], 0, nbins[f]);
+        // cout << vbins[1][f][0] + 1 << " " << vbins[1][f][1] << " " << vbins[0][f][0] + 1 << " " << vbins[0][f][1] << endl;
+        h3_1 = h3->ProjectionX("3_px", vbins[1][f][0] + 1, vbins[1][f][1], vbins[0][f][0] + 1, vbins[0][f][1]);
+        for (int k = 0; k < nbins[f]; k++)
         {
             value = 0;
             err2 = 0;
-            for (int bin = xbins[f][i]; bin < xbins[f][i + 1]; bin++)
+            for (int bin = vbins[2][f][k]; bin < vbins[2][f][k + 1]; bin++)
             {
                 value += h3_1->GetBinContent(bin + 1);
                 err2 += h3_1->GetBinError(bin + 1) * h3_1->GetBinError(bin + 1);
             }
-            h1[f]->SetBinContent(i + 1, value);
-            h1[f]->SetBinError(i + 1, sqrt(err2));
+            h1[f]->SetBinContent(k + 1, value);
+            h1[f]->SetBinError(k + 1, sqrt(err2));
         }
         delete h3_1;
     }
@@ -237,8 +236,6 @@ void convert::get_map()
                     hist_pdf[sys_to_nom(hist_name)].push_back(*hists);
                 delete h3;
                 delete hists;
-                for (int i = 0; i < nycut; i++)
-                    delete h1[i];
             }
         }
     }
@@ -312,68 +309,42 @@ void convert::process_qcd()
 {
     if (hist_map.find("QCD_MC_A") != hist_map.end())
     {
-        TString En = "", CG = "C", CCG = "D", SCG = "B";
-        if (ttx_qcd)
-        {
+        TString En = "", CG = "D", CCG = "C", SCG = "B";
+        if (ch.Contains("M"))
             En = "_En";
-            if (ch.Contains("E"))
-            {
-                CG = "D";
-                CCG = "C";
-            }
-        }
-        double norm = hist_map["QCD_MC_A" + En].GetSumOfWeights() / hist_map["QCD_MC_" + CG + En].GetSumOfWeights();
-        TH1D *hist_qcd = (TH1D *)hist_map["QCD_prompt_" + CG].Clone();
-        set0(hist_qcd);
-        hist_qcd->Scale(norm);
-        TH1D *hist_qcd_up = (TH1D *)hist_map["QCD_prompt_" + SCG].Clone();
-        TH1D *hist_qcd_dn = (TH1D *)hist_map["QCD_prompt_" + CCG].Clone();
-        set0(hist_qcd_up);
-        set0(hist_qcd_dn);
-        TH1D *hist_qcd_nup = (TH1D *)hist_qcd->Clone();
-        TH1D *hist_qcd_ndn = (TH1D *)hist_qcd->Clone();
+        TH1D *trans_sys = (TH1D *)hist_map["QCD_MC_A" + En].Clone("trans_sys");
+        trans_sys->Divide(&hist_map["QCD_MC_D" + En]);
+        TH1D *trans = (TH1D *)hist_map["QCD_MC_B" + En].Clone("trans");
+        trans->Multiply(&hist_map["QCD_MC_C" + En]);
+        trans->Divide(&hist_map["QCD_MC_D" + En]);
+        trans->Divide(&hist_map["QCD_MC_D" + En]);   
 
-        hist_qcd->SetName("QCD");
-        hist_qcd_up->SetName("QCD_qshape" + ch + "Up");
-        hist_qcd_dn->SetName("QCD_qshape" + ch + "Down");
-        hist_qcd_nup->SetName("QCD_qnorm" + ch + "Up");
-        hist_qcd_ndn->SetName("QCD_qnorm" + ch + "Down");
+        set0(&hist_map["QCD_prompt_" + CG]);
+        TH1D *hist_qcd = (TH1D *)hist_map["QCD_prompt_" + CG].Clone("QCD");
+        TH1D *hist_qcd_up = (TH1D *)hist_map["QCD_prompt_" + CG].Clone("QCD_shape" + ch + "Up");
+        TH1D *hist_qcd_dn = (TH1D *)hist_map["QCD_prompt_" + CG].Clone("QCD_shape" + ch + "Down");
+        
+        hist_qcd->Multiply(trans);
+        hist_qcd_up->Multiply(trans_sys);
+        hist_qcd_dn->Divide(trans_sys);
 
-        hist_qcd_up->Scale(1.0 / hist_qcd_up->GetSumOfWeights());
-        hist_qcd_dn->Scale(1.0 / hist_qcd_dn->GetSumOfWeights());
-        TH1D *temp = (TH1D *)hist_qcd_up->Clone();
-        temp->SetName("temp");
-        hist_qcd_up->Divide(hist_qcd_dn);
-        hist_qcd_dn->Divide(temp);
-        hist_qcd_up->Multiply(hist_qcd);
-        hist_qcd_dn->Multiply(hist_qcd);
-
-        double ns = hist_map["QCD_MC_" + SCG + En].GetSumOfWeights() / hist_map["QCD_MC_" +  CCG + En].GetSumOfWeights();
-        ns /= norm;
-        hist_qcd_nup->Scale(ns);
-        hist_qcd_ndn->Scale(1.0 / ns);
         outfile->cd();
         hist_qcd->Write();
         hist_qcd_up->Write();
         hist_qcd_dn->Write();
-        hist_qcd_nup->Write();
-        hist_qcd_ndn->Write();
         delete hist_qcd;
         delete hist_qcd_up;
         delete hist_qcd_dn;
-        delete hist_qcd_nup;
-        delete hist_qcd_ndn;
     }
 }
-convert::convert(TString input, TString output, double likelihood_cut, vector<double> ycut_user, vector<vector<double>> xbins_user, map<TString, TString> name_changes, bool qcd_ttx = false)
+convert::convert(TString input, TString output, vector<vector<vector<double>>> xbins_user, vector<var> vars, map<TString, TString> name_changes = {})
 {
-    ttx_qcd = qcd_ttx;
     name_change = name_changes;
-    set(input, output, likelihood_cut, ycut_user, xbins_user);
+    set(input, output, xbins_user, vars);
     get_map();
     process_map();
     process_pdf();
-    process_qcd();
+    // process_qcd();
     infile->Close();
     outfile->Close();
 }

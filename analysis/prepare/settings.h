@@ -1,7 +1,12 @@
 #include <TROOT.h>
-#include <map>
-#include <vector>
+#include <TChain.h>
+#include <TString.h>
+#include <TLorentzVector.h>
+#include <TH3D.h>
 #include <iostream>
+#include <vector>
+#include <map>
+#include <regex>
 #include <string>
 #include <sstream>
 using namespace std;
@@ -14,10 +19,15 @@ struct var
 };
 
 var top_pt = {"top_pt", 50, 500, 24};
+var top_pt_fine = {"top_pt", 0, 1000, 100};
 var Mtt = {"Mtt", 300, 1500, 24};
+var Mtt_fine = {"Mtt", 300, 3000, 270};
 var deltay = {"deltay", -4, 4, 20};
+var abs_deltay = {"abs_deltay", 0, 4, 40};
 var cost = {"cost", -1, 1, 20};
+var abs_cost = {"abs_cost", 0, 1, 10};
 var ytt = {"ytt", -3, 3, 30};
+var abs_ytt = {"abs_ytt", 0, 3, 30};
 var likelihood = {"likelihood", 13, 50, 37};
 var lepton_pt = {"lepton_pt", 30, 250, 22};
 var leading_pt = {"leading_pt", 30, 400, 37};
@@ -36,7 +46,7 @@ public:
     map<TString, pair<int, int>> index_pro = {{"ttbar", pair<int, int>(0, 3)}, {"DYJets", pair<int, int>(3, 11)}, {"STop", pair<int, int>(11, 16)},
                                               {"WJets", pair<int, int>(16, 20)}, {"other", pair<int, int>(0, 20)}, {"QCD_HT", pair<int, int>(44, 53)}, 
                                               {"QCD_EMEn", pair<int, int>(53, 59)}, {"QCD_MuEn", pair<int, int>(59, 69)}, {"Eta", pair<int, int>(69, 72)}};
-    TString cut, cut_name, ch, suffix;
+    TString cut_name, ch, suffix;
     TString data_name = "new_data.root"; 
     vector<int> xyz_bins = {270, 40, 100};
     vector<double> xyz_range = {300, 3000, 0, 4.0, 8, 33};
@@ -44,13 +54,12 @@ public:
     const bool ttx;
     int year;
     TString cg = "";
-    pair<double, double> xs(TString file);
+    pair<double, double> xs(TString file) const;
     double pre_scale = 1;
     void set_suf(TString cg);
     settings(int cut_nums, int year, bool ttxs);
     TString fileName(int i);
     TString dataName();
-    Float_t get_cut(const tree_draw &tree) const;
 };
 
 settings::settings(int cut_num, int years, bool ttxs) : ttx(ttxs)
@@ -162,40 +171,23 @@ settings::settings(int cut_num, int years, bool ttxs) : ttx(ttxs)
                             1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
                             1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
                             1.0, 1.0, 1.0};
-    vector<TString> cuts = {"(jet_num == 3 && (!lep_flavour))", "(jet_num >= 4  && (!lep_flavour))",
-                            "(jet_num == 3 && lep_flavour)", "(jet_num >= 4 && lep_flavour)"};
     vector<TString> cutsName = {"E_3jets", "E_4jets", "M_3jets", "M_4jets"};
     vector<TString> chs = {"E3j", "E4j", "M3j", "M4j"};
     double lumi_s[4] = {19.5, 16.8, 41.48, 59.83};
     lumi = lumi_s[year - 2015];
-    cut = cuts[cut_num];
     cut_name = cutsName[cut_num];
     ch = chs[cut_num];
-    if (year == 2018 && cut_num < 2)
-        cut += "*(lepton_pt>34)";
-    else if (year == 2017 && cut_num < 2)
-        cut += "*(lepton_pt>37)";
 
     for (int i = 0; i < nsample; i++)
     {
         fileNames.push_back(fileName[i]);
         xsection[fileName[i]] = pair<double, double>(cross_section[i], K_Factor[i]);
     }
-    if (ttx)
-        cut += "*(D_nu < 150)*(nBtag == 2)";
 
 }
 void settings::set_suf(TString cg_n)
 {
     cg = cg_n;
-    if (ttx)
-    {
-        if ((cg == "B" || cg == "D") && cut.Contains("*(nBtag == 2)"))
-            cut.ReplaceAll("*(nBtag == 2)", "");
-        else if ((cg == "A" || cg == "C" || cg == "") && (!cut.Contains("*(nBtag == 2)")))
-            cut += "*(nBtag == 2)";
-    }
-    
     Double_t pre_scale_year[][2] = {{369.84, 130.38}, {1570.17, 162.22}, {1085.83, 224.41}, {1536.28, 474.95}};
     if (cg != "B" && cg != "A" && cg != "")
     {
@@ -210,7 +202,7 @@ void settings::set_suf(TString cg_n)
     if (ttx)
         in = "_ttx";
     if (cg != "")
-        suffix =  "*_" + cg + in;
+        suffix = "*_" + cg + in;
     else
         suffix = "*";
 }
@@ -219,9 +211,10 @@ TString settings::fileName(int i)
     TString temp = fileNames[i];
     return temp.ReplaceAll(".root", suffix + ".root");
 }
-pair<double, double> settings::xs(TString file)
+pair<double, double> settings::xs(TString file) const
 {
-    return xsection[file.ReplaceAll(suffix, "")];
+    return xsection.at(file.ReplaceAll(suffix, ""));
+    // return {xyz_bins[1], xyz_bins[2]};
 }
 TString settings::dataName()
 {
@@ -248,46 +241,50 @@ public:
     Float_t *extra;
     Float_t jet_pt[20];
     // Double_t pu_wt = 1, nnlo_wt = 1;
+    Float_t LHEPdfWeight[103];
+    vector<int> index = {};
     int extra_size = 0;
     Float_t extra_n;
     void setadd();
     const settings scut;
     Float_t calculate(int entry, TString var);
     Float_t get_weight(int entry);
+    Float_t gb_w(TString file);
+    Float_t get_cut();
 public:
-    tree_draw(TString name, TString files, settings scuts, string extra1, Float_t extra2);
+    tree_draw(TString name, TString files, settings scuts, string extra1 = "", Float_t extra2 = 1);
     void draw(TH1D *h1, TString var);
     void draw(TH2D *h1, TString varx, TString vary);
     void draw(TH3D *h1, TString varx, TString vary, TString varz);
 };
 
-Float_t settings::get_cut(const tree_draw &tree) const
+Float_t tree_draw::get_cut()
 {
     bool cut_v = true;
-    if (cut_name.Contains("3jets"))
-        cut_v *= (tree.jet_num == 3);
+    if (scut.cut_name.Contains("3jets"))
+        cut_v *= (jet_num == 3);
     else
-        cut_v *= (tree.jet_num >= 4);
+        cut_v *= (jet_num >= 4);
     
-    if (cut_name.Contains("E"))
+    if (scut.cut_name.Contains("E"))
     {
-        cut_v *= !tree.lep_flavour;
-        if (year == 2018)
-            cut_v *= (tree.lepton_pt > 34);
-        else if (year == 2017)
+        cut_v *= !lep_flavour;
+        if (scut.year == 2018)
+            cut_v *= (lepton_pt > 34);
+        else if (scut.year == 2017)
         {
-            cut_v *= (tree.lepton_pt > 37);
-            if (cg == "A" || cg == "B")
-                cut_v *= tree.HLT_Ele35_WPTight_Gsf;
+            cut_v *= (lepton_pt > 37);
+            if (scut.cg == "A" || scut.cg == "B")
+                cut_v *= HLT_Ele35_WPTight_Gsf;
         }
     }
     else
-        cut_v *= tree.lep_flavour;
-    if (ttx)
+        cut_v *= lep_flavour;
+    if (scut.ttx)
     {
-        cut_v *= (tree.D_nu < 150);
-        if (cg == "A" || cg == "C" || cg == "")
-            cut_v *=  (tree.nBtag == 2);
+        cut_v *= (D_nu < 150);
+        if (scut.cg == "A" || scut.cg == "C" || scut.cg == "")
+            cut_v *=  (nBtag == 2);
     }
     return cut_v;
 }
@@ -310,7 +307,6 @@ void tree_draw::setadd()
     mytree.SetBranchAddress("likelihood", &likelihood);
     mytree.SetBranchAddress("jet_pt", jet_pt);
     mytree.SetBranchAddress("MET_pt", &MET_pt);
-    
     if (scut.cut_name.Contains("E") && scut.year == 2017 && (scut.cg == "A" || scut.cg == "B"))
         mytree.SetBranchAddress("HLT_Ele35_WPTight_Gsf", &HLT_Ele35_WPTight_Gsf);
     if (scut.ttx)
@@ -324,25 +320,67 @@ tree_draw::tree_draw(TString name, TString files, settings scuts, string extra1 
     setadd();
     stringstream ss(extra1);
     string token;
-    vector<TString> tokens;
+    std::vector<TString> tokens;
+    std::regex re("\\[(\\d+)\\]");
+        
     while (std::getline(ss, token, '*'))
-        tokens.push_back(token);
+    {
+        if (!TString(token).Contains("LHEPdfWeight"))
+            tokens.push_back(token);
+        else
+        {
+            std::smatch match;
+            if (std::regex_search(token, match, re))
+                index.push_back(std::stoi(match[1]));
+            else
+                cout << "LHEPdfWeight no index" << endl;
+        }
+    }
+    if (index.size() != 0)
+        mytree.SetBranchAddress("LHEPdfWeight", LHEPdfWeight);
     extra_size = tokens.size();
     if (extra_size >  0)
         extra = new Float_t[extra_size];
     for (int i = 0; i < extra_size; i++)
         mytree.SetBranchAddress(tokens[i], &extra[i]);
-    extra_n = extra2;
+    extra_n = extra2 * gb_w(files);
 }
 Float_t tree_draw::get_weight(int entry)
 {
     mytree.GetEntry(entry);
-    Float_t weight = scut.get_cut(*this);
+    Float_t weight = get_cut();
     for (int i = 0; i < extra_size; i++)
         weight *= extra[i];
     weight *= extra_n;
-    // weight *= pu_wt * nnlo_wt;
+    for (int i = 0; i < index.size(); i++)
+        weight *= LHEPdfWeight[i];
     return weight;
+}
+Float_t tree_draw::gb_w(TString file)
+{
+    if (!file.Contains("data"))
+    {
+        string rfile(file);
+        int pos = rfile.rfind('/');
+        if (pos != std::string::npos)
+            rfile = rfile.substr(pos + 1);
+        auto c0 = new TCanvas("c0", "c0", 8, 30, 600, 600);
+        TChain *tree0 = new TChain("rawtree");
+        tree0->Add(file);
+        TH1D *nmc = new TH1D("nmc", "", 50, 0, 100);
+        nmc->Sumw2();
+        c0->cd();
+        tree0->Draw("nJet>>nmc", "Generator_weight");
+        double cross_section = scut.xs(rfile).first;
+        double K_Factor = scut.xs(rfile).second;
+        double weight = cross_section * scut.lumi / (nmc->GetSumOfWeights()) * K_Factor * 1000;
+        delete tree0;
+        delete nmc;
+        delete c0;
+        return weight;
+    }
+    return scut.pre_scale;
+    
 }
 Float_t tree_draw::calculate(int entry, TString var)
 {
@@ -389,7 +427,10 @@ Float_t tree_draw::calculate(int entry, TString var)
                                 {"mass_tl", mtl},
                                 {"MET_pt", MET_pt},
                                 {"lepton_pt", lepton_pt},
-                                {"leading_pt", jet_pt[0]}};
+                                {"leading_pt", jet_pt[0]},
+                                {"abs_cost", fabs(cost)},
+                                {"abs_ytt",fabs(ytt)},
+                                {"abs_deltay", fabs(rapidity_tt)}};
     return val[var];
 }
 void tree_draw::draw(TH1D *h1, TString var)
@@ -405,5 +446,8 @@ void tree_draw::draw(TH2D *h1, TString varx, TString vary)
 void tree_draw::draw(TH3D *h1, TString varx, TString vary, TString varz)
 {
     for(int i = 0; i < mytree.GetEntries(); i++)
-        h1->Fill(calculate(i, varx), calculate(i, varx), calculate(i, varz),  get_weight(i));
+    {
+        h1->Fill(calculate(i, varx), calculate(i, vary), calculate(i, varz),  get_weight(i));
+        // cout << calculate(i, varx) << " " << calculate(i, vary) << " " << calculate(i, varz) << endl;
+    }
 }
