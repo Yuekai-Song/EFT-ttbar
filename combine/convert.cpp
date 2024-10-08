@@ -110,6 +110,7 @@ vector<int> divide(vector<double> cuts, var variable)
 {
     vector<int> bins;
     bins.clear();
+    // cout << variable.name << " " << variable.xup << " " << variable.xlow << " " << variable.bins << endl;
     for (int i = 0; i < cuts.size(); i++)
     {
         if (cuts[i] < variable.xlow)
@@ -139,10 +140,18 @@ void convert::set(TString input, TString output, vector<vector<vector<double>>> 
     // {
     //     for (int j = 0; j < 3; j++)
     //     {
+    //         for (int k = 0; k < xbins_user[i][j].size(); k++)
+    //         {
+    //             cout << xbins_user[i][j][k] << " ";
+    //         }
+    //         cout << endl;
     //         for (int k = 0; k < vbins[j][i].size(); k++)
+    //         {
     //             cout << vbins[j][i][k] << " ";
+    //         }
+    //         cout << endl;
     //     }
-    //     cout << endl;
+        
     // }
     start[ncut] = bin_num;
     infile = new TFile(input);

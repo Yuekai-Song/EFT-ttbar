@@ -96,7 +96,7 @@ for syss in sys_same_year:
     if "{0}".format(year) in syss:
         exit()
     
-flat_name = {0: "", 1: "_bg_flat_nu"}
+flat_name = {0: "", 1: "_bg_flat"}
 nom_name = {0: "", 1: "_renormed"}
 
 out_dir = name_datacard + "/processed" + flat_name[bg_flat] + nom_name[renorm]
@@ -126,9 +126,33 @@ else:
 if "2cuts" in name_datacard:
     sys_type = sys_type_2cuts
     start = [0, 16, 23]
-else:
+elif "mtt_dyt_cost_4" in name_datacard:
+    sys_type = sys_type_4cuts
+    start = [0, 7, 14, 21, 28, 37, 46, 55, 64, 73, 81]
+elif "mtt_dyt_cost_1" in name_datacard:
+    sys_type = sys_type_4cuts
+    start = [0, 10, 20, 30, 40, 48, 56, 64, 72]
+elif "mtt_dyt_cost_2" in name_datacard:
+    sys_type = sys_type_4cuts
+    start = [0, 10, 20, 30, 39, 48, 57, 65, 73, 81]
+elif "mtt_dyt_cost_3" in name_datacard:
+    sys_type = sys_type_4cuts
+    start = [0, 11, 22, 33, 44, 55]
+elif "mtt_dyt_cost" in name_datacard:
+    sys_type = sys_type_4cuts
+    start = [0, 7, 14, 23, 32, 41, 50, 58]
+elif "mtt_dyt_new" in name_datacard:
+    sys_type = sys_type_4cuts
+    start = [0, 9, 18, 27, 36]
+elif "mtt_dyt" in name_datacard:
     sys_type = sys_type_4cuts
     start = [0, 7, 16, 25, 33]
+elif "pt_dyt" in name_datacard:
+    sys_type = sys_type_4cuts
+    start = [0, 11, 22, 33, 44]
+elif "mtt_cost" in name_datacard:
+    sys_type = sys_type_2cuts
+    start = [0, 11, 22, 33, 44, 55]
 
 ch = cut_name[1:2] + cut_name[3:5]+ "_" + sys.argv[3]
 qnorm_fix = qnorm_22014[ch]

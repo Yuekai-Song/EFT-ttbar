@@ -1,5 +1,6 @@
 import generate_ew
 import generate_sys
+import generate_eta
 import os
 import sys
 
@@ -18,10 +19,13 @@ def obtain_initial(filename):
 if __name__ == "__main__":
     path = os.path.abspath("")
     name = sys.argv[1]
-    dir_sys = path + "/../sys_pdf/datacard" + name
-    dir_ew = path + "/../ew_pdf/datacard" + name
+    dir_sys = path + "/../sys_pdf/" + name
+    dir_ew = path + "/../ew_pdf/" + name
+    dir_eta = path + "/../eta_pdf/" + name
     modelfile = obtain_initial('./temp/temp.tex')
-    filename = "./ttbar/ttbar.tex"
+    if not os.path.exists(name):
+        os.mkdir(name)
+    filename = name + "/ttbar.tex"
 
     with open(filename, 'w', encoding='utf-8') as f:
         for line in modelfile:
@@ -29,6 +33,7 @@ if __name__ == "__main__":
     f.close()
 
     generate_ew.ew_add(dir_ew, filename)
+    generate_eta.eta_add(dir_eta, filename)
     generate_sys.sys_add(dir_sys, filename)
 
     with open(filename, 'a', encoding='utf-8') as f:

@@ -1,4 +1,4 @@
-#include "draw_sys_pre.cpp"
+#include "format.h"
 void sys_and_nom(TString hist_name, TString &sys_name, TString &nom_name)
 {
     int pos = 0;
@@ -34,21 +34,18 @@ double get_range_pad2(TH1D *h1[4])
     else
         return 1.3 * down;
 }
-void draw(TString file_n, TString file_ori_n, bool option, map<TString, double> &sys_range, TString out_path = "", vector<double> ycuts = {}, vector<vector<double>> xbins = {})
+void draw(TString file_n, TString file_ori_n, bool option, map<TString, double> &sys_range, TString lumi = "", TString out_path = "", vector<TString> ycuts = {}, vector<TString> zcuts = {}, vector<vector<double>> xbins = {}, TString xtitle = "", TString cut = "")
 {
-    TFile *file = TFile::Open(file_n);
-    TFile *file_ori = TFile::Open(file_ori_n);
+    map<TString, TH1D> hist_map;
     static TString classname("TH1D");
     TH1D *hsm;
     TH1D *hmc[4];
-    map<TString, TH1D> hist_map;
     map<TString, std::vector<TString>> sys_nom;
     TString sys_name, nom_name;
-    TList *list = file->GetListOfKeys();
-    TList *list_ori = file_ori->GetListOfKeys();
     TKey *key, *key_ori;
-    TIter iter(list), iter_ori(list_ori);
-    double range;
+    TFile *file = TFile::Open(file_n);
+    TList *list = file->GetListOfKeys();
+    TIter iter(list);
     while ((key = (TKey *)iter()))
     {
         if (key->GetClassName() == classname)
@@ -64,10 +61,15 @@ void draw(TString file_n, TString file_ori_n, bool option, map<TString, double> 
                     if((nom_name.Contains("ttbar") && nom_name.Contains("ci0000")) || (!nom_name.Contains("ttbar")))
                         sys_nom[sys_name].push_back(nom_name);
                 }
+                hist_map[hist_name].SetDirectory(0);
+                delete hist;
             }
-            delete hist;
         }
     }
+    file->Close();
+    TFile *file_ori = TFile::Open(file_ori_n);
+    TList *list_ori = file_ori->GetListOfKeys();
+    TIter iter_ori(list_ori);
     while ((key_ori = (TKey *)iter_ori()))
     {
         if (key_ori->GetClassName() == classname)
@@ -77,10 +79,12 @@ void draw(TString file_n, TString file_ori_n, bool option, map<TString, double> 
             {
                 TString hist_name = TString(hist->GetName()) + "_ori";
                 hist_map[hist_name] = *hist;
+                hist_map[hist_name].SetDirectory(0);
+                delete hist;
             }
-            delete hist;
         }
     }
+    file_ori->Close();
     for (map<TString, std::vector<TString>>::iterator it_sys = sys_nom.begin(); it_sys != sys_nom.end(); it_sys++)
     {
         for (vector<TString>::iterator it_nom = it_sys->second.begin(); it_nom != it_sys->second.end(); it_nom++)
@@ -92,7 +96,30 @@ void draw(TString file_n, TString file_ori_n, bool option, map<TString, double> 
             hmc[2] = &hist_map[name + "Up_ori"];
             hmc[3] = &hist_map[name + "Down_ori"];
             if (option)
-                draw_pre(hsm, hmc, it_sys->first,  out_path + it_sys->first + "_" + *it_nom, sys_range[name], xbins, ycuts);
+            {
+                int color[] = {2, 4};
+                TH1D *hd[4];
+                TString legend[] = {"#theta = +1#sigma", "#theta = -1#sigma"};
+                DiCanvas *dc = new DiCanvas(xtitle, xbins, "./sys_pdf/" + out_path + it_sys->first + "_" + *it_nom);
+                dc->draw_up(hsm, 1, "SM case", lumi, ycuts, zcuts, cut, it_sys->first);
+                for (int i = 0; i < 2; i++)
+                    dc->draw_up(hmc[i], color[i], legend[i]);
+                for (int i = 0; i < 4; i++)
+                {
+                    hd[i] = (TH1D *)hmc[i]->Clone(Form("hd_%d", i));
+                    hd[i]->Add(hsm, -1);
+                    hd[i]->Divide(hsm);
+                }
+                for (int i = 0; i < 2; i++)
+                {
+                    dc->draw_dn(hd[i], "Ph", sys_range[name], color[i], 2);
+                }
+                for (int i = 0; i < 2; i++)
+                    dc->draw_dn(hd[2 + i], "h", sys_range[name], color[i], 1);
+                delete dc;
+                for (int i = 0; i < 4; i++)
+                    delete hd[i];
+            }
             else
             {
                 for (int i = 0; i < 4; i++)
@@ -103,32 +130,25 @@ void draw(TString file_n, TString file_ori_n, bool option, map<TString, double> 
             }
         }
     }
-    file->Close();
-    file_ori->Close();
 }
-void draw_sys(TString datacard_name, TString type_name)
+void draw_sys()
 {
-    vector<double> ycuts;
+    TString datacard_name = "mtt_dyt_cost";
+    TString type_name = "processed_bg_flat";
     vector<vector<double>> xbins;
-    if (!datacard_name.Contains("2cuts"))
-    {
-        ycuts = {0.0, 0.4, 1.0, 2.0};
-        xbins = {{0,340,380,420,460,500,600,3000}, {0,350,400,450,500,550,600,700,800,3000}, 
-                               {0,450,500,550,600,650,700,800,1000,3000}, {0,650,700,750,800,900,1000,1200,3000}};
-    }
-    else {
-        ycuts = {0.0, 1.4};
-        xbins = {{300,340,360,380,400,420,440,460,480,500,520,540,570,600,640,700,3000},
-                                   {300,450,500,570,630,700,820,3000}};
-    }
-    if (xbins.size() != ycuts.size())
-    {
-        cout << "the number of cuts on deltay is not the same" << endl;
-        return;
-    }
+    vector<TString> ycut, zcut;
+    vector<var> x;
+    TString xtitle;
+    binning(datacard_name, x, xbins, ycut, zcut, xtitle);
+    // cut[0] = Form("|cos(#theta^{*})| < %.1f", ycuts[1]);
+    // cut[ncuts - 1] = Form("|cos(#theta^{*})| > %.1f", ycuts[ncuts - 1]);
+    // for (int i = 1; i < ncuts - 1; i++)
+    //     cut[i] = Form("%.1f < |cos(#theta^{*})| < %.1f", ycuts[i], ycuts[i + 1]);
 
     TString cutname[4] = {"E_3jets", "E_4jets", "M_3jets", "M_4jets"};
+    TString cut[4] = {"e, 3jets", "e, #geq4jets", "#mu, 3jets", "#mu, #geq4jets"};
     int year[4] = {2015, 2016, 2017, 2018};
+    TString lumi[] = {"19.5", "16.8", "41.48", "59.83"};
     map<TString, double> sys_range;
     TString inpath = "../datacards/";
     TString file_ori[4][4], file[4][4];
@@ -147,7 +167,7 @@ void draw_sys(TString datacard_name, TString type_name)
         for (int y = 0; y < 4; y++)
         {
             TString out_path = datacard_name + "/" + cutname[c] + Form("_%d/", year[y]);
-            draw(file[c][y], file_ori[c][y], 1, sys_range, out_path, ycuts, xbins);
+            draw(file[c][y], file_ori[c][y], 1, sys_range, lumi[y], out_path, ycut, zcut, xbins, xtitle, cut[c]);
         }
     }
 }

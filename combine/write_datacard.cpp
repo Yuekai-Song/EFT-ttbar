@@ -11,7 +11,7 @@ void write_datacard(TString datacard_name, TString cut_name, int year, TString d
         sys_saved = {"jes_Absolute", Form("jes_Absolute_%d", year), "jes_FlavorQCD", "jes_BBEC1", 
                     "jes_EC2", "jes_HF", Form("jes_BBEC1_%d", year), Form("jes_EC2_%d", year), 
                     "jes_RelativeBal", Form("jes_RelativeSample_%d", year), "jer", "unclus", 
-                    "SF_Muon", "SF_Elec",
+                    "SF_Muon", "SF_Elec", "SF_puid",
                     Form("SF_Muon_%d", year), Form("SF_Elec_%d", year), Form("L1PF_%d", year), "PU", "SF_ltag", Form("SF_ltag%d", year), 
                     "SF_btag_type3", "SF_btag_pileup", "SF_btag_jes", Form("SF_btag_stat%d", year),
                     "muR1", "muF1", "muR2", "muF2", "muR3", "muF3", "nnlo_wt", "nnlo",
