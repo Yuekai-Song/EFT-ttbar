@@ -142,7 +142,7 @@ def process(file_name: str, original: str, flat_bg: bool, sys_type: dict, xs_220
             hist_map[sys + "Up"].Scale(qnorm_fix)
             hist_map[sys + "Down"].Scale(1.0 / qnorm_fix)
         
-        if flat_bg and "ttbar" not in nom_name and "QCD" not in nom_name:
+        if flat_bg and "ttbar" not in nom_name and "QCD" not in nom_name and "wshape" not in sys_name:
             option = [2, 1]
         elif sys_name not in sys_type.keys():
             option = [0, 0]

@@ -42,7 +42,7 @@ void format_text(TPaveText *lumi, bool option)
     if (option)
     {
         lumi->SetTextColor(1);
-        lumi->SetTextSize(0.045);
+        lumi->SetTextSize(0.040);
     }
     else
     {

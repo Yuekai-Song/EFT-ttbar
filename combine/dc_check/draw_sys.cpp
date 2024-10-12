@@ -127,14 +127,18 @@ void draw(TString file_n, TString file_ori_n, bool option, map<TString, double> 
                 double range = get_range_pad2(hmc);
                 if (sys_range.find(name) == sys_range.end() || sys_range[name] < range)
                     sys_range[name] = range;
+                if (name.Contains("qshape"))
+                    sys_range[name] = 2;
+                if (name.Contains("wshape"))
+                    sys_range[name] = 1;
+                if (name.Contains("mtop3"))
+                    sys_range[name] = 0.2;
             }
         }
     }
 }
-void draw_sys()
+void draw_sys(TString datacard_name, TString type_name)
 {
-    TString datacard_name = "mtt_dyt_cost";
-    TString type_name = "processed_bg_flat";
     vector<vector<double>> xbins;
     vector<TString> ycut, zcut;
     vector<var> x;

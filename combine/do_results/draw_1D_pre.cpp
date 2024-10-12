@@ -18,7 +18,7 @@ void draw_pre(TString dir, vector<TString> fileName, vector<TString> text, TStri
     if (fileName.size() != text.size())
         cout << "size not equal" << endl;
     gStyle->SetOptStat(0);
-    int color[14] = {1, kViolet, 4, 2, 2, kCyan, kMagenta, kBlue - 10, 3, kYellow, 93};
+    int color[14] = {1, kViolet, 4, 2, kCandy, 93, kBlue - 10, 3, kYellow, 93};
     // DrawFrame (Double_t xmin, Double_t ymin, Double_t xmax, Double_t ymax, const char *title="")
     TCanvas *c = new TCanvas("c", "", 8, 30, 600, 600);
     TCanvas *c2 = new TCanvas("c2", "", 8, 30, 600, 600);
@@ -35,7 +35,7 @@ void draw_pre(TString dir, vector<TString> fileName, vector<TString> text, TStri
     c2->SetFrameBorderMode(0);
     c2->SetFrameFillStyle(0);
     c2->SetFrameBorderMode(0);
-    TLegend *leg = new TLegend(0.4, 0.80, 0.7, 0.90);
+    TLegend *leg = new TLegend(0.4, 0.60, 0.7, 0.90);
     leg->SetFillColor(0);
     leg->SetLineColor(0);
     leg->SetBorderSize(0);
@@ -119,12 +119,12 @@ void draw_pre(TString dir, vector<TString> fileName, vector<TString> text, TStri
     l2->Draw("same");
     // TLatex lumi;
     // lumi.DrawLatex(-0.35,15,"\\mathscr{L}=300 \\mathrm{fb^{-1}}");
-    TPaveText *lumi = new TPaveText(0.50, 0.65, 0.60, 0.75, "NDC");
+    TPaveText *lumi = new TPaveText(0.83, 1 - 0.9 * c2->GetTopMargin(), 0.93, 1 - 0.5 * c2->GetTopMargin(), "NDC");
     // TPaveText (Double_t x1, Double_t y1, Double_t x2, Double_t y2, Option_t *option="br")
     lumi->SetFillColor(0);
     lumi->SetTextFont(42);
-    lumi->SetTextSize(0.045);
-    lumi->SetTextColor(9);
+    lumi->SetTextSize(0.035);
+    lumi->SetTextColor(1);
     lumi->SetBorderSize(0);
     //lumi->AddText("\\mathscr{L} = 59.83 \\mathrm{fb^{-1}}");
     lumi->AddText("137.1 fb^{-1}");

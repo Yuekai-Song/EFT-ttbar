@@ -3,7 +3,7 @@ import sys
 import process
 import ROOT
 
-cut_names = {"_E_3jets": "_E3j", "_M_3jets": "_M3j", "_E_4jets" : "_E4j", "_M_4jets": "_M4j"}
+cut_names = {"_E_3jets": "_e3j", "_M_3jets": "_m3j", "_E_4jets" : "_e4j", "_M_4jets": "_m4j"}
 years = [2015, 2016, 2017, 2018]
 name_datacard = sys.argv[1]
 cut_name = sys.argv[2]
@@ -29,7 +29,9 @@ sys_type_4cuts = {
     "jes_RelativeBal": [1, 0, [0.5]],
     "jes_RelativeSample_{0}".format(year): [1, 0, [0.5]],
     "jer": [1, 0, [1.0]],
-    "unclus": [2, 1]
+    "unclus": [2, 1],
+    "qshape" + cut_names[cut_name] + "_{0}".format(year): [1, 0, [0.7]],
+    "wshape" + cut_names[cut_name] + "_{0}".format(year): [1, 0, [0.7]]
 }
 sys_type_2cuts = {
     "TuneCP5": [2, 1],
@@ -126,24 +128,12 @@ else:
 if "2cuts" in name_datacard:
     sys_type = sys_type_2cuts
     start = [0, 16, 23]
-elif "mtt_dyt_cost_4" in name_datacard:
-    sys_type = sys_type_4cuts
-    start = [0, 7, 14, 21, 28, 37, 46, 55, 64, 73, 81]
-elif "mtt_dyt_cost_1" in name_datacard:
-    sys_type = sys_type_4cuts
-    start = [0, 10, 20, 30, 40, 48, 56, 64, 72]
-elif "mtt_dyt_cost_2" in name_datacard:
-    sys_type = sys_type_4cuts
-    start = [0, 10, 20, 30, 39, 48, 57, 65, 73, 81]
-elif "mtt_dyt_cost_3" in name_datacard:
-    sys_type = sys_type_4cuts
-    start = [0, 11, 22, 33, 44, 55]
 elif "mtt_dyt_cost" in name_datacard:
     sys_type = sys_type_4cuts
     start = [0, 7, 14, 23, 32, 41, 50, 58]
-elif "mtt_dyt_new" in name_datacard:
+elif "pt_dyt_cost" in name_datacard:
     sys_type = sys_type_4cuts
-    start = [0, 9, 18, 27, 36]
+    start = [0, 11, 22, 33, 44, 55, 66, 77]
 elif "mtt_dyt" in name_datacard:
     sys_type = sys_type_4cuts
     start = [0, 7, 16, 25, 33]
@@ -151,7 +141,10 @@ elif "pt_dyt" in name_datacard:
     sys_type = sys_type_4cuts
     start = [0, 11, 22, 33, 44]
 elif "mtt_cost" in name_datacard:
-    sys_type = sys_type_2cuts
+    sys_type = sys_type_4cuts
+    start = [0, 11, 22, 33, 44, 55]
+elif "pt_cost" in name_datacard:
+    sys_type = sys_type_4cuts
     start = [0, 11, 22, 33, 44, 55]
 
 ch = cut_name[1:2] + cut_name[3:5]+ "_" + sys.argv[3]
