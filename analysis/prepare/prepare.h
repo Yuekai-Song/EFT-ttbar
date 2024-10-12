@@ -47,7 +47,7 @@ private:
     vector<TH1 *> qcd_hists;
     TH1* h_other = nullptr;
     bool use_other = false;
-    const TString weight_base = "Generator_weight*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom";
+    const TString weight_base = "Generator_weight*SF_puid*SF_btag*SF_lepton*pu_wt*L1PreFiringWeight_Nom";
     void draw(TH1 *h1, TString file, TString tree, TString weight = "");
     void set_dir();
     void draw_nom();

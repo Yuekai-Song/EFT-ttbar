@@ -11,6 +11,8 @@
 #include <sstream>
 using namespace std;
 
+#ifndef SETS
+#define SETS
 struct var
 {
     TString name;
@@ -25,15 +27,15 @@ var Mtt_fine = {"Mtt", 300, 3000, 270};
 var deltay = {"deltay", -4, 4, 20};
 var abs_deltay = {"abs_deltay", 0, 4, 40};
 var cost = {"cost", -1, 1, 20};
-var abs_cost = {"abs_cost", 0, 1, 10};
+var abs_cost = {"abs_cost", 0, 1, 20};
 var ytt = {"ytt", -3, 3, 30};
 var abs_ytt = {"abs_ytt", 0, 3, 30};
-var likelihood = {"likelihood", 13, 50, 37};
+var likelihood = {"like", 13, 50, 37};
 var lepton_pt = {"lepton_pt", 30, 250, 22};
 var leading_pt = {"leading_pt", 30, 400, 37};
-var mass_t = {"mass_t", 50, 450, 40};
-var mass_th = {"mass_th", 50, 450, 40};
-var mass_tl = {"mass_tl", 50, 450, 40};
+var mass_t = {"mt", 50, 450, 40};
+var mass_th = {"mth", 50, 450, 40};
+var mass_tl = {"mtl", 50, 450, 40};
 var MET_pt = {"MET_pt", 0, 400, 40};
 
 class tree_draw;
@@ -247,10 +249,11 @@ public:
     Float_t extra_n;
     void setadd();
     const settings scut;
-    Float_t calculate(int entry, TString var);
+    bool calculate(int entry);
     Float_t get_weight(int entry);
     Float_t gb_w(TString file);
     Float_t get_cut();
+    map<TString, Float_t> vals;
 public:
     tree_draw(TString name, TString files, settings scuts, string extra1 = "", Float_t extra2 = 1);
     void draw(TH1D *h1, TString var);
@@ -313,7 +316,7 @@ void tree_draw::setadd()
         mytree.SetBranchAddress("D_nu", &D_nu);
 
 }
-tree_draw::tree_draw(TString name, TString files, settings scuts, string extra1 = "", Float_t extra2 = 1) : scut(scuts)
+tree_draw::tree_draw(TString name, TString files, settings scuts, string extra1, Float_t extra2) : scut(scuts)
 {
     mytree.SetName(name);
     mytree.Add(files);
@@ -322,7 +325,7 @@ tree_draw::tree_draw(TString name, TString files, settings scuts, string extra1 
     string token;
     std::vector<TString> tokens;
     std::regex re("\\[(\\d+)\\]");
-        
+
     while (std::getline(ss, token, '*'))
     {
         if (!TString(token).Contains("LHEPdfWeight"))
@@ -353,7 +356,7 @@ Float_t tree_draw::get_weight(int entry)
         weight *= extra[i];
     weight *= extra_n;
     for (int i = 0; i < index.size(); i++)
-        weight *= LHEPdfWeight[i];
+        weight *= LHEPdfWeight[index[i]];
     return weight;
 }
 Float_t tree_draw::gb_w(TString file)
@@ -382,9 +385,9 @@ Float_t tree_draw::gb_w(TString file)
     return scut.pre_scale;
     
 }
-Float_t tree_draw::calculate(int entry, TString var)
+bool tree_draw::calculate(int entry)
 {
-    double mass_tt, rapidity_tt, top_pt, cost, ytt, mt, mth, mtl;
+    Float_t mass_tt, rapidity_tt, top_pt, cost, ytt, mt, mth, mtl;
     TLorentzVector mom_top;
     TLorentzVector mom_atop;
     mytree.GetEntry(entry);
@@ -397,7 +400,6 @@ Float_t tree_draw::calculate(int entry, TString var)
     p4_top_cms.Boost(-p3_cms);
     TVector3 p3_top_cms = p4_top_cms.Vect();
     TVector3 p3_cms_lab = p4_cms_lab.Vect();
-
 
     cost = p3_top_cms.Dot(p3_cms_lab) / (p3_top_cms.Mag() * p3_cms_lab.Mag());
     mass_tt = p4_cms_lab.M();
@@ -415,39 +417,47 @@ Float_t tree_draw::calculate(int entry, TString var)
         mth = mt;
         mtl = mom_atop.M();
     }
-    
-    map<TString, double> val = {{"Mtt", mass_tt},
-                                {"deltay", rapidity_tt},
-                                {"top_pt", top_pt},
-                                {"cost", cost},
-                                {"ytt", ytt},
-                                {"likelihood", likelihood},
-                                {"mass_t", mt},
-                                {"mass_th", mth},
-                                {"mass_tl", mtl},
-                                {"MET_pt", MET_pt},
-                                {"lepton_pt", lepton_pt},
-                                {"leading_pt", jet_pt[0]},
-                                {"abs_cost", fabs(cost)},
-                                {"abs_ytt",fabs(ytt)},
-                                {"abs_deltay", fabs(rapidity_tt)}};
-    return val[var];
+    if (mth > 200)
+        return false;
+
+    vals["Mtt"] = mass_tt;
+    vals["deltay"] = rapidity_tt;
+    vals["cost"] = cost;
+    vals["ytt"] = ytt;
+    vals["like"] = likelihood;
+    vals["mt"] = mt;
+    vals["mth"] = mth;
+    vals["mtl"] = mtl;
+    vals["MET_pt"] = MET_pt;
+    vals["lepton_pt"] = lepton_pt;
+    vals["leading_pt"] = jet_pt[0];
+    vals["abs_cost"] = fabs(cost);
+    vals["abs_ytt"] = fabs(ytt);
+    vals["abs_deltay"] = fabs(rapidity_tt);
+    return true;
 }
 void tree_draw::draw(TH1D *h1, TString var)
 {
     for(int i = 0; i < mytree.GetEntries(); i++)
-        h1->Fill(calculate(i, var), get_weight(i));
+    {
+        if (calculate(i));
+            h1->Fill(calculate(i)[var], get_weight(i));
+    }
 }
 void tree_draw::draw(TH2D *h1, TString varx, TString vary)
 {
     for(int i = 0; i < mytree.GetEntries(); i++)
-        h1->Fill(calculate(i, varx), calculate(i, vary), get_weight(i));
+    {
+        if (calculate(i));
+            h1->Fill(calculate(i)[varx], calculate(i)[vary], get_weight(i));
+    }
 }
 void tree_draw::draw(TH3D *h1, TString varx, TString vary, TString varz)
 {
     for(int i = 0; i < mytree.GetEntries(); i++)
     {
-        h1->Fill(calculate(i, varx), calculate(i, vary), calculate(i, varz),  get_weight(i));
-        // cout << calculate(i, varx) << " " << calculate(i, vary) << " " << calculate(i, varz) << endl;
+        if (calculate(i));
+            h1->Fill(vals[varx], vals[vary], vals[varz],  get_weight(i));
     }
 }
+#endif

@@ -34,8 +34,13 @@ void prepare::draw_nom()
 {
     TString weight;
     TH1 *hist;
+    TString mcdir;
     for (int c = begin; c < min(npro, end); c++)
     {
+        if (c < nEW)
+            mcdir = Form("~/analysis/weight/output/%d/", sets.year);
+        else
+            mcdir = MC_dir;
         weight = weight_base;
         create_hist(hist, process[c]);
         if (c < nEW)
@@ -43,7 +48,7 @@ void prepare::draw_nom()
         if (c == nEW)
             weight = weight + "*nnlo_wt";
         for (int i = sets.index_pro[fileTitle[c]].first; i <  sets.index_pro[fileTitle[c]].second; i++)
-            draw(hist, MC_dir + sets.fileName(i), "mytree", weight);
+            draw(hist, mcdir + sets.fileName(i), "mytree", weight);
         if (c == nEW - 1 && end == npro + 2)
             create_hist(h_other, "other");
         if (h_other)
@@ -63,10 +68,15 @@ void prepare::draw_pdf(int p)
 {
     TString weight;
     TH1 *hist_pdf;
+    TString mcdir;
     for (int c = begin; c < min(npro, end); c++)
     {
         if (p >= npdf_w[c])
             continue;
+        if (c < nEW)
+            mcdir = Form("~/analysis/weight/output/%d/", sets.year);
+        else
+            mcdir = MC_dir;
         weight = weight_base + Form("*LHEPdfWeight[%d]", p);
         create_hist(hist_pdf, process[c] + Form("_pdf_w%d", p));
         if (c > nEW)
@@ -76,7 +86,7 @@ void prepare::draw_pdf(int p)
         else
             weight = weight + "*nnlo_wt";
         for (int i = sets.index_pro[fileTitle[c]].first; i <  sets.index_pro[fileTitle[c]].second; i++)
-            draw(hist_pdf, MC_dir + sets.fileName(i), "mytree", weight);
+            draw(hist_pdf, mcdir + sets.fileName(i), "mytree", weight);
         write(hist_pdf);
         cout << "finished pdf_w" << p << " of " << process[c] << endl;
     }
@@ -86,10 +96,15 @@ void prepare::draw_sys(stype s)
 {
     TH1 *hist_up, *hist_dn;
     TString weight;
+    TString mcdir;
     for (int c = begin; c < min(npro, end); c++)
     {
         if (!psys->match(s, process[c]))
             continue;
+        if (c < nEW)
+            mcdir = Form("~/analysis/weight/output/%d/", sets.year);
+        else
+            mcdir = MC_dir;
         weight = weight_base;
         create_hist(hist_up, process[c] + "_" + s.name + "Up");
         create_hist(hist_dn, process[c] + "_" + s.name + "Down");
@@ -100,8 +115,8 @@ void prepare::draw_sys(stype s)
         for (int i = sets.index_pro[fileTitle[c]].first; i < sets.index_pro[fileTitle[c]].second; i++)
         {
             vector<TString> a = psys->give_sys_name(sets.fileName(i), weight, s, process[c]);
-            draw(hist_up, MC_dir + a[0], a[2], a[4]);
-            draw(hist_dn, MC_dir + a[1], a[3], a[5]);
+            draw(hist_up, mcdir + a[0], a[2], a[4]);
+            draw(hist_dn, mcdir + a[1], a[3], a[5]);
         }
         write(hist_up);
         write(hist_dn);
@@ -222,6 +237,8 @@ void prepare::set_bins(var xvars, var yvars =  {"", 0, 0, 0}, var zvars = {"", 0
     zvar = zvars;
     if (yvar.bins == 0 && zvar.bins == 0)
         category = xvar.name + "_" + category;
+    else if (zvar.bins == 0)
+        category = xvar.name + "_" + yvar.name + "_" + category;
 }
 
 void prepare::create_hist(TH1 *&hist, TString name)
