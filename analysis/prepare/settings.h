@@ -443,7 +443,7 @@ void tree_draw::draw(TH1D *h1, TString var)
     for(int i = 0; i < mytree.GetEntries(); i++)
     {
         if (calculate(i))
-            h1->Fill(vals[varx][var], get_weight(i));
+            h1->Fill(vals[var], get_weight(i));
     }
 }
 void tree_draw::draw(TH2D *h1, TString varx, TString vary)
@@ -451,7 +451,7 @@ void tree_draw::draw(TH2D *h1, TString varx, TString vary)
     for(int i = 0; i < mytree.GetEntries(); i++)
     {
         if (calculate(i))
-            h1->Fill(vals[varx], vals[varx][vary], get_weight(i));
+            h1->Fill(vals[varx], vals[vary], get_weight(i));
     }
 }
 void tree_draw::draw(TH3D *h1, TString varx, TString vary, TString varz)
