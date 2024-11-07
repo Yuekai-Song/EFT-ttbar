@@ -1,6 +1,7 @@
 #include <TROOT.h>
 #include <TChain.h>
 #include <TString.h>
+#include <TCanvas.h>
 #include <TLorentzVector.h>
 #include <TH3D.h>
 #include <iostream>
@@ -417,7 +418,8 @@ bool tree_draw::calculate(int entry)
         mth = mt;
         mtl = mom_atop.M();
     }
-    if (mth > 200)
+
+    if (scut.cut_name.Contains("3jets") && mth > 200)
         return false;
 
     vals["Mtt"] = mass_tt;
@@ -440,23 +442,23 @@ void tree_draw::draw(TH1D *h1, TString var)
 {
     for(int i = 0; i < mytree.GetEntries(); i++)
     {
-        if (calculate(i));
-            h1->Fill(calculate(i)[var], get_weight(i));
+        if (calculate(i))
+            h1->Fill(vals[varx][var], get_weight(i));
     }
 }
 void tree_draw::draw(TH2D *h1, TString varx, TString vary)
 {
     for(int i = 0; i < mytree.GetEntries(); i++)
     {
-        if (calculate(i));
-            h1->Fill(calculate(i)[varx], calculate(i)[vary], get_weight(i));
+        if (calculate(i))
+            h1->Fill(vals[varx], vals[varx][vary], get_weight(i));
     }
 }
 void tree_draw::draw(TH3D *h1, TString varx, TString vary, TString varz)
 {
     for(int i = 0; i < mytree.GetEntries(); i++)
     {
-        if (calculate(i));
+        if (calculate(i))
             h1->Fill(vals[varx], vals[vary], vals[varz],  get_weight(i));
     }
 }
