@@ -1,5 +1,11 @@
+
+#if defined(__CLING__)
+#pragma cling add_include_path("/cvmfs/cms.cern.ch/el9_amd64_gcc12/external/python3/3.9.14-b98669a1dd7ad6f9a9402f3cf1f9d11c/include/python3.9")
+#pragma cling add_library_path("/cvmfs/cms.cern.ch/el9_amd64_gcc12/external/python3/3.9.14-b98669a1dd7ad6f9a9402f3cf1f9d11c/lib")
+#pragma cling load("libAcornAnalysis.so")
+#endif
 #include "select_tree.cpp"
-void process_test(TString outdir, TString outputFile, TString input, int year, bool ttx, bool jet_lep){
+void process_test(TString outdir, TString outputFile, TString input, int year, bool ttx = false, bool jet_lep = false){
     OP_TYPE op_type;
     OBJECT_SELECT_ORDER order_type;
     if (ttx)
@@ -18,6 +24,7 @@ void process_test(TString outdir, TString outputFile, TString input, int year, b
         order_type = OBJECT_SELECT_ORDER::lepton_jet;
         outputFile += "_lj";
     }
+    outputFile += ".root";
     select_tree *s;
     CATEGORY cate = CATEGORY::A;
     int num_j, num_e, num_m, num_g, num_lhe;
@@ -27,7 +34,7 @@ void process_test(TString outdir, TString outputFile, TString input, int year, b
     num_m = r.nm;
     num_g = r.ng;
     num_lhe = r.nLHE;
-    cout << num_lhe << endl;
+    // cout << num_lhe << endl;
     // num_j = 50;
     // num_e = 20;
     // num_m = 20;
@@ -49,7 +56,7 @@ void process_test(TString outdir, TString outputFile, TString input, int year, b
         tf_file = TFile::Open(Form("./corr/tf/tf_%d.root", year));
     select_tree::h_ecorr = (TF1 *)tf_file->Get("Func");
 
-    s = new select_tree(input, outdir+"/"+"new_"+outputFile, "mytree", "Jet_pt", "MET_pt", year, DATA_TYPE::MC_sys, op_type, order_type, cate, num_j, num_e, num_m, num_g, num_lhe);
+    s = new select_tree(input, outdir+"/"+outputFile, "mytree", "Jet_pt", "MET_pt", year, DATA_TYPE::MC_sys, op_type, order_type, cate, num_j, num_e, num_m, num_g, num_lhe);
     s->write();
     delete s;
 

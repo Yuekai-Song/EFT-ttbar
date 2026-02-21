@@ -68,15 +68,17 @@ rm -f condor_${type_name}.sub
 cat >condor_${type_name}.sub <<EOF
 executable              = ../scripts/run_${type_name}.sh
 arguments               = \$(dir) $2 $3
-Initialdir              = /afs/cern.ch/user/y/yuekai/EFT-ttbar/select/20${2}/condor_out_${type_name}/\$(dir)
+Initialdir              = /grid_mnt/data__data.polcms/cms/song/CMSSW_14_1_0_pre4/src/ttbar/select/20${2}/condor_out_${type_name}/\$(dir)
 
 output                  = run.out
 error                   = run.err
 log                     = run.log
 
-RequestMemory           = 2000
-ShouldTransferFiles     = NO
-+JobFlavour             = "testmatch"
-x509userproxy           = \$ENV(HOME)/temp/x509up
+T3Queue = long
+getenv = EOS_MGM_URL,EOS_HOME,X509_USER_PROXY
+WNTag=el9
++SingularityCmd = ""
+include : /opt/exp_soft/cms/t3_tst/t3queue |
+
 Queue dir from ./condor_list_${type_name}.txt
 EOF

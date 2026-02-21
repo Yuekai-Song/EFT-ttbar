@@ -1,3 +1,5 @@
+#include "Acorn/Analysis/interface/StandaloneReweight.h"
+#include <RtypesCore.h>
 #include<TROOT.h>
 #include<Math/PdfFuncMathCore.h>
 #include<TFile.h>
@@ -53,6 +55,7 @@ public:
 
 class select_tree{
 private:
+    std::shared_ptr<StandaloneReweight> rw_;
     TString input;
     TString tree_name;
     int year;
@@ -86,11 +89,13 @@ private:
     ULong64_t event;
     Float_t Generator_weight;
     UInt_t luminosityBlock, run;
-    Float_t *LHEPart_eta, *LHEPart_mass, *LHEPart_phi, *LHEPart_pt;
-    Int_t *LHEPart_pdgId, *LHEPart_status;
-    UInt_t nLHEPart;
+    Float_t *LHEPart_eta, *LHEPart_mass, *LHEPart_phi, *LHEPart_pt, *LHEPart_incomingpz;
+    Int_t *LHEPart_pdgId, *LHEPart_status, *LHEPart_spin;
+    UInt_t nLHEPart, n_ajet;
+    Float_t LHE_AlphaS;
     Float_t LHEScaleWeight[9], PSWeight[4],LHEPdfWeight[150];
     UInt_t nLHEPdfWeight, nLHEScaleWeight, nPSWeight;
+    Float_t A_ctgre, B_ctgre, A_ctgim, B_ctgim, C_ctg;
 
     Float_t L1PreFiringWeight_Nom, L1PreFiringWeight_Up, L1PreFiringWeight_Dn; 
     Bool_t Flag_met[11];
@@ -106,7 +111,7 @@ private:
     Float_t electron_deltaEtaSC;
     Float_t mass_tt_uncorr;
     Double_t corr_f;
-    Float_t rectop_pt, mass_tt, rapidity_tt, recantitop_pt;
+    Float_t rectop_pt, mass_tt, rapidity_tt, recantitop_pt, ctstar;
     Float_t mass_tlep, mass_thad, neutrino_pz;
     Float_t mass_wlep, mass_whad, mass_t, mass_at;
     Float_t mass_bjj, mass_jj, mass_lb;
@@ -121,7 +126,7 @@ private:
     TLorentzVector  p4_lepn, p4_nun, p4_lepp, p4_nup;
     int  index_upbar, index_downbar;
     TLorentzVector  p4_upbar, p4_downbar;
-    Float_t ctstar;
+    Float_t ctstar_gen;
     int index;
     Int_t LHE_nhad, LHE_nlep;
     Float_t muR_up, muF_up, ISR_up, FSR_up;
