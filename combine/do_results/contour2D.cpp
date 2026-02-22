@@ -312,7 +312,7 @@ void contour2D(TString dir, TString datafile, TString xvar, int xbins, float xmi
     m.SetMarkerColor(97);
     m.SetMarkerStyle(33);
     m.DrawMarker(smx, smy);
-    // fit->Draw("P SAME");
+    fit->Draw("P SAME");
 
     //    m.SetMarkerSize(1.8); m.SetMarkerColor(89); m.SetMarkerStyle(33);
     //    m.DrawMarker(smx,smy);
@@ -328,7 +328,7 @@ void contour2D(TString dir, TString datafile, TString xvar, int xbins, float xmi
     leg->SetTextSize(0.05);
     gStyle->SetEndErrorSize(10);
     leg->AddEntry(&m, "SM", "p");
-    // leg->AddEntry(fit, "best fit","p");
+    leg->AddEntry(fit, "best fit","p");
     leg->AddEntry(c68->At(0), "68% CL", "l");
     leg->AddEntry(c95->At(0), "95% CL", "l");
     leg->Draw();
