@@ -213,3 +213,6 @@ combine/convert_3Dto1D.cpp
 prepare_datacard.cpp
 backup
 analysis/derive.cpp
+test
+*png
+rw_*
