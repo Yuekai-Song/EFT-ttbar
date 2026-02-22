@@ -34,7 +34,7 @@ void process_test(TString outdir, TString outputFile, TString input, int year, b
     num_m = r.nm;
     num_g = r.ng;
     num_lhe = r.nLHE;
-    // cout << num_lhe << endl;
+    cout << num_lhe << endl;
     // num_j = 50;
     // num_e = 20;
     // num_m = 20;

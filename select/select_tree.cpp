@@ -606,7 +606,7 @@ void select_tree::read_LHE()
                 part =  {p_temp.E(), p_temp.Px(), p_temp.Py(),p_temp.Pz()};
                 if (LHEPart_pdgId[i] == 6)
                     p4_top = p_temp;
-                else
+                else if (LHEPart_pdgId[i] == -6)
                     p4_antitop = p_temp;
                 n_ajet++;
             }
@@ -705,6 +705,9 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
     for (int entry = 0; entry < chain->GetEntries(); entry++)
     {
         chain->GetEntry(entry);
+        if (entry % 10000 == 0) {
+            cout << entry << " events have been analyzed." << endl;
+        }
         if (data_type != DATA_TYPE::data && input.Contains("TT"))
             read_LHE();
         if ((data_type == MC || data_type == MC_sys) && (op_type == select_reco || op_type == select_reco_ttx))

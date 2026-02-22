@@ -63,7 +63,7 @@ pad_title = ["|#Deltay| < 0.4", "0.4 < |#Deltay| < 1.0", "1.0 < |#Deltay| < 2.0"
 ndivs = [2, 2, 2, 1]
 pad_subtitle = [["|cos(#theta)| < 0.3", "|cos(#theta)| > 0.3"], ["|cos(#theta)| < 0.5", "|cos(#theta)| > 0.5"], ["|cos(#theta)| < 0.8", "|cos(#theta)| > 0.8"], ["0 < |cos(#theta)| < 1"]]
 
-file = rt.TFile('./output_LO.root' if args.lo else './output.root')
+file = rt.TFile('./output_LO.root' if args.lo else './output_back.root')
 
 hists = ana.TDirToNode(file)
 file.Close()
@@ -140,6 +140,9 @@ def plot(sel, lin=True):
 
     pads_u[0].cd()
     latex_pt.DrawLatexNDC(0.52, 1 - t + cms.lumiTextOffset * t * scale + 0.008, selections[sel] + ', GEN, ' + ('Interference, ' if lin else 'BSM, ') + ('extra parton vetoed' if args.lo else 'with extra partons'))
+    for i in range(4):
+        cms.UpdatePad(pads_u[i])
+        cms.UpdatePad(pads_r[i])
     canv.Print(f'{sel}{lin_str}.pdf' if not args.lo else f'{sel}{lin_str}_LO.pdf')
 for sel in selections:
     plot(sel, lin=args.lin)
