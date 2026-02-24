@@ -16,46 +16,54 @@ selections_cfg = {
 }
 input = '/grid_mnt/data__data.polcms/cms/song/CMSSW_14_1_0_pre4/src/ttbar/select/output/TTJets_TuneCP5_13TeV-madgraphMLM.root'
 
-top_pt = ana.var_model('top_pt', 'p_{T}^{t} [GeV]', bin_edges=[0, 50, 100, 150, 200, 250, 300, 400, 1000])
-top_pt.defname = 'top_pt'
+ptt = ana.var_model('ptt', 'p_{T}^{t} [GeV]', bin_edges=[0, 50, 100, 150, 200, 250, 300, 400, 1000])
+ptt.defname = 'rectop_pt'
 deltay = ana.var_model('deltay', '|#Deltay|', bin_edges=[0, 0.4, 1.0, 2.0, 6.0])
-deltay.redefine = 'abs(delta_rapidity_gen)'
+deltay.redefine = 'abs(rapidity_tt)'
 cost = ana.var_model('cost', 'p_{T}^{t} [GeV]', bin_edges=[0, 0.3, 0.5, 0.8, 1])
-cost.redefine = 'abs(ctstar_gen)'
+cost.redefine = 'abs(ctstar)'
 
-rdf_raw = rt.RDataFrame('rawtree', input)
-rdf_raw = rdf_raw.Define("wt_tot", "Generator_weight")
-rdf_raw = rdf_raw.Define("ctg1_lin", f"Generator_weight * (1 + A_ctgre*1)")
-rdf_raw = rdf_raw.Define("ctg2_lin", f"Generator_weight * (1 + A_ctgre*2)")
-rdf_raw = rdf_raw.Define("ctg1_quad", f"Generator_weight * (1 + A_ctgre*1 + B_ctgre*1)")
-rdf_raw = rdf_raw.Define("ctg2_quad", f"Generator_weight * (1 + A_ctgre*2 + B_ctgre*4)")
-if args.lo:
-    rdf_raw = rdf_raw.Filter("n_ajet == 0")
+# rdf_raw = rt.RDataFrame('rawtree', input)
+# rdf_raw = rdf_raw.Define("wt_tot", "Generator_weight")
+# rdf_raw = rdf_raw.Define("ctg1_lin_me", f"Generator_weight * (1 + A_ctgre*1)")
+# rdf_raw = rdf_raw.Define("ctg2_lin_me", f"Generator_weight * (1 + A_ctgre*2)")
+# rdf_raw = rdf_raw.Define("ctg1_quad_me", f"Generator_weight * (1 + A_ctgre*1 + B_ctgre*1)")
+# rdf_raw = rdf_raw.Define("ctg2_quad_me", f"Generator_weight * (1 + A_ctgre*2 + B_ctgre*4)")
+# if args.lo:
+#     rdf_raw = rdf_raw.Filter("n_ajet == 0")
 
 rdf = rt.RDataFrame('mytree', input)
 rdf = rdf.Define("wt_tot", "Generator_weight")
-rdf = rdf.Define("ctg1_lin", f"Generator_weight * (1 + A_ctgre*1)")
-rdf = rdf.Define("ctg2_lin", f"Generator_weight * (1 + A_ctgre*2)")
-rdf = rdf.Define("ctg1_quad", f"Generator_weight * (1 + A_ctgre*1 + B_ctgre*1)")
-rdf = rdf.Define("ctg2_quad", f"Generator_weight * (1 + A_ctgre*2 + B_ctgre*4)")
+rdf = rdf.Define("ctg1_lin_me", f"Generator_weight * (1 + A_ctgre*1)")
+rdf = rdf.Define("ctg2_lin_me", f"Generator_weight * (1 + A_ctgre*2)")
+rdf = rdf.Define("ctg1_quad_me", f"Generator_weight * (1 + A_ctgre*1 + B_ctgre*1)")
+rdf = rdf.Define("ctg2_quad_me", f"Generator_weight * (1 + A_ctgre*2 + B_ctgre*4)")
+rdf = rdf.Define("ctg1_lin_rw", f"Generator_weight * ctg1_lin")
+rdf = rdf.Define("ctg2_lin_rw", f"Generator_weight * ctg2_lin")
+rdf = rdf.Define("ctg1_quad_rw", f"Generator_weight * ctg1_quad")
+rdf = rdf.Define("ctg2_quad_rw", f"Generator_weight * ctg2_quad")
 if args.lo:
     rdf = rdf.Filter("n_ajet == 0")
 
 hist_node = ana.Node()
 
-hist_node['raw']['SM'] = ana.NDHistFromIndex(rdf_raw, [top_pt, deltay, cost], 0, "wt_tot", name='top_pt__deltay__cost', title='3D', single=True)
-hist_node['raw']['ctg1_lin'] = ana.NDHistFromIndex(rdf_raw, [top_pt, deltay, cost], 0, "ctg1_lin", name='top_pt__deltay__cost', title='3D', single=True)
-hist_node['raw']['ctg2_lin'] = ana.NDHistFromIndex(rdf_raw, [top_pt, deltay, cost], 0, "ctg2_lin", name='top_pt__deltay__cost', title='3D', single=True)
-hist_node['raw']['ctg1_quad'] = ana.NDHistFromIndex(rdf_raw, [top_pt, deltay, cost], 0, "ctg1_quad", name='top_pt__deltay__cost', title='3D', single=True)
-hist_node['raw']['ctg2_quad'] = ana.NDHistFromIndex(rdf_raw, [top_pt, deltay, cost], 0, "ctg2_quad", name='top_pt__deltay__cost', title='3D', single=True)
+# hist_node['raw']['SM'] = ana.NDHistFromIndex(rdf_raw, [ptt, deltay, cost], 0, "wt_tot", name='ptt__deltay__cost', title='3D', single=True)
+# hist_node['raw']['ctg1_lin_me'] = ana.NDHistFromIndex(rdf_raw, [ptt, deltay, cost], 0, "ctg1_lin_me", name='ptt__deltay__cost', title='3D', single=True)
+# hist_node['raw']['ctg2_lin_me'] = ana.NDHistFromIndex(rdf_raw, [ptt, deltay, cost], 0, "ctg2_lin_me", name='ptt__deltay__cost', title='3D', single=True)
+# hist_node['raw']['ctg1_quad_me'] = ana.NDHistFromIndex(rdf_raw, [ptt, deltay, cost], 0, "ctg1_quad_me", name='ptt__deltay__cost', title='3D', single=True)
+# hist_node['raw']['ctg2_quad_me'] = ana.NDHistFromIndex(rdf_raw, [ptt, deltay, cost], 0, "ctg2_quad_me", name='ptt__deltay__cost', title='3D', single=True)
 
 for sel_label in selections_cfg:
     rdf_del = rdf.Filter(selections_cfg[sel_label])
-    hist_node[sel_label]['SM'] = ana.NDHistFromIndex(rdf_del, [top_pt, deltay, cost], 0, "wt_tot", name='top_pt__deltay__cost', title='3D', single=True)
-    hist_node[sel_label]['ctg1_lin'] = ana.NDHistFromIndex(rdf_del, [top_pt, deltay, cost], 0, "ctg1_lin", name='top_pt__deltay__cost', title='3D', single=True)
-    hist_node[sel_label]['ctg2_lin'] = ana.NDHistFromIndex(rdf_del, [top_pt, deltay, cost], 0, "ctg2_lin", name='top_pt__deltay__cost', title='3D', single=True)
-    hist_node[sel_label]['ctg1_quad'] = ana.NDHistFromIndex(rdf_del, [top_pt, deltay, cost], 0, "ctg1_quad", name='top_pt__deltay__cost', title='3D', single=True)
-    hist_node[sel_label]['ctg2_quad'] = ana.NDHistFromIndex(rdf_del, [top_pt, deltay, cost], 0, "ctg2_quad", name='top_pt__deltay__cost', title='3D', single=True)
+    hist_node[sel_label]['SM'] = ana.NDHistFromIndex(rdf_del, [ptt, deltay, cost], 0, "wt_tot", name='ptt__deltay__cost', title='3D', single=True)
+    hist_node[sel_label]['ctg1_lin_rw'] = ana.NDHistFromIndex(rdf_del, [ptt, deltay, cost], 0, "ctg1_lin_rw", name='ptt__deltay__cost', title='3D', single=True)
+    hist_node[sel_label]['ctg2_lin_rw'] = ana.NDHistFromIndex(rdf_del, [ptt, deltay, cost], 0, "ctg2_lin_rw", name='ptt__deltay__cost', title='3D', single=True)
+    hist_node[sel_label]['ctg1_quad_rw'] = ana.NDHistFromIndex(rdf_del, [ptt, deltay, cost], 0, "ctg1_quad_rw", name='ptt__deltay__cost', title='3D', single=True)
+    hist_node[sel_label]['ctg2_quad_rw'] = ana.NDHistFromIndex(rdf_del, [ptt, deltay, cost], 0, "ctg2_quad_rw", name='ptt__deltay__cost', title='3D', single=True)
+    hist_node[sel_label]['ctg1_lin_me'] = ana.NDHistFromIndex(rdf_del, [ptt, deltay, cost], 0, "ctg1_lin_me", name='ptt__deltay__cost', title='3D', single=True)
+    hist_node[sel_label]['ctg2_lin_me'] = ana.NDHistFromIndex(rdf_del, [ptt, deltay, cost], 0, "ctg2_lin_me", name='ptt__deltay__cost', title='3D', single=True)
+    hist_node[sel_label]['ctg1_quad_me'] = ana.NDHistFromIndex(rdf_del, [ptt, deltay, cost], 0, "ctg1_quad_me", name='ptt__deltay__cost', title='3D', single=True)
+    hist_node[sel_label]['ctg2_quad_me'] = ana.NDHistFromIndex(rdf_del, [ptt, deltay, cost], 0, "ctg2_quad_me", name='ptt__deltay__cost', title='3D', single=True)
 
 allhists = []
 for path, key, obj in hist_node.ListObjects():
@@ -86,7 +94,7 @@ def project(hist_node, path_cut, target='m_fj'):
                 else:
                     temp[name] = hnd.join(projections=[(target, icut['rebin'], icut['cut']) for icut in cut_rebin])
             del subnode.d[name]
-project(hist_node, path_cut, target='top_pt')
+project(hist_node, path_cut, target='ptt')
 
 file = rt.TFile('./output.root' if not args.lo else './output_LO.root', 'recreate')
 ana.NodeToTDir(file, hist_node)

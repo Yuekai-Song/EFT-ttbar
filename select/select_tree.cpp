@@ -891,6 +891,20 @@ void select_tree::loop(TTree *trees[2], TH1 *hists[20])
                 lepton_eta = mom_lep.Eta();
                 lepton_mass = mom_lep.M();
                 lepton_phi = mom_lep.Phi();
+                
+                ctg1_lin = ctg1_lin_corr->GetBinContent(ctg1_lin_corr->FindBin(top_pt, fabs(delta_rapidity_gen)));
+                ctg2_lin = ctg2_lin_corr->GetBinContent(ctg2_lin_corr->FindBin(top_pt, fabs(delta_rapidity_gen)));
+                ctg1_quad = ctg1_quad_corr->GetBinContent(ctg1_quad_corr->FindBin(top_pt, fabs(delta_rapidity_gen)));
+                ctg2_quad = ctg2_quad_corr->GetBinContent(ctg2_quad_corr->FindBin(top_pt, fabs(delta_rapidity_gen)));
+                if (ctg1_lin == 0)
+                    ctg1_lin = 1;
+                if (ctg2_lin == 0)
+                    ctg2_lin = 1;
+                if (ctg1_quad == 0)
+                    ctg1_quad = 1;
+                 if (ctg2_quad == 0)
+                    ctg2_quad = 1;
+
                 if ((jet_num >= 4) || (jet_num == 3 && jet_pt[0] > 50))
                 {
                     if (data_type == 1)
@@ -1073,6 +1087,10 @@ void select_tree::write_select()
         mytree->Branch("Pileup_nPU", &Pileup_nPU, "Pileup_nPU/I");
         if (input.Contains("TT"))
         {
+            mytree->Branch("ctg1_lin", &ctg1_lin, "ctg1_lin/F");
+            mytree->Branch("ctg2_lin", &ctg2_lin, "ctg2_lin/F");
+            mytree->Branch("ctg1_quad", &ctg1_quad, "ctg1_quad/F");
+            mytree->Branch("ctg2_quad", &ctg2_quad, "ctg2_quad/F");
             mytree->Branch("top_pt", &top_pt, "top_pt/F");
             mytree->Branch("ctstar_gen", &ctstar_gen, "ctstar_gen/F");
             mytree->Branch("M_tt_gen", &M_tt_gen, "M_tt_gen/F");

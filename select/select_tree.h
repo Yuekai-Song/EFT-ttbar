@@ -96,7 +96,7 @@ private:
     Float_t LHEScaleWeight[9], PSWeight[4],LHEPdfWeight[150];
     UInt_t nLHEPdfWeight, nLHEScaleWeight, nPSWeight;
     Float_t A_ctgre, B_ctgre, A_ctgim, B_ctgim, C_ctg;
-
+    Float_t ctg1_lin, ctg2_lin, ctg1_quad, ctg2_quad;
     Float_t L1PreFiringWeight_Nom, L1PreFiringWeight_Up, L1PreFiringWeight_Dn; 
     Bool_t Flag_met[11];
     UInt_t nFlag_met;
@@ -152,6 +152,10 @@ private:
     void match(Float_t *pt, Float_t *eta, Float_t *phi, Float_t *mass, int *index, int num);
 public:
     static TF1* h_ecorr;
+    static TH2D* ctg1_lin_corr;
+    static TH2D* ctg2_lin_corr;
+    static TH2D* ctg1_quad_corr;
+    static TH2D* ctg2_quad_corr;
     select_tree(TString inputfile, TString outputFile, TString name_tree, TString name_jet, TString name_MET, int s_year, DATA_TYPE data_types, OP_TYPE op_types, OBJECT_SELECT_ORDER order_type, CATEGORY cates, int num_j, int num_e, int num_m, int num_g = 0, int num_LHE = 0);//type: 0:data; 1:MC nom; 2:MC sys 3:sys nom
     void write_select();
     void write_distribution();
@@ -161,3 +165,7 @@ public:
 };
 
 TF1* select_tree::h_ecorr = NULL;
+TH2D* select_tree::ctg1_lin_corr = NULL;
+TH2D* select_tree::ctg2_lin_corr = NULL;
+TH2D* select_tree::ctg1_quad_corr = NULL;
+TH2D* select_tree::ctg2_quad_corr = NULL;

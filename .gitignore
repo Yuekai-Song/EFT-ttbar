@@ -206,3 +206,7 @@ Eigen
 lhcut_check
 *.sh
 ttjets
+test
+rw_*
+backup
+*png

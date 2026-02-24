@@ -55,7 +55,11 @@ void process_test(TString outdir, TString outputFile, TString input, int year, b
     else
         tf_file = TFile::Open(Form("./corr/tf/tf_%d.root", year));
     select_tree::h_ecorr = (TF1 *)tf_file->Get("Func");
-
+    TFile* ctg_file =  TFile::Open("../select_analysis/correction_2D_LO.root");
+    select_tree::ctg1_lin_corr = (TH2D *)ctg_file->Get("ctg1_lin");
+    select_tree::ctg2_lin_corr = (TH2D *)ctg_file->Get("ctg2_lin");
+    select_tree::ctg1_quad_corr = (TH2D *)ctg_file->Get("ctg1_quad");
+    select_tree::ctg2_quad_corr = (TH2D *)ctg_file->Get("ctg2_quad");
     s = new select_tree(input, outdir+"/"+outputFile, "mytree", "Jet_pt", "MET_pt", year, DATA_TYPE::MC_sys, op_type, order_type, cate, num_j, num_e, num_m, num_g, num_lhe);
     s->write();
     delete s;
