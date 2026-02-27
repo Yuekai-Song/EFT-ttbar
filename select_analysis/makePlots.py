@@ -76,8 +76,8 @@ def get_hist(node, path, name):
     hist.Divide(node['SM'])
     return hist
 
-dn = [0.01, 0.5]
-up = [2, 1.5]
+dn = [0.31, 0.5]
+up = [1.3, 1.5]
 fracs = [0.88, 1]
 cms.SetLumi(59.83)
 
@@ -98,26 +98,26 @@ def plot(sel, lin=True):
         ctg1_me = get_hist(hists, f'{sel}/{dy}', 'ctg1' + lin_str + '_me')
         ctg2_me = get_hist(hists, f'{sel}/{dy}', 'ctg2' + lin_str + '_me')
         cms.cmsDraw(ctg1_me, 'P', lwidth=2, lcolor=2, msize=0, fstyle=0)
-        cms.cmsDraw(ctg2_me, 'P', lwidth=2, lcolor=4, msize=0, fstyle=0)
+        # cms.cmsDraw(ctg2_me, 'P', lwidth=2, lcolor=4, msize=0, fstyle=0)
         cms.cmsDraw(ctg1_rw, 'P', lwidth=2, lstyle=7, lcolor=2, lalpha=0.5, msize=0, fstyle=0)
-        cms.cmsDraw(ctg2_rw, 'P', lwidth=2, lstyle=7, lcolor=4, lalpha=0.5, msize=0, fstyle=0)
+        # cms.cmsDraw(ctg2_rw, 'P', lwidth=2, lstyle=7, lcolor=4, lalpha=0.5, msize=0, fstyle=0)
         if j == len(deltay) - 1:
-            leg = cms.cmsLeg(pads_u[j].GetLeftMargin() + 0.05, 0.63, 1 - pads_u[j].GetRightMargin() - 0.01, 0.8, textSize=0.03, columns=1)
+            leg = cms.cmsLeg(pads_u[j].GetLeftMargin() + 0.05, 0.7, 1 - pads_u[j].GetRightMargin() - 0.01, 0.8, textSize=0.03, columns=1)
             leg.AddEntry(ctg1_me, 'c_{tg} = 1, ME', 'l')
             leg.AddEntry(ctg1_rw, 'c_{tg} = 1, 3D rw', 'l')
-            leg.AddEntry(ctg2_me, 'c_{tg} = 2, ME', 'l')
-            leg.AddEntry(ctg2_rw, 'c_{tg} = 2, 3D rw', 'l')
+            # leg.AddEntry(ctg2_me, 'c_{tg} = 2, ME', 'l')
+            # leg.AddEntry(ctg2_rw, 'c_{tg} = 2, 3D rw', 'l')
             leg.Draw('same')
         pads_r[j].cd()
         pads_r[j].SetGrid(0, 1)
         cms.GetcmsCanvasHist(pads_r[j]).Draw()
         ctg1_r = ctg1_me.Clone()
         ctg1_r.Divide(ctg1_rw)
-        ctg2_r = ctg2_me.Clone()
-        ctg2_r.Divide(ctg2_rw)
+        # ctg2_r = ctg2_me.Clone()
+        # ctg2_r.Divide(ctg2_rw)
         cms.cmsDraw(ctg1_r, 'P', lwidth=2, lcolor=2, msize=0, fstyle=0)
-        cms.cmsDraw(ctg2_r, 'P', lwidth=2, lcolor=4, msize=0, fstyle=0)
-        allhists += [ctg1_rw, ctg2_rw, ctg1_me, ctg2_me, ctg1_r, ctg2_r]
+        # cms.cmsDraw(ctg2_r, 'P', lwidth=2, lcolor=4, msize=0, fstyle=0)
+        allhists += [ctg1_rw, ctg2_rw, ctg1_me, ctg2_me, ctg1_r]
         pads = [pads_u[j], pads_r[j]]
         for i in range(2):
             pads[i].cd()
